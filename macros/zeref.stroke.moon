@@ -61,8 +61,7 @@ SAVECONFIG = (subs, sel, gui, elements) ->
             vals_write ..= "{#{v.name} = #{v.value}}\n"
     dir = aegisub.decode_path("?user")
     unless zf.util\file_exist("#{dir}\\zeref-cfg", true)
-        os.execute("cd #{dir}")
-        os.execute("mkdir zeref-cfg") -- create folder zeref-cfg
+        os.execute("mkdir #{dir .. "\\zeref-cfg"}") -- create folder zeref-cfg
     cfg_save = "#{dir}\\zeref-cfg\\stroke_config.cfg"
     file = io.open cfg_save, "w"
     file\write vals_write
