@@ -1,4 +1,4 @@
-export script_name        = "Everything Shape 2.0"
+export script_name        = "Everything Shape"
 export script_description = "Do \"everything\" you need for a shape!"
 export script_author      = "Zeref"
 export script_version     = "1.2.0"
@@ -52,8 +52,7 @@ SAVECONFIG = (subs, sel, gui, elements) ->
         vals_write ..= "{#{v.name} = #{v.value}}\n" if v.name
     dir = aegisub.decode_path("?user")
     unless zf.util\file_exist("#{dir}\\zeref-cfg", true)
-        os.execute("cd #{dir}")
-        os.execute("mkdir zeref-cfg") -- create folder zeref-cfg
+        os.execute("mkdir #{dir .. "\\zeref-cfg"}") -- create folder zeref-cfg
     cfg_save = "#{dir}\\zeref-cfg\\everything_shape.cfg"
     file = io.open cfg_save, "w"
     file\write vals_write
