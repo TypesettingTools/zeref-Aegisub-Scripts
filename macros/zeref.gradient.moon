@@ -39,8 +39,7 @@ SAVECONFIG = (gui, ck) ->
         vals_write ..= "{#{v.name} = #{v.value}}\n" if v.name
     dir = aegisub.decode_path("?user")
     unless zf.util\file_exist("#{dir}\\zeref-cfg", true)
-        os.execute("cd #{dir}")
-        os.execute("mkdir zeref-cfg") -- create folder zeref-cfg
+        os.execute("mkdir #{dir .. "\\zeref-cfg"}") -- create folder zeref-cfg
     cfg_save = "#{dir}\\zeref-cfg\\gradient_config.cfg"
     file = io.open cfg_save, "w"
     file\write vals_write
