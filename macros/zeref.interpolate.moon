@@ -1,56 +1,53 @@
 export script_name        = "Interpolate Master"
 export script_description = "Does a linear interpolation between values of the first and last selected line"
 export script_author      = "Zeref"
-export script_version     = "1.0.2"
+export script_version     = "1.0.3"
 -- LIB
 zf = require "ZF.utils"
 
-__tags = {}
-__tags[1] = {"bord", "xbord", "ybord", "be", "shad", "xshad", "yshad", "blur"}
-__tags[2] = {"fs", "fscx", "fscy", "fsp"}
-__tags[3] = {"frx", "fry", "fr", "fax", "fay"}
-__tags[4] = {"_c", "_2c", "_3c", "_4c", "_1a", "_2a", "_3a", "_4a", "alpha"}
-__tags[5] = {"pos", "org", "clip"}
+tags_full = {
+    "bord", "xbord", "ybord", "be", "shad", "xshad", "yshad", "blur"
+    "fs", "fscx", "fscy", "fsp"
+    "frx", "fry", "frz", "fax", "fay"
+    "_c", "_2c", "_3c", "_4c", "_1a", "_2a", "_3a", "_4a", "alpha"
+    "pos", "org", "clip"
+}
 
 interface = ->
     gui = {}
-    for k = 1, #__tags[1] do gui[#gui + 1] = {class: "checkbox", name: __tags[1][k], label: __tags[1][k], x: 0, y: (k - 1), value: false}
-    for k = 1, #__tags[2] do gui[#gui + 1] = {class: "checkbox", name: __tags[2][k], label: __tags[2][k], x: 2, y: (k - 1), value: false}
-    for k = 1, #__tags[3] do gui[#gui + 1] = {class: "checkbox", name: __tags[3][k], label: __tags[3][k], x: 4, y: (k - 1), value: false}
-    for k = 1, #__tags[4] do gui[#gui + 1] = {class: "checkbox", name: __tags[4][k], label: __tags[4][k]\gsub("_", ""), x: 6, y: (k - 1), value: false}
-    for k = 1, #__tags[5] do gui[#gui + 1] = {class: "checkbox", name: __tags[5][k], label: __tags[5][k], x: 8, y: (k - 1), value: false}
-    gui[#gui + 1] = {class: "checkbox", name: "ign", label: "𝐈𝐠𝐧𝐨𝐫𝐞 𝐓𝐞𝐱𝐭", x: 0, y: 8, value: false}
-    gui[#gui + 1] = {class: "label", label: "\n\b\b\b\b\b::𝐀𝐜𝐜𝐞𝐥::\b\b\b\b\b", x: 0, y: 9}
-    gui[#gui + 1] = {class: "floatedit", name: "accel", x: 0, y: 10, value: 1}
+    tags_mask = [zf.table\slice(tags_full, k, k + 4) for k = 1, #tags_full, 5]
+    for k = 1, #tags_mask
+        for j = 1, #tags_mask[k]
+            gui[#gui + 1] = {
+                class: "checkbox"
+                label: tags_mask[k][j]\gsub("_", "")
+                name: tags_mask[k][j]
+                x: (k - 1)
+                y: (j - 1)
+                value: false
+            }
+    gui[#gui + 1] = {class: "checkbox", label: "Ignore Text", name: "igt", x: 0, y: 6, value: false}
+    gui[#gui + 1] = {class: "label", label: "::Accel::", x: 0, y: 7}
+    gui[#gui + 1] = {class: "floatedit", name: "acc", min: 0, x: 0, y: 8, value: 1}
     return gui
 
-SAVECONFIG = (ck) ->
-    cap_GUI = table.copy(interface!)
-    vals_write = "INTERPOLATE MASTER CONFIG - VERSION #{script_version}\n\n"
-    j = 1
-    for k = 1, #__tags[1]
-        cap_GUI[j].value = ck[__tags[1][k]]
-        j += 1
-    for k = 1, #__tags[2]
-        cap_GUI[j].value = ck[__tags[2][k]]
-        j += 1
-    for k = 1, #__tags[3]
-        cap_GUI[j].value = ck[__tags[3][k]]
-        j += 1
-    for k = 1, #__tags[4]
-        cap_GUI[j].value = ck[__tags[4][k]]
-        j += 1
-    for k = 1, #__tags[5]
-        cap_GUI[j].value = ck[__tags[5][k]]
-        j += 1
-    cap_GUI[#cap_GUI - 2].value = ck.ign
-    cap_GUI[#cap_GUI].value = ck.accel
-    for k, v in ipairs cap_GUI do 
+SAVECONFIG = (gui, elements) ->
+    ngui = table.copy(gui)
+    vals_write = "INTERPOLATE MASTER - VERSION #{script_version}\n\n"
+    for k = 1, #tags_full
+        ngui[k].value = elements[tags_full[k]]
+    ngui[30].value = elements["igt"]
+    ngui[32].value = elements["acc"]
+    for k, v in ipairs ngui
         vals_write ..= "{#{v.name} = #{v.value}}\n" if v.name
-    cfg_save = aegisub.decode_path("?user") .. "\\interpolate_config.cfg"
+    dir = aegisub.decode_path("?user")
+    unless zf.util\file_exist("#{dir}\\zeref-cfg", true)
+        os.execute("mkdir #{dir .. "\\zeref-cfg"}") -- create folder zeref-cfg
+    cfg_save = "#{dir}\\zeref-cfg\\interpolate_master.cfg"
     file = io.open cfg_save, "w"
     file\write vals_write
     file\close!
+    return
 
 READCONFIG = (filename) ->
     SEPLINES = (val) ->
@@ -61,7 +58,7 @@ READCONFIG = (filename) ->
             rec_names = sep_vals.n[k]
             sep_vals.v[rec_names] = val[k]\gsub ".+ %= (.+)", (vls) ->
                 vls\gsub "%s+", ""
-        sep_vals
+        return sep_vals
     if filename
         arq = io.open filename, "r"
         if arq != nil
@@ -69,328 +66,320 @@ READCONFIG = (filename) ->
             io.close arq
             lines = [k for k in read\gmatch "(%{[^\n]+%})"]
             for j = 1, #lines do lines[j] = lines[j]\sub(2, -2)
-            return SEPLINES(lines), true, #lines
-        return _, false
+            return SEPLINES(lines), true
     return _, false
 
 LOADCONFIG = (gui) ->
-    load_config = aegisub.decode_path("?user") .. "\\interpolate_config.cfg"
-    read_config, rdn, n = READCONFIG load_config
+    load_config = aegisub.decode_path("?user") .. "\\zeref-cfg\\interpolate_master.cfg"
+    read_config, rdn = READCONFIG load_config
     new_gui = table.copy gui
     if rdn != false
-        j = 1
-        for k = 1, #__tags[1]
-            new_gui[j].value = false
-            new_gui[j].value = true if read_config.v[__tags[1][k]] == "true"
-            j += 1
-        for k = 1, #__tags[2]
-            new_gui[j].value = false
-            new_gui[j].value = true if read_config.v[__tags[2][k]] == "true"
-            j += 1
-        for k = 1, #__tags[3]
-            new_gui[j].value = false
-            new_gui[j].value = true if read_config.v[__tags[3][k]] == "true"
-            j += 1
-        for k = 1, #__tags[4]
-            new_gui[j].value = false
-            new_gui[j].value = true if read_config.v[__tags[4][k]] == "true"
-            j += 1
-        for k = 1, #__tags[5]
-            new_gui[j].value = false
-            new_gui[j].value = true if read_config.v[__tags[5][k]] == "true"
-            j += 1
-        new_gui[#new_gui - 2].value = false
-        new_gui[#new_gui - 2].value = true if read_config.v.act == "true"
-        new_gui[#new_gui].value = tonumber read_config.v.accel
+        for k = 1, #tags_full
+            new_gui[k].value = (read_config.v[tags_full[k]] == "true") and true or false
+        new_gui[30].value = (read_config.v.igt == "true") and true or false
+        new_gui[32].value = tonumber read_config.v.acc
     return new_gui
 
-__error = (ms) ->
-    error = "\n#{script_name} -- Version: #{script_version}\n\nError: -- #{ms}"
-    aegisub.debug.out(error)
-    aegisub.cancel!
+split_tags = (text) -> -- Divide o texto em textos e tags
+    values = {tags: {}, text: {}}
+    values.tags = [t for t in text\gmatch "%b{}"]
+    string.headtail = (s, div) ->
+        a, b, head, tail = s\find("(.-)#{div}(.*)")
+        if a then head, tail else s, ""
+    while text != ""
+        c, d = text\headtail("%b{}")
+        values.text[#values.text + 1] = c
+        text = d
+    return values
 
-__concat = (t) ->
-    index_size, re_index = {}, {}
-    for i = 1, #t do index_size[i] = #t[i]
-    max_sizes = zf.table\op(index_size, "max")
-    for i = 1, max_sizes
+concat_4 = (t) -> -- Concatenates tables that have subtables
+    re_index = {}
+    sizes = [#t[i] for i = 1, #t]
+    table.sort(sizes, (a, b) -> a > b)
+    for i = 1, sizes[1] or 0
         re_index[i] = ""
-        for k = 1, #t do re_index[i] ..= (t[k][i] or "")
+        for k = 1, #t
+            re_index[i] ..= (t[k][i] or "")
     return re_index
 
-interpolation = (first, last, loop, accel = 1, tags = "") ->
-    tags = tags\gsub("_", "")
-    interpolate_shape = (pct, first, last) ->
-        index_shape_first = [tonumber(s) for s in first\gmatch "%-?%d+[%.%d+]*"]
-        index_shape_last  = [tonumber(s) for s in last\gmatch "%-?%d+[%.%d+]*"]
-        if #index_shape_first != #index_shape_last
-            __error("The shapes must have the same stitch length")
+interpolation = (first, last, loop, accel = 1, tags = "") -> -- Interpolates any possible tag
+    t, ipol = {tostring(first),  tostring(last)}, {}
+    interpolate_shape = (pct, f, l) ->
+        fs = [tonumber(s) for s in f\gmatch "%-?%d[%.%d]*"]
+        ls = [tonumber(s) for s in l\gmatch "%-?%d[%.%d]*"]
+        if #fs != #ls
+            error("The shapes must have the same stitch length")
         else
             j = 1
-            result = first\gsub "(%-?%d+[%.%d+]*)", (s) ->
-                s = zf.math\interpolation(pct, index_shape_first[j], index_shape_last[j])
+            f = f\gsub "%-?%d[%.%d]*", (s) ->
+                s = zf.math\interpolation(pct, fs[j], ls[j])
                 j += 1
                 return s
-            return result
-    t, index_pol = {tostring(first),  tostring(last)}, {}
+            return f
+    pol = (pct, first, last) -> zf.math\interpolation(pct, first, last)
+    for k = 1, #t
+        if t[k]\match "&?[Hh]%x%x%x%x%x%x&?"
+            pol = interpolate_color
+        elseif t[k]\match "&?[Hh]%x%x&?"
+            pol = interpolate_alpha
     if t[1]\match("\\pos%b()") and t[2]\match("\\pos%b()")
-        first_pos, last_pos = {}, {}
-        first_pos.x, first_pos.y = t[1]\match("\\pos%((%-?%d+[%.%d+]*),(%-?%d+[%.%d+]*)%)")
-        last_pos.x, last_pos.y = t[2]\match("\\pos%((%-?%d+[%.%d+]*),(%-?%d+[%.%d+]*)%)")
-        first_pos.x, first_pos.y = tonumber(first_pos.x), tonumber(first_pos.y)
-        last_pos.x, last_pos.y = tonumber(last_pos.x), tonumber(last_pos.y)
+        fx, fy = t[1]\match "\\pos%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
+        lx, ly = t[2]\match "\\pos%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
+        fx, fy, lx, ly = tonumber(fx), tonumber(fy), tonumber(lx), tonumber(ly)
         for k = 1, loop
-            pol_x = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, first_pos.x, last_pos.x)
-            pol_y = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, first_pos.y, last_pos.y)
-            index_pol[#index_pol + 1] = "\\pos(#{pol_x},#{pol_y})"
+            px = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, fx, lx)
+            py = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, fy, ly)
+            ipol[#ipol + 1] = "\\pos(#{px},#{py})"
     elseif (not t[1]\match("\\pos%b()") and t[2]\match("\\pos%b()")) or (t[1]\match("\\pos%b()") and not t[2]\match("\\pos%b()"))
-        __error("You must have the \\pos values in both positions")
+        error("You must have the \\pos in both positions")
     elseif t[1]\match("\\org%b()") and t[2]\match("\\org%b()")
-        first_org, last_org = {}, {}
-        first_org.x, first_org.y = t[1]\match("\\org%((%-?%d+[%.%d+]*),(%-?%d+[%.%d+]*)%)")
-        last_org.x, last_org.y = t[2]\match("\\org%((%-?%d+[%.%d+]*),(%-?%d+[%.%d+]*)%)")
-        first_org.x, first_org.y = tonumber(first_org.x), tonumber(first_org.y)
-        last_org.x, last_org.y = tonumber(last_org.x), tonumber(last_org.y)
+        fx, fy = t[1]\match "\\org%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
+        lx, ly = t[2]\match "\\org%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
+        fx, fy, lx, ly = tonumber(fx), tonumber(fy), tonumber(lx), tonumber(ly)
         for k = 1, loop
-            pol_x = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, first_org.x, last_org.x)
-            pol_y = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, first_org.y, last_org.y)
-            index_pol[#index_pol + 1] = "\\org(#{pol_x},#{pol_y})"
+            px = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, fx, lx)
+            py = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, fy, ly)
+            ipol[#ipol + 1] = "\\org(#{px},#{py})"
     elseif (not t[1]\match("\\org%b()") and t[2]\match("\\org%b()")) or (t[1]\match("\\org%b()") and not t[2]\match("\\org%b()"))
-        __error("You must have the \\org values in both positions")
+        error("You must have the \\org in both positions")
     elseif t[1]\match("\\i?clip%b()") and t[2]\match("\\i?clip%b()")
         first_cp, last_cp = {}, {}
-        clip = (t[1]\match("\\iclip") or t[2]\match("\\iclip")) and "iclip" or "clip"
-        if not t[1]\match("\\i?clip%(m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*%)") and not t[2]\match("\\i?clip%(m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*%)")
-            first_cp.x1, first_cp.y1, first_cp.x2, first_cp.y2 = t[1]\match("\\i?clip%((%-?%d+[%.%d+]*),(%-?%d+[%.%d+]*),(%-?%d+[%.%d+]*),(%-?%d+[%.%d+]*)%)")
-            last_cp.x1, last_cp.y1, last_cp.x2, last_cp.y2 = t[2]\match("\\i?clip%((%-?%d+[%.%d+]*),(%-?%d+[%.%d+]*),(%-?%d+[%.%d+]*),(%-?%d+[%.%d+]*)%)")
-            first_cp.x1, first_cp.y1, first_cp.x2, first_cp.y2 = tonumber(first_cp.x1), tonumber(first_cp.y1), tonumber(first_cp.x2), tonumber(first_cp.y2)
-            last_cp.x1, last_cp.y1, last_cp.x2, last_cp.y2 = tonumber(last_cp.x1), tonumber(last_cp.y1), tonumber(last_cp.x2), tonumber(last_cp.y2)
+        _type_ = (t[1]\match("\\iclip") or t[2]\match("\\iclip")) and "iclip" or "clip"
+        cap_rectangle = "\\i?clip%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
+        cap_vector = "\\i?clip%((m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*)%)"
+        if not t[1]\match(cap_vector) and not t[2]\match(cap_vector)
+            fl, ft, fr, fb = t[1]\match(cap_rectangle)
+            ll, lt, lr, lb = t[2]\match(cap_rectangle)
+            fl, ft, fr, fb = tonumber(fl), tonumber(ft), tonumber(fr), tonumber(fb)
+            ll, lt, lr, lb = tonumber(ll), tonumber(lt), tonumber(lr), tonumber(lb)
             for k = 1, loop
-                pol_x1 = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, first_cp.x1, last_cp.x1)
-                pol_y1 = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, first_cp.y1, last_cp.y1)
-                pol_x2 = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, first_cp.x2, last_cp.x2)
-                pol_y2 = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, first_cp.y2, last_cp.y2)
-                index_pol[#index_pol + 1] = "\\#{clip}(#{pol_x1},#{pol_y1},#{pol_x2},#{pol_y2})"
+                l = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, fl, ll)
+                t = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, ft, lt)
+                r = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, fr, lr)
+                b = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, fb, lb)
+                ipol[#ipol + 1] = "\\#{_type_}(#{l},#{t},#{r},#{b})"
+        elseif not t[1]\match(cap_vector) and t[2]\match(cap_vector)
+            f = zf.util\clip_to_draw t[1]\match("\\i?clip%b()")
+            l = t[2]\match(cap_vector)
+            for k = 1, loop
+                s = interpolate_shape((k - 1) ^ accel / (loop - 1) ^ accel, f, l)
+                ipol[#ipol + 1] = "\\#{_type_}(#{s})"
+        elseif t[1]\match(cap_vector) and not t[2]\match(cap_vector)
+            f = t[1]\match(cap_vector)
+            l = zf.util\clip_to_draw t[2]\match("\\i?clip%b()")
+            for k = 1, loop
+                s = interpolate_shape((k - 1) ^ accel / (loop - 1) ^ accel, f, l)
+                ipol[#ipol + 1] = "\\#{_type_}(#{s})"
         else
-            first_cp.v = t[1]\match("\\i?clip%((m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*)%)")
-            last_cp.v = t[2]\match("\\i?clip%((m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*)%)")
+            f = t[1]\match(cap_vector)
+            l = t[2]\match(cap_vector)
             for k = 1, loop
-                pol_v = interpolate_shape((k - 1) ^ accel / (loop - 1) ^ accel, first_cp.v, last_cp.v)
-                index_pol[#index_pol + 1] = "\\#{clip}(#{pol_v})"
+                s = interpolate_shape((k - 1) ^ accel / (loop - 1) ^ accel, f, l)
+                ipol[#ipol + 1] = "\\#{_type_}(#{s})"
     elseif (not t[1]\match("\\i?clip%b()") and t[2]\match("\\i?clip%b()")) or (t[1]\match("\\i?clip%b()") and not t[2]\match("\\i?clip%b()"))
-        __error("You must have the \\clip - \\iclip values in both positions")
+        error("You must have the (\\clip - \\iclip) in both positions")
     else
-        pol = (pct, first, last) -> zf.math\interpolation(pct, first, last)
-        for k = 1, #t
-            if t[k]\match "[&]*[Hh]%x%x%x%x%x%x[&]*"
-                pol = interpolate_color
-            elseif t[k]\match "[&]*[Hh]%x%x[&]*"
-                pol = interpolate_alpha
         for k = 1, loop
-            if t[1] == "" or t[2] == ""
-                index_pol[#index_pol + 1] = ""
+            if not first and not last
+                ipol[#ipol + 1] = ""
             else
-                index_pol[#index_pol + 1] = tags .. pol((k - 1) ^ accel / (loop - 1) ^ accel, first, last)
-    return index_pol
+                ipol[#ipol + 1] = tags .. pol((k - 1) ^ accel / (loop - 1) ^ accel, first, last)
+    return ipol
 
-org_interpolation = (table_tags, tags) ->
-    index_tags, index_ext = {}, {pos: {}, org: {}, clip: {}}
-    for k = 1, #tags
-        index_tags[tags[k]] = {}
-    for k = 1, #tags
-        for _, v in ipairs(table_tags)
-            if v\match "\\#{tags[k]}(%-?%d+[%.%d+]*)"
-                v\gsub "\\#{tags[k]}(%-?%d+[%.%d+]*)", (b) ->
-                    index_tags[tags[k]][#index_tags[tags[k]] + 1] = tonumber(b)
-            elseif v\match "\\#{tags[k]\gsub("_", "")}([&]*[Hh]%x%x%x%x%x%x[&]*)"
-                v\gsub "\\#{tags[k]\gsub("_", "")}([&]*[Hh]%x%x%x%x%x%x[&]*)", (b) ->
-                    index_tags[tags[k]][#index_tags[tags[k]] + 1] = tostring(b)
-            elseif v\match "\\#{tags[k]\gsub("_", "")}([&]*[Hh]%x%x[&]*)"
-                v\gsub "\\#{tags[k]\gsub("_", "")}([&]*[Hh]%x%x[&]*)", (b) ->
-                    index_tags[tags[k]][#index_tags[tags[k]] + 1] = tostring(b)
-            elseif tags[k] == "pos" and v\match "\\pos%b()"
-                index_tags[tags[k]][#index_tags[tags[k]] + 1] = v\match("\\pos%b()")
-            elseif tags[k] == "org" and v\match "\\org%b()"
-                index_tags[tags[k]][#index_tags[tags[k]] + 1] = v\match("\\org%b()")
-            elseif tags[k] == "clip" and v\match "\\i?clip%b()"
-                index_tags[tags[k]][#index_tags[tags[k]] + 1] = v\match("\\i?clip%b()")
-    return index_tags
+class ipol -- Class for macro main settings
 
-index_interpolation = (t_tags, f_tags, n, old_tags, accel, style_values) ->
-    index_pol, re_index = {}, {}
-    for k = 1, #f_tags
-        index_tags = org_interpolation(t_tags, f_tags)[f_tags[k]]
-        if (not index_tags[1]) and (not index_tags[2])
-            index_tags[1], index_tags[2] = "", ""
-        elseif (not index_tags[1]) and index_tags[2]
-            index_tags[1] = style_values.first[f_tags[k]]
-        elseif index_tags[1] and (not index_tags[2])
-            index_tags[2] = style_values.last[f_tags[k]]
-        table.insert(index_pol, interpolation(index_tags[1], index_tags[2], n, accel, "\\#{f_tags[k]}"))
-        for j = 1, #t_tags
-            t_tags[j] = t_tags[j]\gsub("\\#{f_tags[k]\gsub("_", "")}%-?[%d&]^*[%.%dHh&%x]*", "")
-            t_tags[j] = t_tags[j]\gsub("\\i?#{f_tags[k]}%b()", "")
-        for j = 1, #old_tags
-            old_tags[j] = old_tags[j]\gsub("\\#{f_tags[k]\gsub("_", "")}%-?[%d&]^*[%.%dHh&%x]*", "")
-            old_tags[j] = old_tags[j]\gsub("\\i?#{f_tags[k]}%b()", "")
-    re_index = __concat(index_pol)
-    for k = 1, #re_index do re_index[k] ..= old_tags[k]
-    return re_index
+    new: (text_f, text_l, n, style_tags, elements, old, mac) =>
+        text_f = text_f\gsub("\\1c", "\\c")\gsub("\\frz?", "\\frz")\gsub("\\t%b()", "")
+        text_l = text_l\gsub("\\1c", "\\c")\gsub("\\frz?", "\\frz")\gsub("\\t%b()", "")
+        a = text_f\gsub("%s+", "")\find("%b{}")
+        b = text_l\gsub("%s+", "")\find("%b{}")
+        text_f = (a != 1) and "{}#{text_f}" or text_f
+        text_l = (b != 1) and "{}#{text_l}" or text_l
+        @info_v = {:text_f, :text_l, :old, :mac, backup_t: {}}
+        @info_v.f = split_tags(text_f)
+        @info_v.l = split_tags(text_l)
+        @tags_id = {f: {}, l: {}, ipol: {}, :n, :elements, styles: style_tags}
 
-index_tags_text = (line_text) ->
-    tags, text, nftags = {}, {}, false
-    line_text = line_text\gsub("(.-)%{", (tx) ->
-        text[#text + 1] = tx if tx != ""
-        nftags = true if tx != "", 1)
-    line_text = line_text\gsub "(%b{})([^%b{}]*)", (tg, tx) ->
-        tags[#tags + 1] = tg
-        text[#text + 1] = tx
-    return text, tags, nftags
+    tags_splitter: => -- Organizes the tags from the selected tags in the macro and removes the old values from them
+        split = (t, ivf) ->
+            for _, i in pairs(tags_full)
+                if @tags_id.elements[i]
+                    tif = t[i]
+                    if i\match("_") or (i == "alpha")
+                        i = i\gsub("_", "")
+                        if i\match("\\%da") or (i == "alpha")
+                            tif = ivf\match("\\#{i}%s*&?[Hh]%x%x&?") and ivf\match("\\#{i}%s*(&?[Hh]%x%x&?)") or nil
+                            ivf = ivf\gsub("\\#{i}%s*&?[Hh]%x%x&?", "")
+                        else
+                            tif = ivf\match("\\#{i}%s*&?[Hh]%x%x%x%x%x%x&?") and ivf\match("\\#{i}%s*(&?[Hh]%x%x%x%x%x%x&?)") or nil
+                            ivf = ivf\gsub("\\#{i}%s*&?[Hh]%x%x%x%x%x%x&?", "")
+                            ivf = ivf\gsub("\\1c%s*&?[Hh]%x%x%x%x%x%x&?", "") if i == "c"
+                    elseif (i == "pos") or (i == "org") or (i == "clip")
+                        tif = ivf\match("\\i?#{i}%b()")
+                        ivf = ivf\gsub("\\i?#{i}%b()", "")
+                    else
+                        tif = ivf\match("\\#{i}%s*%-?%d[%.%d]*") and tonumber(ivf\match("\\#{i}%s*(%-?%d[%.%d]*)")) or nil
+                        ivf = ivf\gsub("\\#{i}%s*%-?%d[%.%d]*", "")
+                        ivf = ivf\gsub("\\fr%s*%-?%d[%.%d]*", "") if i == "frz"
+                    t[i] = tif
+            return ivf
+        for j = 1, #@info_v.old
+            @info_v.backup_t[j] = {}
+            for k = 1, #@info_v.old[j].tags
+                ivf = @info_v.old[j].tags[k]
+                @info_v.backup_t[j][k] = {}
+                @info_v.backup_t[j][k] = [t for t in ivf\gmatch "\\t%b()"]
+                ivf = ivf\gsub "\\t%b()", ""
+                ivf = split({}, ivf)
+                @info_v.old[j].tags[k] = ivf
+        for k = 1, #@info_v.f.tags
+            ivf = @info_v.f.tags[k]
+            @tags_id.f[k] = {}
+            split(@tags_id.f[k], ivf)
+        for k = 1, #@info_v.l.tags
+            ivf = @info_v.l.tags[k]
+            @tags_id.l[k] = {}
+            split(@tags_id.l[k], ivf)
 
-class interpol
+    tags_ipol: => -- interpolates the selected tags
+        @tags_splitter!
+        interpol, len = {}, #@tags_id.f > #@tags_id.l and #@tags_id.f or #@tags_id.l
+        for i = 1, len
+            @tags_id.ipol[i] = {}
+            if @tags_id.f[i]
+                for k, v in pairs(@tags_id.f[i])
+                    k = k\gsub("_", "")
+                    fix_color = (k\find("%d") == 1 or k == "c") and "_#{k}" or k
+                    if (@tags_id.f[i][k] and not @tags_id.l[i]) or (@tags_id.f[i][k] and (@tags_id.l[i] and not @tags_id.l[i][k]))
+                        @tags_id.ipol[i][k] = interpolation(@tags_id.f[i][k], @tags_id.styles.last[fix_color], @tags_id.n, @tags_id.elements.acc, "\\#{k}")
+                    elseif @tags_id.f[i][k] and (@tags_id.l[i] and @tags_id.l[i][k])
+                        @tags_id.ipol[i][k] = interpolation(@tags_id.f[i][k], @tags_id.l[i][k], @tags_id.n, @tags_id.elements.acc, "\\#{k}")
+            if @tags_id.l[i]
+                continue if @tags_id.ipol[i][k]
+                for k, v in pairs(@tags_id.l[i])
+                    k = k\gsub("_", "")
+                    fix_color = (k\find("%d") == 1 or k == "c") and "_#{k}" or k
+                    if (@tags_id.l[i][k] and not @tags_id.f[i]) or (@tags_id.l[i][k] and (@tags_id.f[i] and not @tags_id.f[i][k]))
+                        @tags_id.ipol[i][k] = interpolation(@tags_id.styles.first[fix_color], @tags_id.l[i][k], @tags_id.n, @tags_id.elements.acc, "\\#{k}")
+                    elseif @tags_id.l[i][k] and (@tags_id.f[i] and @tags_id.f[i][k])
+                        @tags_id.ipol[i][k] = interpolation(@tags_id.f[i][k], @tags_id.l[i][k], @tags_id.n, @tags_id.elements.acc, "\\#{k}")
+
+    make_tags: => -- Organizes the output of the ready-made tags
+        @tags_ipol!
+        tags, final = {}, {}
+        ps = #@info_v.f.text > #@info_v.l.text and @info_v.f.text or @info_v.l.text
+        table.remove(ps, 1) if ps[1] == ""
+        for i = 1, #ps
+            tags[i], final[i] = {}, ""
+            if (@tags_id.ipol[i] and zf.table\len(@tags_id.ipol[i], "other") == 0) or not @tags_id.ipol[i]
+                tags[i][#tags[i] + 1] = interpolation(nil, nil, @tags_id.n)
+            else
+                tags[i][#tags[i] + 1] = v for k, v in pairs(@tags_id.ipol[i])
+            tags[i] = concat_4 tags[i]
+            for j = 1, #tags[i]
+                if @tags_id.elements.igt
+                    old_tags = (@info_v.old[j].tags[i] or "")\sub(2, -2)
+                    old_tags ..= table.concat(@info_v.backup_t[j][i] or {})
+                    tags[i][j] = ("{#{tags[i][j] .. old_tags}}#{ps[i]}")\gsub("{}", "", 1)
+        if not @tags_id.elements.igt
+            for i = 1, #tags[1]
+                text = @info_v.mac[i]
+                a = text\gsub("%s+", "")\find("%b{}")
+                text = (a != 1) and "{}#{text}" or text
+                old_tags = (@info_v.old[i].tags[1] or "")\sub(2, -2)
+                old_tags ..= table.concat(@info_v.backup_t[i][1] or {})
+                text = "{#{tags[1][i] .. old_tags}}" .. text\gsub("%b{}", "", 1)
+                @info_v.mac[i] = text
+            return @info_v.mac
+        else
+            return concat_4 tags
+
+class build_macro -- Output function, just set some dependencies and return the build
 
     new: (subs, sel) =>
         @sb, @sl = subs, sel
+        @sel_lines = [subs[i] for _, i in ipairs(sel)]
+        @sel_first, @sel_last = @sel_lines[1], @sel_lines[#@sel_lines]
 
-    index_texts: =>
-        @selected_lines = [@sb[i] for _, i in ipairs(@sl)]
-        @txt_selected_lines = [@sb[i].text for _, i in ipairs(@sl)]
-
-    org_text_and_tags: =>
-        @index_texts!
-        @index_tg_tx = {text: {}, tags: {}, nftags: {}}
-        for i = 1, #@txt_selected_lines
-            @index_tg_tx.text[i], @index_tg_tx.tags[i], @index_tg_tx.nftags[i] = index_tags_text(@txt_selected_lines[i])
-        index_size = {tags: {}, text: {}}
-        for i = 1, #@index_tg_tx.tags do index_size.tags[i] = #@index_tg_tx.tags[i]
-        for i = 1, #@index_tg_tx.text do index_size.text[i] = #@index_tg_tx.text[i]
-        max_size_tags = zf.table\op(index_size.tags, "max")
-        max_size_text = zf.table\op(index_size.text, "max")
-        local index_size_text
-        for i = 1, #@index_tg_tx.text
-            index_size_text = i if (#@index_tg_tx.text[i] == max_size_text)
-        for i = 1, #@index_tg_tx.text
-            @index_tg_tx.text[i] = @index_tg_tx.text[index_size_text]
-        for i = 1, #@index_tg_tx.tags
-            if #@index_tg_tx.tags[i] < max_size_tags
-                for k = #@index_tg_tx.tags[i], (max_size_tags - 1)
-                    if @index_tg_tx.nftags[i] == true
-                        table.insert(@index_tg_tx.tags[i], 1, "")
-                    else
-                        table.insert(@index_tg_tx.tags[i], "")
-        for i = 1, #@index_tg_tx.tags
-            for k = 1, #@index_tg_tx.tags[i]
-                @index_tg_tx.tags[i][k] = @index_tg_tx.tags[i][k]\sub(2, -2)
-        return @index_tg_tx
-
-    index_styles_values: =>
-        @index_texts!
-        first, last = @selected_lines[1], @selected_lines[#@selected_lines]
+    style_ref: =>
         meta, styles = karaskel.collect_head(@sb)
-        karaskel.preproc_line(@sb, meta, styles, first)
-        karaskel.preproc_line(@sb, meta, styles, last)
+        karaskel.preproc_line(@sb, meta, styles, @sel_first)
+        karaskel.preproc_line(@sb, meta, styles, @sel_last)
+        cfs, afs = util.color_from_style, util.alpha_from_style
         @style_values = {
             first: {
-                bord: first.styleref.outline, xbord: 0, ybord: 0
-                be: 0, shad: first.styleref.shadow, xshad: 0
-                yshad: 0, blur: 0, fs: first.styleref.fontsize
-                fscx: first.styleref.scale_x, fscy: first.styleref.scale_x
-                fsp: first.styleref.spacing, frx: 0, fry: 0
-                fr: first.styleref.angle, fax: 0, fay: 0
-                _c:  util.color_from_style(first.styleref.color1)
-                _2c: util.color_from_style(first.styleref.color2)
-                _3c: util.color_from_style(first.styleref.color3)
-                _4c: util.color_from_style(first.styleref.color4)
-                _1a: util.alpha_from_style(first.styleref.color1)
-                _2a: util.alpha_from_style(first.styleref.color2)
-                _3a: util.alpha_from_style(first.styleref.color3)
-                _4a: util.alpha_from_style(first.styleref.color4)
+                bord: @sel_first.styleref.outline, xbord: 0, ybord: 0
+                be: 0, shad: @sel_first.styleref.shadow, xshad: 0
+                yshad: 0, blur: 0, fs: @sel_first.styleref.fontsize
+                fscx: @sel_first.styleref.scale_x, fscy: @sel_first.styleref.scale_x
+                fsp: @sel_first.styleref.spacing, frx: 0, fry: 0
+                frz: @sel_first.styleref.angle, fax: 0, fay: 0
+                _c:  cfs(@sel_first.styleref.color1)
+                _2c: cfs(@sel_first.styleref.color2)
+                _3c: cfs(@sel_first.styleref.color3)
+                _4c: cfs(@sel_first.styleref.color4)
+                _1a: afs(@sel_first.styleref.color1)
+                _2a: afs(@sel_first.styleref.color2)
+                _3a: afs(@sel_first.styleref.color3)
+                _4a: afs(@sel_first.styleref.color4)
             }
             last: {
-                bord: last.styleref.outline, xbord: 0, ybord: 0
-                be: 0, shad: last.styleref.shadow, xshad: 0
-                yshad: 0, blur: 0, fs: last.styleref.fontsize
-                fscx: last.styleref.scale_x, fscy: last.styleref.scale_x
-                fsp: last.styleref.spacing, frx: 0, fry: 0
-                fr: last.styleref.angle, fax: 0, fay: 0
-                _c:  util.color_from_style(last.styleref.color1)
-                _2c: util.color_from_style(last.styleref.color2)
-                _3c: util.color_from_style(last.styleref.color3)
-                _4c: util.color_from_style(last.styleref.color4)
-                _1a: util.alpha_from_style(last.styleref.color1)
-                _2a: util.alpha_from_style(last.styleref.color2)
-                _3a: util.alpha_from_style(last.styleref.color3)
-                _4a: util.alpha_from_style(last.styleref.color4)
+                bord: @sel_last.styleref.outline, xbord: 0, ybord: 0
+                be: 0, shad: @sel_last.styleref.shadow, xshad: 0
+                yshad: 0, blur: 0, fs: @sel_last.styleref.fontsize
+                fscx: @sel_last.styleref.scale_x, fscy: @sel_last.styleref.scale_x
+                fsp: @sel_last.styleref.spacing, frx: 0, fry: 0
+                frz: @sel_last.styleref.angle, fax: 0, fay: 0
+                _c:  cfs(@sel_last.styleref.color1)
+                _2c: cfs(@sel_last.styleref.color2)
+                _3c: cfs(@sel_last.styleref.color3)
+                _4c: cfs(@sel_last.styleref.color4)
+                _1a: afs(@sel_last.styleref.color1)
+                _2a: afs(@sel_last.styleref.color2)
+                _3a: afs(@sel_last.styleref.color3)
+                _4a: afs(@sel_last.styleref.color4)
             }
         }
 
-    interpol_values: (selected_tags, accel) =>
-        @org_text_and_tags!
-        @index_styles_values!
-        index_pol, old_tags, seg = {}, {}, @index_tg_tx.tags
-        re_t = {seg[1], seg[#seg]}
-        for k = 1, #seg[1] do old_tags[#old_tags + 1] = {}
-        for k = 1, #seg do for j = 1, #seg[k] do table.insert(old_tags[j], seg[k][j]) 
-        for k = 1, #re_t[1]
-            index_pol[k] = index_interpolation({re_t[1][k], re_t[2][k]}, selected_tags, #@sl, old_tags[k], accel, @style_values)
-            for j = 1, #index_pol[k] do index_pol[k][j] = "{#{index_pol[k][j]}}"\gsub("{}", "") .. @index_tg_tx.text[j][k]
-        return __concat(index_pol)
+    text_ref: (other) =>
+        local old
+        if other
+            old = [v.text for k, v in ipairs @sel_lines]
+        else
+            old = [split_tags(v.text) for k, v in ipairs @sel_lines]
+        return old
 
-    interpol_values_ign: (selected_tags, accel) =>
-        @index_styles_values!
-        @index_texts!
-        __index_tg_tx, index_pol = {text: {}, tags: {}}, {}
-        verify = (line) ->
-            nftags, tags = false, ""
-            line = line\gsub("(.-)%{", (v) ->
-                nftags = true if v != "", 1)
-            if nftags == false
-                tags = line\match("%b{}") or ""
-                line = line\gsub("%b{}", "", 1)
-            return line, tags\sub(2, -2) or ""
-        for i = 1, #@txt_selected_lines
-            __index_tg_tx.text[i], __index_tg_tx.tags[i] = verify(@txt_selected_lines[i])
-        index_pol = index_interpolation({__index_tg_tx.tags[1], __index_tg_tx.tags[#__index_tg_tx.tags]}, selected_tags, #@sl, __index_tg_tx.tags, accel, @style_values)
-        for i = 1, #index_pol
-            index_pol[i] = "{#{index_pol[i]}}"\gsub("{}", "") .. __index_tg_tx.text[i]
-        return index_pol
-
-    final: =>
-        inter = LOADCONFIG(interface!)
-        local bx, ck
+    out: =>
+        @style_ref!
+        inter, add = LOADCONFIG(interface!), 0
+        local button, elements
         while true
-            bx, ck = aegisub.dialog.display(inter, {"Run", " Run - Save Mods ", "Reset", "Cancel"}, close: "Cancel")
-            inter = interface! if bx == "Reset"
-            break if bx == "Run" or bx == " Run - Save Mods " or bx == "Cancel"
-        __index_tags, __index_true = {}, {}
-        for k = 1, #__tags
-            for j = 1, #__tags[k]
-                __index_tags[#__index_tags + 1] = __tags[k][j]
-        for k = 1, #__index_tags
-            __index_true[#__index_true + 1] = __index_tags[k] if (ck[__index_tags[k]] == true)
-        switch bx
-            when "Run", " Run - Save Mods "
-                aegisub.progress.task("Interpolating...")
-                SAVECONFIG(ck) if bx == " Run - Save Mods "
-                if #__index_true > 0
-                    for k, v in ipairs(@sl)
-                        aegisub.progress.set((v - 1) / #@sl * 100)
-                        l = @sb[v]
-                        unless ck.ign
-                            l.text = @interpol_values(__index_true, ck.accel)[k]
-                        else
-                            l.text = @interpol_values_ign(__index_true, ck.accel)[k]
-                        @sb[v] = l
-                    aegisub.progress.set(100)
-                else
-                    aegisub.cancel!
-            when "Cancel"
+            button, elements = aegisub.dialog.display(inter, {"Run", "Run - Save", "Reset", "Close"}, {close: "Close"})
+            inter = interface! if button == "Reset"
+            break if button == "Run" or button == "Run - Save" or button == "Close"
+        make_ipol = ipol(@sel_first.text, @sel_last.text, #@sel_lines, @style_values, elements, @text_ref!, @text_ref(true))
+        split, box_true = make_ipol\make_tags!, {}
+        box_true[#box_true + 1] = (v == true) or nil for k, v in pairs elements
+        if (button == "Run") or (button == "Run - Save")
+            SAVECONFIG(inter, elements) if (button == "Run - Save")
+            if #box_true > 0
+                for k, v in ipairs @sl
+                    l = @sb[v]
+                    text = l.text
+                    l.text = split[k]
+                    @sb[v] = l
+            else
                 aegisub.cancel!
+        else
+            aegisub.cancel!
+        return
 
-main = (subs, sel) ->
-    return interpol(subs, sel)\final!
+main = (subs, sel) -> -- Only function to store the class construct for the Aegisub API to recognize
+    build_macro(subs, sel)\out!
+    return
 
-enable = (subs, sel) ->
+enable = (subs, sel) -> -- Activates the macro when it has more than 2 or more selections
     return (#sel > 1) and true or false
 
 aegisub.register_macro script_name, script_description, main, enable
+return
