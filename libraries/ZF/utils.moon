@@ -174,6 +174,18 @@ class TABLE
         for i = 1, n do t[#t + 1] = select(i, ...)
         return ...
 
+    slice: (t, f, l, s) =>
+        sliced = [t[i] for i = f or 1, l or #t, s or 1]
+        return sliced
+
+    len: (t, table_type = "array") =>
+        count = 0
+        if table_type == "array"
+            count += 1 for k, v in ipairs t
+        else
+            count += 1 for k, v in pairs t
+        return count
+
     view: (Table, table_name, indent) => -- returns a table as string
         cart, autoref = "", ""
         isemptytable = (Table) -> next(Table) == nil
@@ -733,11 +745,11 @@ class POLY
     to_points: (shape, oth) => -- converts shapes to points in 2 different way
         shape = SHAPE(shape)\redraw(1, "bezier").code
         points = {parts: {}, result: {}}
-        points.parts = [p for p in shape\gmatch " ([^m]+)"]
+        points.parts = [p for p in shape\gmatch "m [^m]*"]
         points.result = [ [tonumber(p) * 1000 for p in v\gmatch "%-?%d[%.%d]*"] for v in *points.parts ]
         if oth
             points = {parts: {}, result: {}}
-            points.parts = [p for p in shape\gmatch " ([^m]+)"]
+            points.parts = [p for p in shape\gmatch "m [^m]*"]
             points.result = [ [{x: tonumber(x), y: tonumber(y)} for x, y in v\gmatch "(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)"] for v in *points.parts ]
             return points.result
         return points.result
@@ -951,7 +963,7 @@ class SUB_POLY extends POLY
 
     smooth_edges: (shape, r) =>
         points, dist, c, l1, l2, shapes = {parts: {}, result: {}}, {}, {}, {}, {}, {}
-        points.parts = ["m " .. p for p in shape\gmatch " ([^m]+)"] -- index the parts of a shape
+        points.parts = [p for p in shape\gmatch "m [^m]*"] -- index the parts of a shape
         for k = 1, #points.parts
             points.result[k] = [{x: tonumber(x), y: tonumber(y)} for x, y in points.parts[k]\gmatch "(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)"] unless points.parts[k]\match("b") -- index the points of each part of a shape
         get_angle = (c, l) -> -- returns the value of the angle between points c and l
@@ -995,6 +1007,18 @@ class SUB_POLY extends POLY
                     shapes[k] ..= " l #{x1} #{y1} b #{pcx1} #{pcy1} #{pcx2} #{pcy2} #{x2} #{y2}"
                 shapes[k] = shapes[k]\gsub(" l", "m", 1)
         return table.concat(shapes)\gsub("(%d)m", "%1 m")
+
+    envelope_distort: (shape, mode) =>
+        shape = Yutils.shape.split(Yutils.shape.flatten(shape), 2)
+        switch mode
+            when "wave"
+                wave = (frx = 0, amx = 0, fry = 0, amy = 0) -> -- freguencia e amplitude
+                    shape = SHAPE(shape)\filter(nil, (x, y) ->
+                        x += cos(y * (frx * 0.001) * pi * 2) * amx
+                        y += sin(x * (fry * 0.001) * pi * 2) * amy
+                        return x, y)
+                    return shape
+                return wave
 
     org_points: (points, an) => -- moves the points to positions relative to the alignment 7
         width, height = @dimension(points)
@@ -1134,23 +1158,23 @@ class SUPPORT
             styles[k].margin_v = line.margin_b if line.margin_b > 0
             if vtext\match "%b{}"
                 tags = vtext\match "%b{}"
-                styles[k].align     = tonumber tags\match "\\an[%s+]*(%d)" if tags\match "\\an[%s+]*%d"
-                styles[k].fontname  = tags\match "\\fn[%s+]*([^\\}]*)" if tags\match "\\fn[%s+]*[^\\}]*"
-                styles[k].fontsize  = tonumber tags\match "\\fs[%s+]*(%d[%.%d]*)" if tags\match "\\fs[%s+]*%d[%.%d]*"
-                styles[k].scale_x   = tonumber tags\match "\\fscx[%s+]*(%d[%.%d]*)" if tags\match "\\fscx[%s+]*%d[%.%d]*"
-                styles[k].scale_y   = tonumber tags\match "\\fscy[%s+]*(%d[%.%d]*)" if tags\match "\\fscy[%s+]*%d[%.%d]*"
-                styles[k].spacing   = tonumber tags\match "\\fsp[%s+]*(%-?%d[%.%d]*)" if tags\match "\\fsp[%s+]*%-?%d[%.%d]*"
-                styles[k].outline   = tonumber tags\match "\\bord[%s+]*(%d[%.%d]*)" if tags\match "\\bord[%s+]*%d[%.%d]*"
-                styles[k].shadow    = tonumber tags\match "\\shad[%s+]*(%d[%.%d]*)" if tags\match "\\shad[%s+]*%d[%.%d]*"
-                styles[k].angle     = tonumber tags\match "\\fr[z]*[%s+]*(%-?%d[%.%d]*)" if tags\match "\\fr[z]*[%s+]*%-?%d[%.%d]*"
-                styles[k].color1    = tags\match "\\1?c[%s+]*(&[hH]%x+&)" if tags\match "\\1?c[%s+]*&[hH]%x+&"
-                styles[k].color2    = tags\match "\\2c[%s+]*(&[hH]%x+&)" if tags\match "\\2c[%s+]*&[hH]%x+&"
-                styles[k].color3    = tags\match "\\3c[%s+]*(&[hH]%x+&)" if tags\match "\\3c[%s+]*&[hH]%x+&"
-                styles[k].color4    = tags\match "\\4c[%s+]*(&[hH]%x+&)" if tags\match "\\4c[%s+]*&[hH]%x+&"
-                styles[k].bold      = true if tags\match "\\b[%s+]*1"
-                styles[k].italic    = true if tags\match "\\i[%s+]*1"
-                styles[k].underline = true if tags\match "\\u[%s+]*1"
-                styles[k].strikeout = true if tags\match "\\s[%s+]*1"
+                styles[k].align     = tonumber tags\match "\\an%s*(%d)" if tags\match "\\an%s*%d"
+                styles[k].fontname  = tags\match "\\fn%s*([^\\}]*)" if tags\match "\\fn%s*[^\\}]*"
+                styles[k].fontsize  = tonumber tags\match "\\fs%s*(%d[%.%d]*)" if tags\match "\\fs%s*%d[%.%d]*"
+                styles[k].scale_x   = tonumber tags\match "\\fscx%s*(%d[%.%d]*)" if tags\match "\\fscx%s*%d[%.%d]*"
+                styles[k].scale_y   = tonumber tags\match "\\fscy%s*(%d[%.%d]*)" if tags\match "\\fscy%s*%d[%.%d]*"
+                styles[k].spacing   = tonumber tags\match "\\fsp%s*(%-?%d[%.%d]*)" if tags\match "\\fsp%s*%-?%d[%.%d]*"
+                styles[k].outline   = tonumber tags\match "\\bord%s*(%d[%.%d]*)" if tags\match "\\bord%s*%d[%.%d]*"
+                styles[k].shadow    = tonumber tags\match "\\shad%s*(%d[%.%d]*)" if tags\match "\\shad%s*%d[%.%d]*"
+                styles[k].angle     = tonumber tags\match "\\fr[z]?%s*(%-?%d[%.%d]*)" if tags\match "\\fr[z]?%s*%-?%d[%.%d]*"
+                styles[k].color1    = tags\match "\\1?c%s*(&[hH]%x+&)" if tags\match "\\1?c%s*&[hH]%x+&"
+                styles[k].color2    = tags\match "\\2c%s*(&[hH]%x+&)" if tags\match "\\2c%s*&[hH]%x+&"
+                styles[k].color3    = tags\match "\\3c%s*(&[hH]%x+&)" if tags\match "\\3c%s*&[hH]%x+&"
+                styles[k].color4    = tags\match "\\4c%s*(&[hH]%x+&)" if tags\match "\\4c%s*&[hH]%x+&"
+                styles[k].bold      = true if tags\match "\\b%s*1"
+                styles[k].italic    = true if tags\match "\\i%s*1"
+                styles[k].underline = true if tags\match "\\u%s*1"
+                styles[k].strikeout = true if tags\match "\\s%s*1"
         return meta, styles
 
     find_coords: (line, meta, ogp) => -- finds coordinates of some tags
@@ -1201,17 +1225,17 @@ class SUPPORT
                     coords.move.x1, coords.move.y1 = meta.res_x - line.styleref.margin_r, line.styleref.margin_v
                     coords.org.x, coords.org.y = meta.res_x - line.styleref.margin_r, line.styleref.margin_v
         if line.text\match "%b{}"
-            if line.text\match "\\frx[%s+]*%-?%d[%.%d]*"
-                frx = line.text\match "\\frx[%s+]*(%-?%d[%.%d]*)"
+            if line.text\match "\\frx%s*%-?%d[%.%d]*"
+                frx = line.text\match "\\frx%s*(%-?%d[%.%d]*)"
                 coords.rots.frx = tonumber frx
-            if line.text\match "\\fry[%s+]*%-?%d[%.%d]*"
-                fry = line.text\match "\\fry[%s+]*(%-?%d[%.%d]*)"
+            if line.text\match "\\fry%s*%-?%d[%.%d]*"
+                fry = line.text\match "\\fry%s*(%-?%d[%.%d]*)"
                 coords.rots.fry = tonumber fry
-            if line.text\match "\\fax[%s+]*%-?%d[%.%d]*"
-                fax = line.text\match "\\fax[%s+]*(%-?%d[%.%d]*)"
+            if line.text\match "\\fax%s*%-?%d[%.%d]*"
+                fax = line.text\match "\\fax%s*(%-?%d[%.%d]*)"
                 coords.rots.fax = tonumber fax
-            if line.text\match "\\fay[%s+]*%-?%d[%.%d]*"
-                fay = line.text\match "\\fay[%s+]*(%-?%d[%.%d]*)"
+            if line.text\match "\\fay%s*%-?%d[%.%d]*"
+                fay = line.text\match "\\fay%s*(%-?%d[%.%d]*)"
                 coords.rots.fay = tonumber fay
             if line.text\match "\\pos%b()"
                 px, py = line.text\match "\\pos%((%-?%d[%.%d]*),(%-?%d[%.%d]*)%)"
@@ -1325,15 +1349,15 @@ class TAGS
     remove: (modes = "full", tags) => -- only a tag removal repository
         @tags = tags or @find!
         caps = {
-            fn: "\\fn[%s+]*[^\\}]*", fs: "\\fs[%s+]*%d[%.%d]*", fsp: "\\fsp[%s+]*%-?%d[%.%d]*"
-            fscx: "\\fscx[%s+]*%d[%.%d]*", fscy: "\\fscy[%s+]*%d[%.%d]*", b: "\\b[%s+]*%d"
-            i: "\\i[%s+]*%d", s: "\\s[%s+]*%d", u: "\\u[%s+]*%d"
-            p: "\\p%d", an: "\\an%d", fr: "\\fr[%s+]*[z]*%-?%d+[%.%d]*"
-            frx: "\\frx[%s+]*%-?%d+[%.%d]*", fry: "\\fry[%s+]*%-?%d+[%.%d]*", fax: "\\fax[%s+]*%-?%d+[%.%d]*"
-            fay: "\\fay[%s+]*%-?%d+[%.%d]*", pos: "\\pos%b()", org: "\\org%b()"
-            _1c: "\\1?c[%s+]*&H%x+&", _2c: "\\2c[%s+]*&H%x+&", _3c: "\\3c[%s+]*&H%x+&"
-            _4c: "\\4c[%s+]*&H%x+&", bord: "\\[xy]*bord[%s+]*%d[%.%d]*", clip: "\\i?clip%b()"
-            shad: "\\[xy]*shad[%s+]*%-?%d[%.%d]*", move:"\\move%b()"
+            fn: "\\fn%s*[^\\}]*", fs: "\\fs%s*%d[%.%d]*", fsp: "\\fsp%s*%-?%d[%.%d]*"
+            fscx: "\\fscx%s*%d[%.%d]*", fscy: "\\fscy%s*%d[%.%d]*", b: "\\b%s*%d"
+            i: "\\i%s*%d", s: "\\s%s*%d", u: "\\u%s*%d"
+            p: "\\p%d", an: "\\an%d", fr: "\\fr%s*[z]?%-?%d+[%.%d]*"
+            frx: "\\frx%s*%-?%d+[%.%d]*", fry: "\\fry%s*%-?%d+[%.%d]*", fax: "\\fax%s*%-?%d+[%.%d]*"
+            fay: "\\fay%s*%-?%d+[%.%d]*", pos: "\\pos%b()", org: "\\org%b()"
+            _1c: "\\1?c%s*&H%x+&", _2c: "\\2c%s*&H%x+&", _3c: "\\3c%s*&H%x+&"
+            _4c: "\\4c%s*&H%x+&", bord: "\\[xy]?bord%s*%d[%.%d]*", clip: "\\i?clip%b()"
+            shad: "\\[xy]?shad%s*%-?%d[%.%d]*", move:"\\move%b()"
         }
         switch modes
             when "shape"
