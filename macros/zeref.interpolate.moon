@@ -80,27 +80,27 @@ LOADCONFIG = (gui) ->
         new_gui[32].value = tonumber read_config.v.acc
     return new_gui
 
-split_tags = (text) -> -- Divide o texto em textos e tags
-    values = {tags: {}, text: {}}
-    values.tags = [t for t in text\gmatch "%b{}"]
+split_tags = (text) -> -- Splits text into text and tags
+    v = {tg: {}, tx: {}}
+    v.tg = [t for t in text\gmatch "%b{}"]
     string.headtail = (s, div) ->
         a, b, head, tail = s\find("(.-)#{div}(.*)")
         if a then head, tail else s, ""
     while text != ""
         c, d = text\headtail("%b{}")
-        values.text[#values.text + 1] = c
+        v.tx[#v.tx + 1] = c
         text = d
-    return values
+    return v
 
 concat_4 = (t) -> -- Concatenates tables that have subtables
-    re_index = {}
+    nt = {}
     sizes = [#t[i] for i = 1, #t]
     table.sort(sizes, (a, b) -> a > b)
     for i = 1, sizes[1] or 0
-        re_index[i] = ""
+        nt[i] = ""
         for k = 1, #t
-            re_index[i] ..= (t[k][i] or "")
-    return re_index
+            nt[i] ..= (t[k][i] or "")
+    return nt
 
 interpolation = (first, last, loop, accel = 1, tags = "") -> -- Interpolates any possible tag
     t, ipol = {tostring(first),  tostring(last)}, {}
@@ -213,14 +213,14 @@ class ipol -- Class for macro main settings
                         else
                             tif = ivf\match("\\#{i}%s*&?[Hh]%x%x%x%x%x%x&?") and ivf\match("\\#{i}%s*(&?[Hh]%x%x%x%x%x%x&?)") or nil
                             ivf = ivf\gsub("\\#{i}%s*&?[Hh]%x%x%x%x%x%x&?", "")
-                            ivf = ivf\gsub("\\1c%s*&?[Hh]%x%x%x%x%x%x&?", "") if i == "c"
+                            ivf = ivf\gsub("\\1c%s*&?[Hh]%x%x%x%x%x%x&?", "") if (i == "c")
                     elseif (i == "pos") or (i == "org") or (i == "clip")
                         tif = ivf\match("\\i?#{i}%b()")
                         ivf = ivf\gsub("\\i?#{i}%b()", "")
                     else
                         tif = ivf\match("\\#{i}%s*%-?%d[%.%d]*") and tonumber(ivf\match("\\#{i}%s*(%-?%d[%.%d]*)")) or nil
                         ivf = ivf\gsub("\\#{i}%s*%-?%d[%.%d]*", "")
-                        ivf = ivf\gsub("\\fr%s*%-?%d[%.%d]*", "") if i == "frz"
+                        ivf = ivf\gsub("\\fr%s*%-?%d[%.%d]*", "") if (i == "frz")
                     t[i] = tif
             return ivf
         for j = 1, #@info_v.old
@@ -247,6 +247,7 @@ class ipol -- Class for macro main settings
         for i = 1, len
             @tags_id.ipol[i] = {}
             if @tags_id.f[i]
+                continue if @tags_id.ipol[i][k]
                 for k, v in pairs(@tags_id.f[i])
                     k = k\gsub("_", "")
                     fix_color = (k\find("%d") == 1 or k == "c") and "_#{k}" or k
@@ -276,8 +277,8 @@ class ipol -- Class for macro main settings
             else
                 tags[i][#tags[i] + 1] = v for k, v in pairs(@tags_id.ipol[i])
             tags[i] = concat_4 tags[i]
-            for j = 1, #tags[i]
-                if @tags_id.elements.igt
+            if @tags_id.elements.igt
+                for j = 1, #tags[i]
                     old_tags = (@info_v.old[j].tags[i] or "")\sub(2, -2)
                     old_tags ..= table.concat(@info_v.backup_t[j][i] or {})
                     tags[i][j] = ("{#{tags[i][j] .. old_tags}}#{ps[i]}")\gsub("{}", "", 1)
