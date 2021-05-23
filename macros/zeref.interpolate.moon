@@ -1,7 +1,7 @@
 export script_name        = "Interpolate Master"
 export script_description = "Does a linear interpolation between values of the first and last selected line"
 export script_author      = "Zeref"
-export script_version     = "1.0.3"
+export script_version     = "1.0.4"
 -- LIB
 zf = require "ZF.utils"
 
@@ -225,19 +225,19 @@ class ipol -- Class for macro main settings
             return ivf
         for j = 1, #@info_v.old
             @info_v.backup_t[j] = {}
-            for k = 1, #@info_v.old[j].tags
-                ivf = @info_v.old[j].tags[k]
+            for k = 1, #@info_v.old[j].tg
+                ivf = @info_v.old[j].tg[k]
                 @info_v.backup_t[j][k] = {}
                 @info_v.backup_t[j][k] = [t for t in ivf\gmatch "\\t%b()"]
                 ivf = ivf\gsub "\\t%b()", ""
                 ivf = split({}, ivf)
-                @info_v.old[j].tags[k] = ivf
-        for k = 1, #@info_v.f.tags
-            ivf = @info_v.f.tags[k]
+                @info_v.old[j].tg[k] = ivf
+        for k = 1, #@info_v.f.tg
+            ivf = @info_v.f.tg[k]
             @tags_id.f[k] = {}
             split(@tags_id.f[k], ivf)
-        for k = 1, #@info_v.l.tags
-            ivf = @info_v.l.tags[k]
+        for k = 1, #@info_v.l.tg
+            ivf = @info_v.l.tg[k]
             @tags_id.l[k] = {}
             split(@tags_id.l[k], ivf)
 
@@ -268,7 +268,7 @@ class ipol -- Class for macro main settings
     make_tags: => -- Organizes the output of the ready-made tags
         @tags_ipol!
         tags, final = {}, {}
-        ps = #@info_v.f.text > #@info_v.l.text and @info_v.f.text or @info_v.l.text
+        ps = #@info_v.f.tx > #@info_v.l.tx and @info_v.f.tx or @info_v.l.tx
         table.remove(ps, 1) if ps[1] == ""
         for i = 1, #ps
             tags[i], final[i] = {}, ""
@@ -279,7 +279,7 @@ class ipol -- Class for macro main settings
             tags[i] = concat_4 tags[i]
             if @tags_id.elements.igt
                 for j = 1, #tags[i]
-                    old_tags = (@info_v.old[j].tags[i] or "")\sub(2, -2)
+                    old_tags = (@info_v.old[j].tg[i] or "")\sub(2, -2)
                     old_tags ..= table.concat(@info_v.backup_t[j][i] or {})
                     tags[i][j] = ("{#{tags[i][j] .. old_tags}}#{ps[i]}")\gsub("{}", "", 1)
         if not @tags_id.elements.igt
@@ -287,7 +287,7 @@ class ipol -- Class for macro main settings
                 text = @info_v.mac[i]
                 a = text\gsub("%s+", "")\find("%b{}")
                 text = (a != 1) and "{}#{text}" or text
-                old_tags = (@info_v.old[i].tags[1] or "")\sub(2, -2)
+                old_tags = (@info_v.old[i].tg[1] or "")\sub(2, -2)
                 old_tags ..= table.concat(@info_v.backup_t[i][1] or {})
                 text = "{#{tags[1][i] .. old_tags}}" .. text\gsub("%b{}", "", 1)
                 @info_v.mac[i] = text
