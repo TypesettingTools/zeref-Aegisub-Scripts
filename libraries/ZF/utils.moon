@@ -10,192 +10,51 @@ require "karaskel"
 ffi = require "ffi"
 Yutils = require "Yutils" -- https://github.com/Youka/Yutils
 
-if ffi.os != "Windows"
+if (ffi.os != "Windows")
     error("This is not compatible with your operating system.")
 else
     Poly = require "ZF.clipper.clipper"
 
 class MATH
 
-    round: (x, dec = 3) => -- round values
-        if dec and dec >= 1
-            dec = 10 ^ floor dec
-            return floor(x * dec + 0.5) / dec
-        else
-            return floor x + 0.5
-
-    angle: (x1 = 0, y1 = 0, x2 = 0, y2 = 0) => -- returns the angle between two points
-        angle = deg(atan((y2 - y1) / (x2 - x1)))
-        if x2 > x1 and y2 == y1
-            angle = 0
-        elseif x2 > x1 and y2 > y1
-            angle = 360 - angle
-        elseif x2 == x1 and y2 > y1
-            angle = 270
-        elseif x2 < x1 and y2 > y1
-            angle = 180 - angle
-        elseif x2 < x1 and y2 == y1
-            angle = 180
-        elseif x2 < x1 and y2 < y1
-            angle = 180 - angle
-        elseif x2 == x1 and y2 < y1
-            angle = 90
-        elseif x2 > x1 and y2 < y1
-            angle = -angle
-        return angle
+    round: (x, dec = 2) => -- round values
+        Yutils.math.round(x, dec)
 
     distance: (x1 = 0, y1 = 0, x2 = 0, y2 = 0) => -- returns the distance between two points
-        if type(x1) == "table"
-            polylength = 0
-            for i = 3, #x1, 2 do polylength += @distance(x1[i], x1[i + 1], x1[i - 2], x1[i - 1])
-            return polylength
-        return @round(((x2 - x1) ^ 2 + (y2 - y1) ^ 2) ^ 0.5, 3)
-
-    factk: (n) => -- returns the factorial of a number
-        k_factk = 1
-        if n > 1 then for i = 2, n do k_factk *= i
-        return k_factk
-
-    bernstein: (i, n, t) => -- returns Bezier patches --> https://en.wikipedia.org/wiki/Bernstein%E2%80%93Vazirani_algorithm
-        return (@factk(n) / (@factk(i) * @factk(n - i))) * (t ^ i) * ((1 - t) ^ (n - i))
-
-    confi_bezier: (x, y, t, rt) => -- returns the Bezier points configured
-        px, py = x, y
-        if y == nil
-            px, py = {}, {}
-            for i = 1, #x / 2
-                px[i] = x[2 * i - 1]
-                py[i] = x[2 * i - 0]
-        pos_x, pos_y, n = 0, 0, #px
-        for i = 1, n
-            pos_x += px[i] * @bernstein(i - 1, n - 1, t)
-            pos_y += py[i] * @bernstein(i - 1, n - 1, t)
-        return (rt != "y" and pos_x or pos_y), not rt and pos_y or nil
-
-    length_bezier: (bezier) => -- returns the length of the bezier
-        px, py, bx, by = {}, {}, {}, {}
-        blength, nN = 0
-        for i = 1, #bezier / 2
-            px[i], py[i] = bezier[2 * i - 1], bezier[2 * i]
-        nN = ceil(1.33 * @distance(bezier))
-        for i = 1, nN
-            bx[i], by[i] = @confi_bezier(px, py, (i - 1) / (nN - 1))
-        for i = 2, nN
-            blength += @distance(bx[i], by[i], bx[i - 1], by[i - 1])
-        return blength
-
-    polar: (angle = 0, radius = 0, rt) => -- returns to the polar angle of the points
-        px = @round(radius * cos(rad(angle)), 3)
-        py = @round(-radius * sin(rad(angle)), 3)
-        return (rt != "y" and px or py), not rt and py or nil
+        @round sqrt((x2 - x1) ^ 2 + (y2 - y1) ^ 2), 3
 
     interpolation: (pct, min, max) => -- interpolate two values
-        if pct <= 0 then min elseif pct >= 1 then max else @round(pct * (max - min) + min, 3)
+        if (pct <= 0) then min elseif (pct >= 1) then max else @round(pct * (max - min) + min, 2)
 
 class TABLE
 
-    op: (Table, mode, add) => -- returns several operations for tables
-        Table = Table! if type(Table) == "function"
-        table_sum, table_average, table_concat = 0, 0, ""
-        table_add, table_inverse, table_function = {}, {}, {}
-        switch mode
-            when "sum", "suma"
-                add or= #Table
-                add = #Table if add > #Table
-                for i = 1, add do table_sum = table_sum + Table[i]
-                return table_sum
-            when "pro", "multi"
-                table_pro = table.copy(Table)
-                for i = 1, #Table do table_pro[i] = Table[i] * add
-                return table_pro
-            when "concat"
-                con_add = ""
-                for i = 1, #Table
-                    con_add = ""
-                    con_add = add if add and i < #Table
-                    table_concat ..= Table[i] .. con_add
-                return table_concat
-            when "average"
-                for i = 1, #Table do table_average = table_average + Table[i]
-                return table_average / #Table if #Table > 0
-                return 0
-            when "min"
-                table_min = table.copy(Table)
-                table.sort(table_min, (a, b) ->
-                    return a < b)
-                return table_min[1] if table_min[1]
-                return 0
-            when "max"
-                table_max = table.copy(Table)
-                table.sort(table_max, (a, b) ->
-                    return a < b)
-                return table_max[#table_max] if table_max[#table_max]
-                return 0
-            when "rank"
-                table_rank = table.copy(Table)
-                table.sort(table_rank, (a, b) ->
-                    return a < b)
-                return table_rank[#table_rank] - table_rank[1] if table_rank[1]
-                return 0
-            when "org"
-                table_org = table.copy(Table)
-                table.sort(table_org, (a, b) ->
-                    return a < b)
-                return table_org
-            when "org2"
-                table_org2 = table.copy(Table)
-                table.sort(table_org2, (a, b) ->
-                    return a > b)
-                return table_org2
-            when "round"
-                table_round = table.copy(Table)
-                return MATH\round(table_round, add)
-            when "add"
-                if type(add) == "number"
-                    for i = 1, #Table do table_add[i] = Table[i] + add
-                elseif type(add) == "table"
-                    for i = 1, #Table
-                        if type(Table[i]) == "table"
-                            table_add[i] = {}
-                            for k = 1, #Table[i]
-                                table_add[i][k] = Table[i][k] + add[1 + (k + 1) % 2]
-                                table_add[i][k] = Table[i][k] + add[1 + (k - 1) % 2] if k % 2 == 1
-                        elseif i % 2 == 1
-                            table_add[i] = Table[i] + add[1 + (i - 1) % 2]
-                        else
-                            table_add[i] = Table[i] + add[1 + (i + 1) % 2]
-                return table_add
-            when "inverse"
-                for i = 1, #Table do table_inverse[i] = Table[#Table - i + 1]
-                return table_inverse
-
-    push: (t, ...) => -- pushes all the given values to the end of the table t and returns the pushed values. Nil values are ignored.
+    push: (t, ...) => -- adds one or more elements to the end of an table
         n = select("#", ...)
-        for i = 1, n do t[#t + 1] = select(i, ...)
+        t = [select(i, ...) for i = 1, n]
         return ...
 
-    slice: (t, f, l, s) =>
+    slice: (t, f, l, s) => -- returns a copy of part of an array from a subarray created between the start and end positions
         sliced = [t[i] for i = f or 1, l or #t, s or 1]
         return sliced
 
-    len: (t, table_type = "array") =>
+    len: (t, table_type = "array") => -- get the real length of the table
         count = 0
-        if table_type == "array"
+        if (table_type == "array")
             count += 1 for k, v in ipairs t
         else
             count += 1 for k, v in pairs t
         return count
 
-    view: (Table, table_name, indent) => -- returns a table as string
+    view: (Table, table_name, indent) => -- get a table as string
         cart, autoref = "", ""
         isemptytable = (Table) -> next(Table) == nil
         basicSerialize = (o) ->
             so = tostring(o)
-            if type(o) == "function"
+            if (type(o) == "function")
                 info = debug.getinfo o, "S"
                 return format "%q", so .. ", C function" if info.what == "C"
                 format "%q, defined in (lines: %s - %s), ubication %s", so, info.linedefined, info.lastlinedefined, info.source
-            elseif type(o) == "number" or type(o) == "boolean"
+            elseif (type(o) == "number") or (type(o) == "boolean")
                 return so
             format "%q", so
         addtocart = (value, table_name, indent, saved, field) ->
@@ -226,32 +85,13 @@ class TABLE
         addtocart Table, table_name, indent
         return cart .. autoref
 
-    interpolation: (t, loop, mode, accel = 1, tags = "") =>
-        local ipol_i, ipol_f, pct_ip
-        vtable, ipols = table.copy(t), {}
-        max_loop = loop - 1
-        pol = interpolate
-        switch mode
-            when "number"
-                pol = interpolate
-            when "color"
-                pol = interpolate_color
-            when "alpha"
-                pol = interpolate_alpha
-        for i = 1, max_loop
-            ipol_i = vtable[floor((i - 1) / (max_loop / (#vtable - 1))) + 1]
-            ipol_f = vtable[floor((i - 1) / (max_loop / (#vtable - 1))) + 2]
-            pct_ip = floor((i - 1) % (max_loop / (#vtable - 1))) / (max_loop / (#vtable - 1))
-            ipols[i] = tags .. pol(pct_ip ^ accel, ipol_i, ipol_f)
-        ipols[#ipols + 1] = tags .. vtable[#vtable]
-        return ipols
-
 class l2b
+
     bezier_segments = {}
 
     new: (x, y) =>
-        @x = type(x) == "number" and x or 0
-        @y = type(y) == "number" and y or 0
+        @x = (type(x) == "number" and x or 0)
+        @y = (type(y) == "number" and y or 0)
 
     Point: (x, y) =>
         return @(x, y)
@@ -543,8 +383,8 @@ class l2b
         @fitCurve(d, #d + 1, ____error)
         return bezier_segments
 
-    solution: (shape, dist = math.pi, ____error = 1) => -- by Itachi --> https://github.com/KaraEffect0r/Kara_Effector
-        shape = type(shape) == "table" and SUB_POLY\to_shape(shape) or shape
+    solution: (shape, dist = math.pi, ____error) => -- by Itachi --> https://github.com/KaraEffect0r/Kara_Effector
+        shape = (type(shape) == "table" and SHAPER(shape)\build(true) or shape)
         dis__one = (shape, dist) ->
             shapes = [s for s in shape\gmatch "m%s+%-?%d[%.%-%d l]*"]
             shape_simple = (shape) ->
@@ -568,30 +408,39 @@ class l2b
                 shapes[i] = shape_simple(shapes[i])
             return shapes
 
-        make_shape = (shape, dist, ____error) ->
-            sol_bezier = (points) ->
+        make_shape = (shape, dist) ->
+            sol = (points, bl = "bezier") ->
                 shape = ""
-                for k = 1, #points
-                    shape ..= "b #{MATH\round(points[k][1].x)} #{MATH\round(points[k][1].y)} #{MATH\round(points[k][2].x)} #{MATH\round(points[k][2].y)} #{MATH\round(points[k][3].x)} #{MATH\round(points[k][3].y)} "
-                return "#{MATH\round(points[1][0].x)} #{MATH\round(points[1][0].y)} " .. shape
-            sol_line = (points) ->
-                shape = "l "
-                for k = 1, #points
-                    shape ..= "#{points[k].x} #{points[k].y} l "
-                return shape
+                if bl == "line"
+                    shape = "l "
+                    for k = 1, #points
+                        shape ..= "#{points[k].x} #{points[k].y} l "
+                    return shape
+                else
+                    for k = 1, #points
+                        x1 = MATH\round(points[k][1].x)
+                        y1 = MATH\round(points[k][1].y)
+                        x2 = MATH\round(points[k][2].x)
+                        y2 = MATH\round(points[k][2].y)
+                        x3 = MATH\round(points[k][3].x)
+                        y3 = MATH\round(points[k][3].y)
+                        shape ..= "b #{x1} #{y1} #{x2} #{y2} #{x3} #{y3} "
+                    x0 = MATH\round(points[1][0].x)
+                    y0 = MATH\round(points[1][0].y)
+                    return "#{x0} #{y0} #{shape}"
             points = dis__one(shape, dist)
             for k = 1, #points
                 for j = 1, #points[k]
                     if points[k][j].bezier
                         points[k][j] = @polyline2bezier(points[k][j], ____error)
-                        points[k][j] = sol_bezier(points[k][j])
+                        points[k][j] = sol(points[k][j])
                     else
-                        points[k][j] = #points[k][j] > 0 and sol_line(points[k][j]) or "l "
+                        points[k][j] = #points[k][j] > 0 and sol(points[k][j], "line") or "l "
                 points[k] = "m " .. table.concat(points[k])
                 points[k] = points[k]\gsub("m l", "m")
                 points[k] = points[k]\sub(-2, -2) == "l" and points[k]\sub(1, -3) or points[k]
             return table.concat(points)
-        return make_shape(shape, dist, ____error)
+        return make_shape(shape, dist)
 
 class l2l
 
@@ -655,268 +504,424 @@ class l2l
         return points
 
     solution: (points, tolerance = 0.1, highestQuality, closed) =>
-        points = (type(points) == "string") and SUB_POLY\to_points(points, true) or points
         sol = [@simplify(v, tolerance, highestQuality, closed) for v in *points]
-        return SUB_POLY\to_shape(sol)
+        return SHAPER(sol)\build(true)
 
-class SHAPE  -- by Itachi --> https://github.com/KaraEffect0r/Kara_Effector
+class BEZIER
 
-    new: (shape) =>
-        @code = ""
-        @n = 0
-        @minx = math.huge
-        @maxx = -math.huge
-        @miny = math.huge
-        @maxy = -math.huge
-        @part = type(shape) == "table" and table.copy(shape) or shape
+    new: (...) =>
+        @points = (type(...) == "table" and ... or {...})
+
+    line: (t, b0, b1) =>
+        (1 - t) * b0 + t * b1
+
+    quadratic: (t, b0, b1, b2) =>
+        (1 - t) ^ 2 * b0 + 2 * t * (1 - t) * b1 + t ^ 2 * b2
+
+    cubic: (t, b0, b1, b2, b3) =>
+        (1 - t) ^ 3 * b0 + 3 * t * (1 - t) ^ 2 * b1 + 3 * t ^ 2 * (1 - t) * b2 + t ^ 3 * b3
+
+    bernstein: (t, i, n) =>
+        f = (n) ->
+			k = 1
+            for i = 2, n
+                k *= i
+			return k
+        f(n) / (f(i) * f(n - i)) * t ^ i * ((1 - t) ^ (n - i))
+
+    create: (len) =>
+        len = MATH\round((not len and @len! or len), 0)
+        pt, bz, pv = @points, {}, {x: {}, y: {}}
+        if #pt > 8
+            for k = 1, #pt, 2
+                pv.x[#pv.x + 1] = pt[k + 0]
+                pv.y[#pv.y + 1] = pt[k + 1]
+        for k = 0, len
+            t = k / len
+            switch #pt
+                when 4
+                    bz[#bz + 1] = {
+                        @line(t, pt[1], pt[3])
+                        @line(t, pt[2], pt[4])
+                        typer: "l"
+                    }
+                when 6
+                    bz[#bz + 1] = {
+                        @quadratic(t, pt[1], pt[3], pt[5])
+                        @quadratic(t, pt[2], pt[4], pt[6])
+                        typer: "l"
+                    }
+                when 8
+                    bz[#bz + 1] = {
+                        @cubic(t, pt[1], pt[3], pt[5], pt[7])
+                        @cubic(t, pt[2], pt[4], pt[6], pt[8])
+                        typer: "l"
+                    }
+                else
+                    px, py, n = 0, 0, #pv.x
+                    for i = 1, n
+                        b = @bernstein(t, i - 1, n - 1)
+                        px += pv.x[i] * b
+                        py += pv.y[i] * b
+                    bz[#bz + 1] = {px, py, typer: "l"}
+        return bz
+
+    len: (steps = 100) =>
+        pt, pv, len = @points, {x: {}, y: {}}, 0
+        x, y = pt[1], pt[2]
+        if (#pt > 8)
+            for k = 1, #pt, 2
+                pv.x[#pv.x + 1] = pt[k + 0]
+                pv.y[#pv.y + 1] = pt[k + 1]
+        for i = 0, steps
+            t = i / steps
+            local cx, cy, px, py, n
+            switch #pt
+                when 4
+                    cx = @line(t, pt[1], pt[3], pt[5])
+                    cy = @line(t, pt[2], pt[4], pt[6])
+                when 6
+                    cx = @quadratic(t, pt[1], pt[3], pt[5])
+                    cy = @quadratic(t, pt[2], pt[4], pt[6])
+                when 8
+                    cx = @cubic(t, pt[1], pt[3], pt[5], pt[7])
+                    cy = @cubic(t, pt[2], pt[4], pt[6], pt[8])
+                else
+                    px, py, n = 0, 0, #pv.x
+                    for i = 1, n
+                        b = @bernstein(t, i - 1, n - 1)
+                        px += pv.x[i] * b
+                        py += pv.y[i] * b
+                    cx, cy = px, py
+            ds = MATH\distance(x, y, cx, cy)
+            x, y = cx, cy
+            len += ds
+        return len
+
+class SHAPER
+
+    new: (shape, closed = true) =>
+        @points = {}
         if type(shape) == "string"
+            shape = SUPPORT\clip_to_draw(shape)
             shape = shape\gsub "([bl]^*)(%s+%-?%d[%.%-%d ]*)", (bl, nums) ->
                 i, k = (bl == "b" and 6 or 2), 0
                 nums = nums\gsub "%-?%d[%.%d]*", (n) ->
                     k += 1
                     return (k % i == 0) and n .. " " .. bl or n
                 return bl .. nums\sub(1, -3)
-            shape_to_points = (shape) ->
-                parts = {}
-                for p in shape\gmatch("[mbl]^*%s+%-?%d[%.%-%d ]*")
-                    parts[#parts + 1] = {type: p\match("[mbl]^*")}
-                    for x, y in p\gmatch("(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)")
-                        parts[#parts][#parts[#parts] + 1] = {x: tonumber(x), y: tonumber(y)}
-                for i = 2, #parts
-                    parts[i][0] = {x: parts[i - 1][#parts[i - 1]].x, y: parts[i - 1][#parts[i - 1]].y}
-                return parts
-            @part = shape_to_points(shape)
-        for i = 1, #@part
-            for j = 1, #@part[i]
-                @minx, @miny = min(@minx, @part[i][j].x), min(@miny, @part[i][j].y)
-                @maxx, @maxy = max(@maxx, @part[i][j].x), max(@maxy, @part[i][j].y)
-                @n += 1
-        for i = 1, #@part
-            @code ..= @part[i].type .. " "
-            for k = 1, #@part[i]
-                @code ..= "#{MATH\round(@part[i][k].x, 3)} #{MATH\round(@part[i][k].y, 3)} "
-        return s
-
-    redraw: (tract = 2, section = "all") =>
-        shapes = {}
-        for i = 1, #@part
-            if section != "bezier"
-                if @part[i].type != "l"
-                    shapes[i] = @part[i]
-                else
-                    shapes[i] = {type: "l"}
-                    for k = 1, #@part[i]
-                        x1, y1 = @part[i][k - 1].x, @part[i][k - 1].y
-                        x2, y2 = @part[i][k].x, @part[i][k].y
-                        ang, dist = MATH\angle(x1, y1, x2, y2), MATH\distance(x1, y1, x2, y2)
-                        parts = dist / MATH\round(dist / tract)
-                        for j = 1, MATH\round(dist / parts)
-                            shapes[i][j] = {x: x1 + MATH\polar(ang, parts * j, "x"), y: y1 + MATH\polar(ang, parts * j, "y")}
-            if section != "line"
-                if @part[i].type != "b"
-                    shapes[i] = shapes[i] or @part[i]
-                else
-                    shapes[i] = {type: "l"}
-                    for k = 1, #@part[i]
-                        bezier = {}
-                        for j = 0, #@part[i]
-                            bezier[#bezier + 1] = @part[i][j].x
-                            bezier[#bezier + 1] = @part[i][j].y
-                        length = MATH\length_bezier(bezier)
-                        n = MATH\round(length / tract) + 1
-                        for j = 1, n
-                            shapes[i][j] = {x: MATH\confi_bezier(bezier, nil, j / n, "x"), y: MATH\confi_bezier(bezier, nil, j / n, "y")}
-        return SHAPE(shapes)
-
-    filter: (split, ...) =>
-        @ = @redraw(split) if split and split > 0
-        filters = (... and type(...) == "table") and ... or {...}
-        filters[1] = #filters == 0 and ((x, y) -> return x, y) or filters[1]
-        for j = 1, #filters
-            for i = 1, #@part
-                for k = 1, #@part[i]
-                    x, y = @part[i][k].x, @part[i][k].y
-                    @part[i][k].x, @part[i][k].y = filters[j](x, y)
-            @ = SHAPE(@part)
-        return @code
-
-class POLY
-
-    to_points: (shape, oth) => -- converts shapes to points in 2 different way
-        shape = SHAPE(shape)\redraw(1, "bezier").code
-        points = {parts: {}, result: {}}
-        points.parts = [p for p in shape\gmatch "m [^m]*"]
-        points.result = [ [tonumber(p) * 1000 for p in v\gmatch "%-?%d[%.%d]*"] for v in *points.parts ]
-        if oth
-            points = {parts: {}, result: {}}
-            points.parts = [p for p in shape\gmatch "m [^m]*"]
-            points.result = [ [{x: tonumber(x), y: tonumber(y)} for x, y in v\gmatch "(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)"] for v in *points.parts ]
-            return points.result
-        return points.result
-
-    to_shape: (points) => -- turns points into shapes, valid only for line points
-        new_shape = {}
-        if type(points) != "table"
-            for k = 1, points\size!
-                new_shape[k] = ""
-                path_parts = points\get(k)
-                for p = 1, path_parts\size!
-                    path_points = path_parts\get(p)
-                    new_shape[k] ..= "l #{MATH\round(tonumber(path_points.x) * 0.001)} #{MATH\round(tonumber(path_points.y) * 0.001)} "
-                new_shape[k] = new_shape[k]\gsub("l", "m", 1)
-            return table.concat(new_shape)
+            for m in shape\gmatch("m [^m]*")
+                if closed
+                    fpx, fpy = m\match("(%-?%d[%.%d]*)%s*(%-?%d[%.%d]*)")
+                    lpx, lpy = m\reverse!\match("%d[%.%-%d]*%s*%d[%.%-%d]*")\reverse!\match("(%-?%d[%.%d]*)%s*(%-?%d[%.%d]*)")
+                    if (fpx != lpx) or (fpy != lpy)
+                        m ..= "l #{fpx} #{fpy} "
+                @points[#@points + 1] = {}
+                for p in m\gmatch("[mbl]* [^mbl]*")
+                    @points[#@points][#@points[#@points] + 1] = {typer: p\match("%a")}
+                    for x, y in p\gmatch("(%-?%d[%.%d]*)%s*(%-?%d[%.%d]*)")
+                        @points[#@points][#@points[#@points]][#@points[#@points][#@points[#@points]] + 1] = tonumber(x)
+                        @points[#@points][#@points[#@points]][#@points[#@points][#@points[#@points]] + 1] = tonumber(y)
         else
-            for k = 1, #points
-                new_shape[k] = ""
-                for p = 1, #points[k]
-                    new_shape[k] ..= "l #{MATH\round(points[k][p].x)} #{MATH\round(points[k][p].y)} "
-                new_shape[k] = new_shape[k]\gsub("l", "m", 1)
-            return table.concat(new_shape)
+            @points = shape.points or shape
+        return @
 
-    create_path: (path) => -- adds path to a C structure
-        pts = Poly.Path!
-        n_pts = #path
-        for k = 1, n_pts, 2 do pts\add(path[k], path[k + 1])
-        return pts
+    split: (size = 1, seg = "all", len_t) =>
+        index = {}
+        for i = 1, #@points
+            for j = 1, #@points[i]
+                if (seg == "line")
+                    if (@points[i][j].typer == "l")
+                        table.insert(@points[i][j], 1, @points[i][j - 1][#@points[i][j - 1] - 0])
+                        table.insert(@points[i][j], 1, @points[i][j - 1][#@points[i][j - 1] - 1])
+                elseif (seg == "bezier")
+                    if (@points[i][j].typer == "b")
+                        table.insert(@points[i][j], 1, @points[i][j - 1][#@points[i][j - 1] - 0])
+                        table.insert(@points[i][j], 1, @points[i][j - 1][#@points[i][j - 1] - 1])
+                else
+                    if (@points[i][j].typer != "m")
+                        table.insert(@points[i][j], 1, @points[i][j - 1][#@points[i][j - 1] - 0])
+                        table.insert(@points[i][j], 1, @points[i][j - 1][#@points[i][j - 1] - 1])
+            table.remove(@points[i], 1)
+            if (@points[i][#@points[i]].typer == "l") and (@points[i][1][1] == @points[i][#@points[i]][1]) and (@points[i][1][2] == @points[i][#@points[i]][2])
+                table.remove(@points[i])
+        for i = 1, #@points
+            index[i] = {}
+            switch seg
+                when "line"
+                    for j = 1, #@points[i]
+                        if (@points[i][j].typer == "l")
+                            bz = BEZIER(@points[i][j])
+                            len = bz\len!
+                            bz = bz\create(not len_t and (len / size) or len_t)
+                            for k = 1, #bz
+                                index[i][#index[i] + 1] = bz[k]
+                        else
+                            index[i][#index[i] + 1] = @points[i][j]
+                when "bezier"
+                    for j = 1, #@points[i]
+                        if (@points[i][j].typer == "b")
+                            bz = BEZIER(@points[i][j])
+                            len = bz\len!
+                            bz = bz\create(not len_t and (len / size) or len_t)
+                            for k = 1, #bz
+                                index[i][#index[i] + 1] = bz[k]
+                        else
+                            index[i][#index[i] + 1] = @points[i][j]
+                else -- when "all"
+                    for j = 1, #@points[i]
+                        if (@points[i][j].typer != "m")
+                            bz = BEZIER(@points[i][j])
+                            len = bz\len!
+                            bz = bz\create(not len_t and (len / size) or len_t)
+                            for k = 1, #bz
+                                index[i][#index[i] + 1] = bz[k]
+                        else
+                            index[i][#index[i] + 1] = @points[i][j]
+        @points = index
+        return @
 
-    create_paths: (paths) => -- adds paths to a C structure
-        points = Poly.Paths!
-        for k = 1, #paths do points\add(@create_path(paths[k]))
-        return points
-
-    simplify: (paths, ass, tol = 1) => -- remove useless vertices from a polygon
-        paths = @to_points(paths) if type(paths) == "string"
-        points = Poly.Paths!
-        for k = 1, #paths do points\add(@create_path(paths[k]))
-        points = points\simplify!
-        solution = @get_solution(points)
-        return not ass and l2l\solution(solution, tol / 10) or l2b\solution(solution, tol)
-
-    clean: (paths) =>
-        paths = @to_points(paths) if type(paths) == "string"
-        points = Poly.Paths!
-        for k = 1, #paths do points\add(@create_path(paths[k]))
-        points = points\clean_polygon!
-        return @to_shape(points)
-
-    get_solution: (path) => -- returns the clipper library solution
-        get_path_points = (path) ->
-            result = {}
-            for k = 1, path\size!
-                point = path\get(k)
-                result[k] = {x: tonumber(point.x) * 0.001, y: tonumber(point.y) * 0.001}
-            result
-        result = {}
-        for k = 1, path\size! do result[k] = get_path_points(path\get(k))
-        return result
-
-    clipper: (shape_or_points_subj, shape_or_points_clip, fill_types = "even_odd", clip_type = "intersection") => -- returns a clipped shape, according to its set configurations
-        points_subj = shape_or_points_subj
-        points_clip = shape_or_points_clip
-        points_subj = @to_points(points_subj) if type(points_subj) != "table"
-        points_clip = @to_points(points_clip) if type(points_clip) != "table"
-        ft_subj, ft_clip = fill_types[1], fill_types[2]
-        ft_subj, ft_clip = fill_types, fill_types if type(fill_types) != "table"
-        subj = @create_paths(points_subj)
-        clip = @create_paths(points_clip)
-        pc = Poly.Clipper!
-        pc\add_paths(subj, "subject")
-        pc\add_paths(clip, "clip")
-        final = pc\execute(clip_type, ft_subj, ft_clip)
-        return @to_shape(final)
-
-    offset: (points, size, join_type = "round", end_type = "closed_polygon", miter_limit = 2, arc_toleranc = 0.25) => -- returns a shape offseting, according to its set configurations
-        points = @to_points(points) if type(points) == "string"
-        po = Poly.ClipperOffset(miter_limit, arc_toleranc)
-        pp = @create_paths(points)
-        final = po\offset_paths(pp, size * 1000, join_type, end_type)
-        return @to_shape(final)
-
-    to_outline: (points, size, outline_type = "Round", mode = "Center", miter_limit = 2, arc_tolerance = 0.25) => -- returns an outline and the opposite of it, according to your defined settings
-        error("You need to add a size and it has to be bigger than 0.") unless size or size <= 0
-        outline_type = outline_type\lower!
-        size = (mode == "Inside" and -size or size)
-        points = @simplify(points) unless mode == "Center"
-        create_offset = @offset(points, size, outline_type, nil, miter_limit, arc_tolerance)
-        create_offset = @offset(points, size, outline_type, "closed_line", miter_limit, arc_tolerance) if mode == "Center"
-        outline = switch mode
-            when "Outside"
-                @clipper(create_offset, points, nil, "difference")
+    bounding: (shaper) => -- returns the shape bounding box
+        local l, t, r, b, n
+        n = 1
+        @filter (x, y) ->
+            if l
+                l, t, r, b = min(l, x), min(t, y), max(r, x), max(b, y)
             else
-                @clipper(points, create_offset, nil, "difference")
-        switch mode
-            when "Outside"
-                create_offset = points
-            when "Center"
-                return create_offset, outline
-        return @simplify(outline), @simplify(create_offset)
+                l, t, r, b = x, y, x, y
+            n += 1
+            return x, y
+        if shaper
+            return ("m %s %s l %s %s l %s %s l %s %s ")\format(l, t, r, t, r, b, l, b), l, t, r, b, n
+        return l, t, r, b, n
 
-class SUB_POLY extends POLY
+    info: => -- export shape information
+        export minx, miny, maxx, maxy, n_points = @bounding!
+        export w_shape, h_shape = maxx - minx, maxy - miny
+        export c_shape, m_shape = minx + w_shape / 2, miny + h_shape / 2
 
-    sep_points: (points) => -- a different way of separating points
-        points = @to_shape(points) if type(points) == "table"
-        points_ot, k = {x: {}, y: {}}, 1
-        for x, y in points\gmatch "(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)"
-            points_ot.x[k] = tonumber(x)
-            points_ot.y[k] = tonumber(y)
-            k += 1
-        return points_ot
+    filter: (fils = (x, y) -> x, y) => -- can do transformations with n-filters
+        fils = (type(fils) != "table" and {fils} or fils)
+        for f in *fils
+            for m in *@points
+                for p in *m
+                    for k = 1, #p, 2
+                        p[k], p[k + 1] = f(p[k], p[k + 1])
+        return @
 
-    dimension: (points) => -- returns the winth and height values of a shape
-        get_values = @sep_points(points)
-        width, height = 0, 0
-        if #get_values.x > 0
-            width = TABLE\op(get_values.x, "rank")
-            height = TABLE\op(get_values.y, "rank")
-        return width, height
+    displace: (px = 0, py = 0) => -- moves the shape from the values of x and y
+        @filter (x, y) ->
+            x += px
+            y += py
+            return x, y
+        return @
 
-    info: (points) => -- returns information contained in the shape
-        get_values = @sep_points(points)
-        minx       = TABLE\op(get_values.x, "min")
-        maxx       = TABLE\op(get_values.x, "max")
-        miny       = TABLE\op(get_values.y, "min")
-        maxy       = TABLE\op(get_values.y, "max")
-        w_shape    = maxx - minx
-        h_shape    = maxy - miny
-        c_shape    = minx + w_shape / 2
-        m_shape    = miny + h_shape / 2
-        n_shape    = #get_values.x
-        n_points   = #get_values.x
-        return {
-            :minx, :miny, :maxx, :maxy,
-            :w_shape, :h_shape,:c_shape,
-            :m_shape, :n_shape, :n_points
-        }
-
-    displace: (shape, x2 = 0, y2 = 0) => -- displace points
-        shape = SHAPE(shape)\filter(nil, (x, y) ->
-            x += x2
-            y += y2
-            return x, y)
-        return shape
-
-    scale: (shape, sx = 100, sy = 100) => -- scale points
-        shape = SHAPE(shape)\filter(nil, (x, y) ->
+    scale: (sx = 100, sy = 100) => -- scales a shape from the values of sx and sy
+        @filter (x, y) ->
             x *= sx / 100
             y *= sy / 100
-            return x, y)
-        return shape
+            return x, y
+        return @
 
-    round: (shape, n = 3) => -- round points
-        shape = SHAPE(shape)\filter(nil, (x, y) ->
-            x = MATH\round(x, n)
-            y = MATH\round(y, n)
-            return x, y)
-        return shape
+    rotate: (angle, cx, cy) => -- rotates the shape from the value of angle
+        @info!
+        cx or= c_shape
+        cy or= m_shape
+        r = rad(angle)
+        @filter (x, y) ->
+            rx = cos(r) * (x - cx) - sin(r) * (y - cy) + cx
+            ry = sin(r) * (x - cx) + cos(r) * (y - cy) + cy
+            return rx, ry
+        return @
 
-    origin: (points, pos) => -- returns the original position of the points
-        minx, miny = @info(points).minx, @info(points).miny
-        return @displace(points, -minx, -miny), MATH\round(minx, 3), MATH\round(miny, 3) if pos
-        return @displace(points, -minx, -miny)
+    origin: (min) => -- moves the points to their original position
+        @info!
+        @displace(-minx, -miny)
+        return @, minx, miny if min
+        return @
 
-    expand: (shape, line, meta) => -- expands the points of agreement with the values of tags some tags
-        shape = @org_points(shape, line.styleref.align)
-        points = @to_points(shape, true)
+    org_points: (an = 7) => -- moves the points to positions relative to the alignment 7
+        @info!
+        w, h = w_shape, h_shape
+        switch an
+            when 1 then @displace(nil, -h)
+            when 2 then @displace(-w / 2, -h)
+            when 3 then @displace(-w, -h)
+            when 4 then @displace(nil, -h / 2)
+            when 5 then @displace(-w / 2, -h / 2)
+            when 6 then @displace(-w, -h / 2)
+            when 8 then @displace(-w / 2)
+            when 9 then @displace(-w)
+        return @
+
+    to_clip: (an = 7, px = 0, py = 0) => -- moves points to relative clip positions
+        @info!
+        w, h = w_shape, h_shape
+        switch an
+            when 1 then @displace(px, py - h)
+            when 2 then @displace(px - w / 2, py - h)
+            when 3 then @displace(px - w, py - h)
+            when 4 then @displace(px, py - h / 2)
+            when 5 then @displace(px - w / 2, py - h / 2)
+            when 6 then @displace(px - w, py - h / 2)
+            when 7 then @displace(px, py)
+            when 8 then @displace(px - w / 2, py)
+            when 9 then @displace(px - w, py)
+        return @
+
+    unclip: (an = 7, px = 0, py = 0) => -- moves the points to relative shape positions
+        @info!
+        w, h = w_shape, h_shape
+        switch an
+            when 1 then @displace(-px, -py + h)
+            when 2 then @displace(-px + w / 2, -py + h)
+            when 3 then @displace(-px + w, -py + h)
+            when 4 then @displace(-px, -py + h / 2)
+            when 5 then @displace(-px + w / 2, -py + h / 2)
+            when 6 then @displace(-px + w, -py + h / 2)
+            when 7 then @displace(-px, -py)
+            when 8 then @displace(-px + w / 2, -py)
+            when 9 then @displace(-px + w, -py)
+        return @
+
+    perspective: (destin) => -- http://jsfiddle.net/xjHUk/278/
+        l, t, r, b = @bounding!
+        source = {
+            {x: l, y: t}
+            {x: r, y: t}
+            {x: r, y: b}
+            {x: l, y: b}
+        }
+        destin or= {
+            {x: l + 100, y: t}
+            {x: r - 100, y: t}
+            {x: r, y: b}
+            {x: l, y: b}
+        }
+        @filter (xI, yI) ->
+            add = 0.001 -- to avoid dividing by zero
+            xA, yA = source[1].x, source[1].y
+            xC, yC = source[3].x, source[3].y
+            --
+            xAu, yAu = destin[1].x, destin[1].y
+            xBu, yBu = destin[2].x, destin[2].y
+            xCu, yCu = destin[3].x, destin[3].y
+            xDu, yDu = destin[4].x, destin[4].y
+            -- if points are the same, have to add a "add" to avoid dividing by zero
+            xCu += add if (xBu == xCu)
+            xDu += add if (xAu == xDu)
+            xBu += add if (xAu == xBu)
+            xCu += add if (xDu == xCu)
+            kBC = (yBu - yCu) / (xBu - xCu)
+            kAD = (yAu - yDu) / (xAu - xDu)
+            kAB = (yAu - yBu) / (xAu - xBu)
+            kDC = (yDu - yCu) / (xDu - xCu)
+            --
+            kAD += add if (kBC == kAD)
+            xE = ((((kBC * xBu) - (kAD * xAu)) + yAu) - yBu) / (kBC - kAD)
+            yE = (kBC * (xE - xBu)) + yBu
+            kDC += add if (kAB == kDC)
+            xF = ((((kAB * xBu) - (kDC * xCu)) + yCu) - yBu) / (kAB - kDC)
+            yF = (kAB * (xF - xBu)) + yBu
+            xF += add if (xE == xF)
+            kEF = (yE - yF) / (xE - xF)
+            kAB += add if (kEF == kAB)
+            xG = ((((kEF * xDu) - (kAB * xAu)) + yAu) - yDu) / (kEF - kAB)
+            yG = (kEF * (xG - xDu)) + yDu
+            kBC += add if (kEF == kBC)
+            xH = ((((kEF * xDu) - (kBC * xBu)) + yBu) - yDu) / (kEF - kBC)
+            yH = (kEF * (xH - xDu)) + yDu
+            --
+            rG = (yC - yI) / (yC - yA)
+            rH = (xI - xA) / (xC - xA)
+            xJ = ((xG - xDu) * rG) + xDu
+            yJ = ((yG - yDu) * rG) + yDu
+            xK = ((xH - xDu) * rH) + xDu
+            yK = ((yH - yDu) * rH) + yDu
+            --
+            xJ += add if (xF == xJ)
+            xK += add if (xE == xK)
+            kJF = (yF - yJ) / (xF - xJ)
+            kKE = (yE - yK) / (xE - xK)
+            --
+            kKE += add if (kJF == kKE)
+            xIu = ((((kJF * xF) - (kKE * xE)) + yE) - yF) / (kJF - kKE)
+            yIu = (kJF * (xIu - xJ)) + yJ
+            return xIu, yIu
+        return @
+
+    to_bezier: => -- transforms line points into bezier points
+        shape = @build!
+        line_to_bezier = (x1, y1, x2, y2) ->
+            x1, y1, (2 * x1 + x2) / 3, (2 * y1 + y2) / 3, (x1 + 2 * x2) / 3, (y1 + 2 * y2) / 3, x2, y2
+        for i = 1, 2
+			shape = shape\gsub "(%-?%d[%.%d]*)%s*(%-?%d[%.%d]*)%s*l%s*(%-?%d[%.%d]*)%s*(%-?%d[%.%d]*)", (px1, py1, px2, py2) ->
+                x1, y1, x2, y2, x3, y3, x4, y4 = line_to_bezier(tonumber(px1), tonumber(py1), tonumber(px2), tonumber(py2))
+                return ("%s %s b %s %s %s %s %s %s")\format(x1, y1, x2, y2, x3, y3, x4, y4)
+        return SHAPER(shape).points
+
+    envelop_distort: (ctrl_p1, ctrl_p2) => -- https://codepen.io/benjamminf/pen/LLmrKN
+        @info!
+        ctrl_p1 or= {
+            {x: minx, y: miny},
+            {x: maxx, y: miny},
+            {x: maxx, y: maxy},
+            {x: minx, y: maxy},
+        }
+        ctrl_p2 or= {
+            {x: minx - 100, y: miny},
+            {x: maxx + 100, y: miny},
+            {x: maxx, y: maxy},
+            {x: minx, y: maxy},
+        }
+        isNaN = (v) -> (type(v) == "number") and (v != v) -- checks if the number is nan
+        error("The control points must have the same quantity!") if (#ctrl_p1 != #ctrl_p2)
+        -- to avoid dividing by zero
+        ctrl_b = 0.1
+        for i = 1, #ctrl_p1
+            ctrl_p1[i].x -= ctrl_b if (ctrl_p1[i].x == minx)
+            ctrl_p1[i].y -= ctrl_b if (ctrl_p1[i].y == miny)
+            ctrl_p1[i].x += ctrl_b if (ctrl_p1[i].x == maxx)
+            ctrl_p1[i].y += ctrl_b if (ctrl_p1[i].y == maxy)
+            --
+            ctrl_p2[i].x -= ctrl_b if (ctrl_p2[i].x == minx)
+            ctrl_p2[i].y -= ctrl_b if (ctrl_p2[i].y == miny)
+            ctrl_p2[i].x += ctrl_b if (ctrl_p2[i].x == maxx)
+            ctrl_p2[i].y += ctrl_b if (ctrl_p2[i].y == maxy)
+        -- @split(2)
+        @points = @to_bezier!
+        A, W, L, V1, V2 = {}, {}, nil, ctrl_p1, ctrl_p2
+        @filter (x, y) ->
+            -- Find Angles
+            for i = 1, #V1
+                j = i % #V1 + 1
+                vi, vj = V1[i], V1[j]
+                r0i = sqrt((x - vi.x) ^ 2 + (y - vi.y) ^ 2)
+                r0j = sqrt((x - vj.x) ^ 2 + (y - vj.y) ^ 2)
+                rij = sqrt((vi.x - vj.x) ^ 2 + (vi.y - vj.y) ^ 2)
+                dn = 2 * r0i * r0j
+                r = (r0i ^ 2 + r0j ^ 2 - rij ^ 2) / dn
+                A[i] = (isNaN(r) and 0 or acos(max(-1, min(r, 1))))
+            -- Find Weights
+            for j = 1, #V1
+                i = (j > 1 and j or #V1 + 1) - 1
+                vj = V1[j]
+                r = sqrt((vj.x - x) ^ 2 + (vj.y - y) ^ 2)
+                W[j] = (tan(A[i] / 2) + tan(A[j] / 2)) / r
+            -- Normalise Weights
+            Ws = 0
+            for _, v in ipairs(W) do Ws += v
+            -- Reposition
+            nx, ny = 0, 0
+            for i = 1, #V1
+                L = W[i] / Ws
+                nx += L * V2[i].x
+                ny += L * V2[i].y
+            return nx, ny
+        return @
+
+    expand: (line, meta) => -- expands the points of agreement with the values of tags some tags -- By Alen --> https://github.com/Alendt/Aegisub-Scripts
+        @org_points(line.styleref.align)
         data = SUPPORT\find_coords(line, meta, true)
         frx = pi / 180 * data.rots.frx
         fry = pi / 180 * data.rots.fry
@@ -946,137 +951,250 @@ class SUB_POLY extends POLY
         z4[3] += dist
         offs_x = data.org.x - data.pos.x
         offs_y = data.org.y - data.pos.y
-        m = {}
-        for k = 1, 3 do m[k] = {}
+        matrix = [{} for k = 1, 3]
         for i = 1, 3
-            m[1][i] = z4[i] * offs_x + x4[i] * dist
-            m[2][i] = z4[i] * offs_y + y3[i] * dist
-            m[3][i] = z4[i]
-        for i = 1, #points
-            for k = 1, #points[i]
-                v = {}
-                for j = 1, 3 do v[j] = (m[j][1] * points[i][k].x * xscale) + (m[j][2] * points[i][k].y * yscale) + m[j][3]
-                w = 1 / max(v[3], 0.1)
-                points[i][k].x = MATH\round(v[1] * w, 3)
-                points[i][k].y = MATH\round(v[2] * w, 3)
-        return @to_shape(points)
+            matrix[1][i] = z4[i] * offs_x + x4[i] * dist
+            matrix[2][i] = z4[i] * offs_y + y3[i] * dist
+            matrix[3][i] = z4[i]
+        @filter (x, y) ->
+            v = [(matrix[m][1] * x * xscale) + (matrix[m][2] * y * yscale) + matrix[m][3] for m = 1, 3]
+            w = 1 / max(v[3], 0.1)
+            x = MATH\round(v[1] * w, 3)
+            y = MATH\round(v[2] * w, 3)
+            return x, y
+        return @
 
-    smooth_edges: (shape, r) =>
-        points, dist, c, l1, l2, shapes = {parts: {}, result: {}}, {}, {}, {}, {}, {}
-        points.parts = [p for p in shape\gmatch "m [^m]*"] -- index the parts of a shape
-        for k = 1, #points.parts
-            points.result[k] = [{x: tonumber(x), y: tonumber(y)} for x, y in points.parts[k]\gmatch "(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)"] unless points.parts[k]\match("b") -- index the points of each part of a shape
-        get_angle = (c, l) -> -- returns the value of the angle between points c and l
+    smooth_edges: (radius = 0) => -- smooths the corners of a shape
+        deps, build = {c: {}, l: {{}, {}}, counter: {}, dist: {}}, {}
+        get_angle = (c, l) ->
             delta_x = l.x - c.x
             delta_y = l.y - c.y
-            return math.atan2(delta_y, delta_x)
-        -- limits the radius according to the smallest distance found between points
-        for k = 1, #points.parts
-            unless points.parts[k]\match("b")
-                for j = 2, #points.result[k]
-                    x1 = points.result[k][j - 1].x
-                    x2 = points.result[k][j].x
-                    y1 = points.result[k][j - 1].y
-                    y2 = points.result[k][j].y
-                    table.insert(dist, math.sqrt((x2 - x1) ^ 2 + (y2 - y1) ^ 2) / 2)
-        table.sort(dist, (a, b) -> return a < b)
-        r = (dist[1] < r) and dist[1] or r
-        -- does the smooth edges process
-        for k = 1, #points.parts
-            shapes[k] = ""
-            if points.parts[k]\match("b")
-                shapes[k] ..= points.parts[k]
+            return atan2(delta_y, delta_x)
+        for k = 1, #@points -- Does a configuration to check if the point can be a corner
+            deps.counter[k] = {}
+            for j = 1, #@points[k]
+                deps.counter[k][#deps.counter[k] + 1] = (@points[k][j].typer == "m" or @points[k][j].typer == "l") or nil
+                if @points[k][j].typer == "b"
+                    @points[k][j].corner = false
+                elseif (@points[k][j].typer == "m") and (@points[k][j + 1] and @points[k][j + 1].typer == "b")
+                    @points[k][j].corner = false
+                elseif (@points[k][j].typer == "l") and (@points[k][j + 1] and @points[k][j + 1].typer == "b")
+                    @points[k][j].corner = false
+                elseif (@points[k][j].typer == "l") and (@points[k][j - 1] and @points[k][j - 1].typer == "b")
+                    @points[k][j].corner = false
+                else
+                    @points[k][j].corner = true
+            if (@points[k][2].typer and @points[k][2].typer == "b") and (@points[k][#@points[k]].typer == "l")
+                @points[k][#@points[k]].corner = false
+            if (@points[k][#@points[k]].typer == "l") and (@points[k][1][1] == @points[k][#@points[k]][1]) and (@points[k][1][2] == @points[k][#@points[k]][2])
+                table.remove(@points[k])
+            if (@points[k][#@points[k]].typer == "b")
+                @points[k][1].corner = false
+        for k = 1, #@points
+            deps.dist[k] = {}
+            for j = 1, #@points[k] - 1
+                for i = 1, #@points[k][j], 2
+                    if (@points[k][j].typer != "b")
+                        p0, p1 = @points[k][j], @points[k][j + 1]
+                        x0, y0 = p0[i], p0[i + 1]
+                        x1, y1 = p1[i], p1[i + 1]
+                        deps.dist[k][#deps.dist[k] + 1] = MATH\distance(x0, y0, x1, y1) / 2
+            table.sort(deps.dist[k], (a, b) -> a < b)
+        for k = 1, #@points
+            r = deps.dist[k][1] < radius and deps.dist[k][1] or radius -- Limits the smoothness to the smallest distance encountered
+            build[k] = {}
+            for j = 1, #@points[k]
+                p = (j == 1 and #@points[k] or j - 1)
+                n = (j == #@points[k] and 1 or j + 1)
+                build[k][j] = {}
+                for i = 1, #@points[k][j], 2
+                    if @points[k][j].corner and (#deps.counter[k] > 4)
+                        deps.c.x = MATH\round(@points[k][j][i + 0])
+                        deps.c.y = MATH\round(@points[k][j][i + 1])
+                        deps.l[1].x = @points[k][p][i + 0]
+                        deps.l[1].y = @points[k][p][i + 1]
+                        deps.l[2].x = @points[k][n][i + 0]
+                        deps.l[2].y = @points[k][n][i + 1]
+                        angle_f = get_angle(deps.c, deps.l[1])
+                        angle_l = get_angle(deps.c, deps.l[2])
+                        x1 = MATH\round(deps.c.x + r * cos(angle_f))
+                        y1 = MATH\round(deps.c.y + r * sin(angle_f))
+                        x2 = MATH\round(deps.c.x + r * cos(angle_l))
+                        y2 = MATH\round(deps.c.y + r * sin(angle_l))
+                        pcx1, pcy1 = MATH\round((x1 + 2 * deps.c.x) / 3), MATH\round((y1 + 2 * deps.c.y) / 3)
+                        pcx2, pcy2 = MATH\round((x2 + 2 * deps.c.x) / 3), MATH\round((y2 + 2 * deps.c.y) / 3)
+                        build[k][j][#build[k][j] + 1] = ("l %s %s b %s %s %s %s %s %s ")\format(x1, y1, pcx1, pcy1, pcx2, pcy2, x2, y2)
+                    else
+                        build[k][j][#build[k][j] + 1] = ("%s %s ")\format(@points[k][j][i + 0], @points[k][j][i + 1])
+                        build[k][j][#build[k][j] + 1] = ""
+                if #build[k][j] > 1
+                    build[k][j] = ("%s %s")\format(@points[k][j].typer, table.concat(build[k][j]))
+                else
+                    build[k][j] = table.concat(build[k][j])
+            build[k] = table.concat(build[k])
+            build[k] = (build[k]\find("l") == 1 and build[k]\gsub("l", "m", 1) or build[k])
+        return table.concat(build)
+
+    build: (typer, dec = 2) => -- Builds the shape from the points
+        shape = {}
+        unless typer
+            for i = 1, #@points
+                shape[i] = {}
+                for j = 1, #@points[i]
+                    shape[i][j] = ""
+                    local p0, p1, p2, x1, y1, x2, y2, x3, y3
+                    if (@points[i][j].typer != "b")
+                        p0, p1, p2 = @points[i][j], @points[i][j + 1], @points[i][j - 1]
+                        -- Remove duplicate points
+                        if p1 and (floor(p0[1]) == floor(p1[1])) and (floor(p0[2]) == floor(p1[2]))
+                            continue
+                        elseif p2 and p2.typer == "b" and (floor(p0[1]) == floor(p2[#p2 - 1])) and (floor(p0[2]) == floor(p2[#p2]))
+                            continue
+                        x1, y1 = MATH\round(p0[1], dec), MATH\round(p0[2], dec)
+                        shape[i][j] ..= "#{p0.typer} #{x1} #{y1} "
+                    else
+                        p0, x1, y1, x2, y2, x3, y3 = @points[i][j]
+                        if #p0 > 6
+                            x1, y1 = MATH\round(p0[3], dec), MATH\round(p0[4], dec)
+                            x2, y2 = MATH\round(p0[5], dec), MATH\round(p0[6], dec)
+                            x3, y3 = MATH\round(p0[7], dec), MATH\round(p0[8], dec)
+                        else
+                            x1, y1 = MATH\round(p0[1], dec), MATH\round(p0[2], dec)
+                            x2, y2 = MATH\round(p0[3], dec), MATH\round(p0[4], dec)
+                            x3, y3 = MATH\round(p0[5], dec), MATH\round(p0[6], dec)
+                        shape[i][j] ..= "b #{x1} #{y1} #{x2} #{y2} #{x3} #{y3} "
+                shape[i] = table.concat(shape[i])
+                if (shape[i]\find("l") == 1)
+                    shape[i] = shape[i]\gsub("l", "m", 1)
+                elseif (shape[i]\find("b") == 1)
+                    shape[i] = shape[i]\gsub("b", "m", 1)
+            shape = table.concat(shape)
+        else
+            for i = 1, #@points
+                shape[i] = ""
+                for j = 1, #@points[i]
+                    x, y = MATH\round(@points[i][j].x, dec), MATH\round(@points[i][j].y, dec)
+                    shape[i] ..= "l #{x} #{y} "
+                shape[i] = shape[i]\gsub("l", "m", 1)
+            shape = table.concat(shape)
+        return shape
+
+class POLY
+
+    to_points: (shape, scale = 100000) => -- converts a shape to line points
+        shape = shape\match("b") and SHAPER(shape)\split(1, "bezier")\scale(scale, scale) or SHAPER(shape)\scale(scale, scale)
+        return shape.points
+
+    to_shape: (points, rescale = 0.001) => -- converts line points to shape
+        new_shape = {}
+        if (type(points) != "table")
+            for k = 1, points\size!
+                new_shape[k] = ""
+                path_parts = points\get(k)
+                for p = 1, path_parts\size!
+                    path_points = path_parts\get(p)
+                    new_shape[k] ..= "l #{MATH\round(tonumber(path_points.x) * rescale)} #{MATH\round(tonumber(path_points.y) * rescale)} "
+                new_shape[k] = new_shape[k]\gsub("l", "m", 1)
+            return table.concat(new_shape)
+        else
+            return SHAPER(points)\build!
+
+    create_path: (path) => -- adds path to the Poly data
+        points = Poly.Path!
+        for p in *path
+            points\add(p[1], p[2])
+        return points
+
+    create_paths: (paths) => -- adds paths to the Poly data
+        points = Poly.Paths!
+        for p in *paths
+            points\add(@create_path(p))
+        return points
+
+    simplify: (paths, ass, tol = 1, sp) => -- remove useless vertices from a polygon
+        paths = (type(paths) == "string" and @to_points(paths) or paths)
+        points = Poly.Paths!
+        for p in *paths
+            points\add(@create_path(p))
+        points = points\simplify!
+        return @to_shape(points) if sp
+        return not ass and l2l\solution(@get_solution(points), tol / 10) or l2b\solution(@get_solution(points), tol)
+
+    clean: (paths, sp) =>
+        paths = (type(paths) == "string" and @to_points(paths) or paths)
+        points = Poly.Paths!
+        for p in *paths
+            points\add(@create_path(p))
+        points = points\clean_polygon!
+        return @to_shape(points) if sp
+        return l2l\solution(@get_solution(points), 0.1)
+
+    get_solution: (path, rescale = 0.001) => -- returns the clipper library solution
+        get_path_points = (path) ->
+            result = {}
+            for k = 1, path\size!
+                point = path\get(k)
+                result[k] = {x: tonumber(point.x) * rescale, y: tonumber(point.y) * rescale}
+            return result
+        result = {}
+        for k = 1, path\size!
+            result[#result + 1] = get_path_points(path\get(k))
+        return result
+
+    clipper: (sbj, clp, ft = "even_odd", ct = "intersection", sp) => -- returns a clipped shape, according to its set configurations
+        sbj = (type(sbj) == "string" and @to_points(sbj) or sbj)
+        clp = (type(clp) == "string" and @to_points(clp) or clp)
+        ft_sbj = (type(ft) == "table" and ft[1] or ft)
+        ft_clp = (type(ft) == "table" and ft[2] or ft)
+        subj, clip = @create_paths(sbj), @create_paths(clp)
+        pc = Poly.Clipper!
+        pc\add_paths(subj, "subject")
+        pc\add_paths(clip, "clip")
+        final = pc\execute(ct, ft_sbj, ft_clp)
+        return @to_shape(final) if sp
+        return l2l\solution(@get_solution(final), 0.1) -- simplify :()
+
+    offset: (points, size, jt = "round", et = "closed_polygon", mtl = 2, act = 0.25, sp) => -- returns a shape offseting, according to its set configurations
+        points = (type(points) == "string" and @to_points(points) or points)
+        po = Poly.ClipperOffset(mtl, act)
+        pp = @create_paths(points)
+        final = po\offset_paths(pp, size * 1000, jt, et)
+        return @to_shape(final) if sp
+        return l2l\solution(@get_solution(final), 0.1) -- simplify :()
+
+    to_outline: (points, size, outline_type = "Round", mode = "Center", miter_limit = 2, arc_tolerance = 0.25) => -- returns an outline and the opposite of it, according to your defined settings
+        error("You need to add a size and it has to be bigger than 0.") unless size or size < 0
+        outline_type = outline_type\lower!
+        size = (mode == "Inside" and -size or size)
+        points = (mode != "Center" and @simplify(points, nil, nil, true) or points)
+        local create_offset
+        if (mode == "Center")
+            create_offset = @offset(points, size, outline_type, "closed_line", miter_limit, arc_tolerance, true)
+        else
+            create_offset = @offset(points, size, outline_type, nil, miter_limit, arc_tolerance, true)
+        outline = switch mode
+            when "Outside"
+                @clipper(create_offset, points, nil, "difference", true)
             else
-                for j = 1, #points.result[k]
-                    prev = (j == 1) and #points.result[k] or j - 1
-                    next = (j == #points.result[k]) and 1 or j + 1
-                    c.x  = points.result[k][j].x
-                    c.y  = points.result[k][j].y
-                    l1.x = points.result[k][prev].x
-                    l1.y = points.result[k][prev].y
-                    l2.x = points.result[k][next].x
-                    l2.y = points.result[k][next].y
-                    angle_1 = get_angle(c, l1)
-                    angle_2 = get_angle(c, l2)
-                    x1 = MATH\round(c.x + r * math.cos(angle_1))
-                    y1 = MATH\round(c.y + r * math.sin(angle_1))
-                    x2 = MATH\round(c.x + r * math.cos(angle_2))
-                    y2 = MATH\round(c.y + r * math.sin(angle_2))
-                    pcx1, pcy1 = MATH\round((x1 + 2 * c.x) / 3), MATH\round((y1 + 2 * c.y) / 3)
-                    pcx2, pcy2 = MATH\round((x2 + 2 * c.x) / 3), MATH\round((y2 + 2 * c.y) / 3)
-                    shapes[k] ..= " l #{x1} #{y1} b #{pcx1} #{pcy1} #{pcx2} #{pcy2} #{x2} #{y2}"
-                shapes[k] = shapes[k]\gsub(" l", "m", 1)
-        return table.concat(shapes)\gsub("(%d)m", "%1 m")
-
-    envelope_distort: (shape, mode) =>
-        shape = Yutils.shape.split(Yutils.shape.flatten(shape), 2)
+                @clipper(points, create_offset, nil, "difference", true)
         switch mode
-            when "wave"
-                wave = (frx = 0, amx = 0, fry = 0, amy = 0) -> -- freguencia e amplitude
-                    shape = SHAPE(shape)\filter(nil, (x, y) ->
-                        x += cos(y * (frx * 0.001) * pi * 2) * amx
-                        y += sin(x * (fry * 0.001) * pi * 2) * amy
-                        return x, y)
-                    return shape
-                return wave
-
-    org_points: (points, an) => -- moves the points to positions relative to the alignment 7
-        width, height = @dimension(points)
-        switch an
-            when 1 then @displace(points, nil, -height)
-            when 2 then @displace(points, -width / 2, -height)
-            when 3 then @displace(points, -width, -height)
-            when 4 then @displace(points, nil, -height / 2)
-            when 5 then @displace(points, -width / 2, -height / 2)
-            when 6 then @displace(points, -width, -height / 2)
-            when 7 then @displace(points)
-            when 8 then @displace(points, -width / 2)
-            when 9 then @displace(points, -width)
-
-    to_clip: (points, an, px = 0, py = 0) => -- moves points to relative clip positions
-        width, height = @dimension(points)
-        switch an
-            when 1 then @displace(points, px, py - height)
-            when 2 then @displace(points, px - width / 2, py - height)
-            when 3 then @displace(points, px - width, py - height)
-            when 4 then @displace(points, px, py - height / 2)
-            when 5 then @displace(points, px - width / 2, py - height / 2)
-            when 6 then @displace(points, px - width, py - height / 2)
-            when 7 then @displace(points, px, py)
-            when 8 then @displace(points, px - width / 2, py)
-            when 9 then @displace(points, px - width, py)
-
-    unclip: (points, an, px = 0, py = 0) => -- moves the points to relative shape positions
-        points = SUPPORT\clip_to_draw(points)
-        width, height = @dimension(points)
-        switch an
-            when 1 then @displace(points, -px, -py + height)
-            when 2 then @displace(points, -px + width / 2, -py + height)
-            when 3 then @displace(points, -px + width, -py + height)
-            when 4 then @displace(points, -px, -py + height / 2)
-            when 5 then @displace(points, -px + width / 2, -py + height / 2)
-            when 6 then @displace(points, -px + width, -py + height / 2)
-            when 7 then @displace(points, -px, -py)
-            when 8 then @displace(points, -px + width / 2, -py)
-            when 9 then @displace(points, -px + width, -py)
+            when "Outside"
+                create_offset = points
+            when "Center"
+                return @simplify(create_offset, true, 3), @simplify(outline, true, 3)
+        return @simplify(outline, true, 3), @simplify(create_offset, true, 3)
 
     clip: (subj, clip, x = 0, y = 0, iclip) => -- the same thing as \clip and \iclip
-        rec_points = ""
-        if type(clip) == "table"
-            rec_points = {}
+        local shape
+        if (type(clip) == "table")
+            shape = {}
             for k = 1, #clip
-                clip[k] = @displace(clip[k], -x, -y)
-                if iclip
-                    rec_points[k] = @clipper(subj, clip[k], "even_odd", "difference")
-                else
-                    rec_points[k] = @clipper(subj, clip[k], "even_odd", "intersection")
+                clip[k] = SHAPER(clip[k])\displace(-x, -y)\build!
+                shape[k] = (iclip and @clipper(subj, clip[k], "even_odd", "difference", true) or @clipper(subj, clip[k], "even_odd", "intersection", true))
         else
-            clip = @displace(clip, -x, -y)
-            if iclip
-                rec_points = @clipper(subj, clip, "even_odd", "difference")
-            else
-                rec_points = @clipper(subj, clip, "even_odd", "intersection")
-        return rec_points
+            clip = SHAPER(clip)\displace(-x, -y)\build!
+            shape = (iclip and @clipper(subj, clip, "even_odd", "difference", true) or @clipper(subj, clip, "even_odd", "intersection", true))
+        return @simplify(shape, true, 3)
 
 class TEXT
 
@@ -1087,7 +1205,7 @@ class TEXT
         texts, texts_shape, lwidth, lheight = {}, {}, {}, {}
         while text != ""
             c, d = headtail(text, "\\N")
-            texts[#texts + 1] = c
+            texts[#texts + 1] = c\match("^%s*(.-)%s*$")
             text = d
         for k = 1, #texts
             style_cfg = {
@@ -1106,42 +1224,40 @@ class TEXT
             texts_shape[k] = font.text_to_shape texts[k]
             texts_shape[k] = texts_shape[k]\gsub(" c", "")
             lwidth[k], lheight[k] = tonumber(extents.width), tonumber(extents.height)
-            texts_shape[k] = SUB_POLY\displace texts_shape[k], 0, (k - 1) * style_cfg[6] * style_cfg[8]
+            texts_shape[k] = SHAPER(texts_shape[k])\displace(0, (k - 1) * style_cfg[6] * style_cfg[8])\build!
         return texts_shape, texts, lwidth, lheight
 
     to_clip: (line, text = line.text_stripped, an = line.styleref.align, px = 0, py = 0) => -- converts your text into clip
-        text_shape, texts, lwidth, lheight = @to_shape(line, text)
+        texts_shape, texts, lwidth, lheight = @to_shape(line, text)
         break_line, extra = (line.styleref.fontsize * line.styleref.scale_y / 100), 0
-        for k = 1, #text_shape
+        for k = 1, #texts_shape
             if texts[k] == ""
                 py -= break_line / 2
                 extra -= break_line / 2
-            text_shape[k] = switch an
-                when 1 then SUB_POLY\displace text_shape[k], px, py - lheight[k] - break_line * (#text_shape - 1)
-                when 2 then SUB_POLY\displace text_shape[k], px - lwidth[k] / 2, py - lheight[k] - break_line * (#text_shape - 1)
-                when 3 then SUB_POLY\displace text_shape[k], px - lwidth[k], py - lheight[k] - break_line * (#text_shape - 1)
-                when 4 then SUB_POLY\displace text_shape[k], px, py - lheight[k] / 2 - break_line * (#text_shape - 1) / 2
-                when 5 then SUB_POLY\displace text_shape[k], px - lwidth[k] / 2, (py - lheight[k] / 2 - break_line * (#text_shape - 1) / 2)
-                when 6 then SUB_POLY\displace text_shape[k], px - lwidth[k], py - lheight[k] / 2 - break_line * (#text_shape - 1) / 2
-                when 7 then SUB_POLY\displace text_shape[k], px, py
-                when 8 then SUB_POLY\displace text_shape[k], px - lwidth[k] / 2, py
-                when 9 then SUB_POLY\displace text_shape[k], px - lwidth[k], py
-        new_shape = table.concat(text_shape)
+            texts_shape[k] = switch an
+                when 1 then SHAPER(texts_shape[k])\displace(px, py - lheight[k] - break_line * (#texts_shape - 1))\build!
+                when 2 then SHAPER(texts_shape[k])\displace(px - lwidth[k] / 2, py - lheight[k] - break_line * (#texts_shape - 1))\build!
+                when 3 then SHAPER(texts_shape[k])\displace(px - lwidth[k], py - lheight[k] - break_line * (#texts_shape - 1))\build!
+                when 4 then SHAPER(texts_shape[k])\displace(px, py - lheight[k] / 2 - break_line * (#texts_shape - 1) / 2)\build!
+                when 5 then SHAPER(texts_shape[k])\displace(px - lwidth[k] / 2, (py - lheight[k] / 2 - break_line * (#texts_shape - 1) / 2))\build!
+                when 6 then SHAPER(texts_shape[k])\displace(px - lwidth[k], py - lheight[k] / 2 - break_line * (#texts_shape - 1) / 2)\build!
+                when 7 then SHAPER(texts_shape[k])\displace(px, py)\build!
+                when 8 then SHAPER(texts_shape[k])\displace(px - lwidth[k] / 2, py)\build!
+                when 9 then SHAPER(texts_shape[k])\displace(px - lwidth[k], py)\build!
+        new_shape = table.concat(texts_shape)
         new_shape = switch an
-            when 1, 2, 3 then SUB_POLY\displace new_shape, 0, -extra
-            when 4, 5, 6 then SUB_POLY\displace new_shape, 0, -extra / 2
+            when 1, 2, 3 then SHAPER(new_shape)\displace(0, -extra)\build!
+            when 4, 5, 6 then SHAPER(new_shape)\displace(0, -extra / 2)\build!
         return new_shape
 
 class SUPPORT
 
-    interpolation: (pct, tp, ...) =>
-        tp or= "number"
-        pct or= 0.5
+    interpolation: (pct = 0.5, tp = "number", ...) =>
         values = (type(...) == "table" and ... or {...})
         --
-        ipol_function = util.interpolate if tp == "number"
-        ipol_function = util.interpolate_color if tp == "color"
-        ipol_function = util.interpolate_alpha if tp == "alpha"
+        ipol_function = util.interpolate if (tp == "number")
+        ipol_function = util.interpolate_color if (tp == "color")
+        ipol_function = util.interpolate_alpha if (tp == "alpha")
         --
         pct = util.clamp(pct, 0, 1) * (#values - 1)
         valor_i = values[floor(pct) + 1]
@@ -1152,10 +1268,10 @@ class SUPPORT
         tags, vtext = "", line.text
         meta, styles = karaskel.collect_head subs
         for k = 1, styles.n
-            styles[k].margin_l = line.margin_l if line.margin_l > 0
-            styles[k].margin_r = line.margin_r if line.margin_r > 0
-            styles[k].margin_v = line.margin_t if line.margin_t > 0
-            styles[k].margin_v = line.margin_b if line.margin_b > 0
+            styles[k].margin_l = line.margin_l if (line.margin_l > 0)
+            styles[k].margin_r = line.margin_r if (line.margin_r > 0)
+            styles[k].margin_v = line.margin_t if (line.margin_t > 0)
+            styles[k].margin_v = line.margin_b if (line.margin_b > 0)
             if vtext\match "%b{}"
                 tags = vtext\match "%b{}"
                 styles[k].align     = tonumber tags\match "\\an%s*(%d)" if tags\match "\\an%s*%d"
@@ -1166,11 +1282,11 @@ class SUPPORT
                 styles[k].spacing   = tonumber tags\match "\\fsp%s*(%-?%d[%.%d]*)" if tags\match "\\fsp%s*%-?%d[%.%d]*"
                 styles[k].outline   = tonumber tags\match "\\bord%s*(%d[%.%d]*)" if tags\match "\\bord%s*%d[%.%d]*"
                 styles[k].shadow    = tonumber tags\match "\\shad%s*(%d[%.%d]*)" if tags\match "\\shad%s*%d[%.%d]*"
-                styles[k].angle     = tonumber tags\match "\\fr[z]?%s*(%-?%d[%.%d]*)" if tags\match "\\fr[z]?%s*%-?%d[%.%d]*"
-                styles[k].color1    = tags\match "\\1?c%s*(&[hH]%x+&)" if tags\match "\\1?c%s*&[hH]%x+&"
-                styles[k].color2    = tags\match "\\2c%s*(&[hH]%x+&)" if tags\match "\\2c%s*&[hH]%x+&"
-                styles[k].color3    = tags\match "\\3c%s*(&[hH]%x+&)" if tags\match "\\3c%s*&[hH]%x+&"
-                styles[k].color4    = tags\match "\\4c%s*(&[hH]%x+&)" if tags\match "\\4c%s*&[hH]%x+&"
+                styles[k].angle     = tonumber tags\match "\\frz?%s*(%-?%d[%.%d]*)" if tags\match "\\frz?%s*%-?%d[%.%d]*"
+                styles[k].color1    = tags\match "\\1?c%s*(&?[Hh]%x+&?)" if tags\match "\\1?c%s*&?[Hh]%x+&?"
+                styles[k].color2    = tags\match "\\2c%s*(&?[Hh]%x+&?)" if tags\match "\\2c%s*&?[Hh]%x+&?"
+                styles[k].color3    = tags\match "\\3c%s*(&?[Hh]%x+&?)" if tags\match "\\3c%s*&?[Hh]%x+&?"
+                styles[k].color4    = tags\match "\\4c%s*(&?[Hh]%x+&?)" if tags\match "\\4c%s*&?[Hh]%x+&?"
                 styles[k].bold      = true if tags\match "\\b%s*1"
                 styles[k].italic    = true if tags\match "\\i%s*1"
                 styles[k].underline = true if tags\match "\\u%s*1"
@@ -1238,11 +1354,11 @@ class SUPPORT
                 fay = line.text\match "\\fay%s*(%-?%d[%.%d]*)"
                 coords.rots.fay = tonumber fay
             if line.text\match "\\pos%b()"
-                px, py = line.text\match "\\pos%((%-?%d[%.%d]*),(%-?%d[%.%d]*)%)"
+                px, py = line.text\match "\\pos%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
                 coords.pos.x = tonumber px
                 coords.pos.y = tonumber py
-            if line.text\match "\\move%(%-?%d[%.%d]*,%-?%d[%.%d]*,%-?%d[%.%d]*,%-?%d[%.%d]*"
-                x1, y1, x2, y2, t1, t2 = line.text\match "\\move%((%-?%d[%.%d]*),(%-?%d[%.%d]*),(%-?%d[%.%d]*),(%-?%d[%.%d]*)"
+            if line.text\match "\\move%(%s*%-?%d[%.%d]*%s*,%s*%-?%d[%.%d]*%s*,%s*%-?%d[%.%d]*%s*,%s*%-?%d[%.%d]*%s*"
+                x1, y1, x2, y2, t1, t2 = line.text\match "\\move%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*"
                 coords.move.x1 = tonumber x1
                 coords.move.y1 = tonumber y1
                 coords.move.x2 = tonumber x2
@@ -1250,7 +1366,7 @@ class SUPPORT
                 coords.pos.x   = tonumber x1
                 coords.pos.y   = tonumber y1
             if line.text\match "\\org%b()"
-                ox, oy = line.text\match "\\org%((%-?%d[%.%d]*),(%-?%d[%.%d]*)%)"
+                ox, oy = line.text\match "\\org%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
                 coords.org.x = tonumber ox
                 coords.org.y = tonumber oy
         if ogp
@@ -1260,17 +1376,16 @@ class SUPPORT
         return coords
 
     html_color: (color, mode = "to_rgb") => -- transform an html color to hexadecimal and the other way around
-        n_c =  ""
+        c =  ""
         switch mode
             when "to_rgb"
                 color = color\gsub "(%x%x)(%x%x)(%x%x)", (b, g, r) ->
-                    n_c = "&H#{r}#{g}#{b}&"
-                n_c
+                    c = "&H#{r}#{g}#{b}&"
             when "to_html"
                 rgb_color = util.color_from_style(rgb_color)
                 rgb_color = rgb_color\gsub "&[hH](%x%x)(%x%x)(%x%x)&", (r, g, b) ->
-                    n_c = "##{b}#{g}#{r}"
-                n_c
+                    c = "##{b}#{g}#{r}"
+        return c
 
     file_exist: (file, dir) =>
         file ..= "/" if dir
@@ -1280,16 +1395,16 @@ class SUPPORT
         return ok, err
 
     clip_to_draw: (clip) => -- converts data from clip to shape
-        new_clip, final = {}, ""
+        local shape
         if clip\match("\\i?clip%b()")
             unless clip\match("\\i?clip%(m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*%)")
-                new_clip.l, new_clip.t, new_clip.r, new_clip.b = clip\match "\\i?clip%((%-?%d[%.%d]*),(%-?%d[%.%d]*),(%-?%d[%.%d]*),(%-?%d[%.%d]*)%)"
-                final = "m #{new_clip.l} #{new_clip.t} l #{new_clip.r} #{new_clip.t} #{new_clip.r} #{new_clip.b} #{new_clip.l} #{new_clip.b}"
+                l, t, r, b = clip\match "\\i?clip%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
+                shape = "m #{l} #{t} l #{r} #{t} l #{r} #{b} l #{l} #{b}"
             else
-                final = clip\match("\\i?clip%((m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*)%)") if clip\match("\\i?clip%(m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*%)")
+                shape = clip\match("\\i?clip%((m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*)%)")
         else
-            final = clip
-        return final
+            shape = clip
+        return shape
 
 class TAGS
 
@@ -1409,8 +1524,8 @@ class TAGS
 return {
     math:  MATH
     table: TABLE
-    poly:  SUB_POLY
-    shape: SHAPE
+    poly:  POLY
+    shape: SHAPER
     text:  TEXT
     util:  SUPPORT
     tags:  TAGS
