@@ -1,28 +1,21 @@
-export script_name = "Stroke Panel"
+export script_name        = "Stroke Panel"
 export script_description = "A stroke panel"
-export script_author = "Zeref"
-export script_version = "1.5.3"
+export script_author      = "Zeref"
+export script_version     = "0.0.0"
 -- LIB
 zf = require "ZF.utils"
 
-stroke = {}
-stroke.corner = {
-    "Miter"
-    "Round"
-    "Square"
+stroke = {
+    corner: {"Miter", "Round", "Square"}
+    align: {"Center", "Inside", "Outside"}
 }
 
-stroke.align = {
-    "Center"
-    "Inside"
-    "Outside"
+hints = {
+    arctolerance: "The default ArcTolerance is 0.25 units. \nThis means that the maximum distance \nthe flattened path will deviate from the \n\"true\" arc will be no more than 0.25 units \n(before rounding)."
+    stroke_size: "Stroke Size."
+    miterlimit: "The default value for MiterLimit is 2 (ie twice delta). \nThis is also the smallest MiterLimit that's allowed. \nIf mitering was unrestricted (ie without any squaring), \nthen offsets at very acute angles would generate \nunacceptably long \"spikes\"."
+    only_offset: "Return only the offseting text."
 }
-
-hints = {}
-hints.arctolerance = "The default ArcTolerance is 0.25 units. \nThis means that the maximum distance \nthe flattened path will deviate from the \n\"true\" arc will be no more than 0.25 units \n(before rounding)."
-hints.stroke_size = "Stroke Size."
-hints.miterlimit = "The default value for MiterLimit is 2 (ie twice delta). \nThis is also the smallest MiterLimit that's allowed. \nIf mitering was unrestricted (ie without any squaring), \nthen offsets at very acute angles would generate \nunacceptably long \"spikes\"."
-hints.only_offset = "Return only the offseting text."
 
 INTERFACE = (subs, sel) ->
     local gui
@@ -61,12 +54,12 @@ SAVECONFIG = (subs, sel, gui, elements) ->
             vals_write ..= "{#{v.name} = #{v.value}}\n"
     dir = aegisub.decode_path("?user")
     unless zf.util\file_exist("#{dir}\\zeref-cfg", true)
-        os.execute("mkdir #{dir .. "\\zeref-cfg"}") -- create folder zeref-cfg
+        os.execute("cd #{dir}")
+        os.execute("mkdir zeref-cfg") -- create folder zeref-cfg
     cfg_save = "#{dir}\\zeref-cfg\\stroke_config.cfg"
     file = io.open cfg_save, "w"
     file\write vals_write
     file\close!
-    -- aegisub.log "Your changes are saved in:\n\n#{cfg_save}"
     return
 
 READCONFIG = (filename) ->
@@ -108,7 +101,7 @@ stroke_panel = (subs, sel) ->
     while true
         bx, ck = aegisub.dialog.display(inter, {"Run", "Run - Save", "Reset", "Cancel"}, {close: "Cancel"})
         inter = INTERFACE(subs, sel) if bx == "Reset"
-        break if bx == "Run" or bx == "Run - Save" or bx == "Cancel"
+        break if (bx == "Run" or bx == "Run - Save" or bx == "Cancel")
     aegisub.progress.task("Generating Stroke...")
     switch bx
         when "Run", "Run - Save"
@@ -127,19 +120,18 @@ stroke_panel = (subs, sel) ->
                 tags ..= "\\pos(#{coords.pos.x},#{coords.pos.y})" unless tags\match("\\pos%b()") and not tags\match("\\move%b()")
                 detect = zf.tags\remove("full", l.text)
                 shape = detect\match("m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*")
-                shape = zf.poly\unclip(zf.text\to_clip(l, detect), l.styleref.align) unless shape
+                shape or= zf.shape(zf.text\to_clip(l, text))\unclip(l.styleref.align)\build!
                 out_shape, out_offset = "", ""
                 if ck.olf
-                    out_shape = zf.poly\offset(zf.poly\org_points(shape, l.styleref.align), ck.ssz, ck.crn\lower!, nil, ck.mtl, ck.atc)
+                    out_shape = zf.poly\offset(zf.shape(shape)\org_points(l.styleref.align)\build!, ck.ssz, ck.crn\lower!, nil, ck.mtl, ck.atc)
                     l.comment = false
                     __tags = zf.tags\clean("{#{tags}\\c#{zf.util\html_color(ck.color1)}}")
                     l.text = "#{__tags}#{out_shape}"
                     subs.insert(i + add + 1, l)
                     add += 1
                 else
-                    out_shape, out_offset = zf.poly\to_outline(zf.poly\org_points(shape, l.styleref.align), ck.ssz, ck.crn, ck.alg, ck.mtl, ck.atc)
-                    colors = {ck.color3, ck.color1}
-                    shapes = {out_shape, out_offset}
+                    out_shape, out_offset = zf.poly\to_outline(zf.shape(shape)\org_points(l.styleref.align)\build!, ck.ssz, ck.crn, ck.alg, ck.mtl, ck.atc)
+                    colors, shapes = {ck.color3, ck.color1}, {out_shape, out_offset}
                     for k = 1, 2
                         l.comment = false
                         __tags = zf.tags\clean("{#{tags}\\c#{zf.util\html_color(colors[k])}}")

@@ -1,17 +1,18 @@
 export script_name        = "Shape Relocate"
 export script_description = "Relocate the shape and returns information intended for karaoke"
 export script_author      = "Zeref"
-export script_version     = "1.0.0"
+export script_version     = "0.0.0"
 -- LIB
 zf = require "ZF.utils"
 
 main = (subs, sel) ->
     index_r, index_pos = {}, {} -- recebem as recolocações e as posições relativas a origem
     shape_relocate = (shape) -> -- realoca a shape em sua posição original e indexa as recolocações
-        shape, nx, ny = zf.poly\origin(shape, true)
-        width, height = zf.poly\dimension(shape)
+        shape, nx, ny = zf.shape(shape)\origin(true)
+        shape\info!
+        width, height = w_shape, h_shape
         index_pos[#index_pos + 1] = {x: nx, y: ny, w: width, h: height, s: (nx + ny)}
-        return shape, nx, ny
+        return shape\build!, nx, ny
     table.sort(index_pos, (a, b) -> return a.s < b.s) if index_pos[1] != nil -- organiza os valores da reolocações
     infos = { -- recebem as informações já apuradas
         shapes:           {}
@@ -70,11 +71,10 @@ main = (subs, sel) ->
                     px -= index_pos[1].w / 2
                 when 9
                     px -= index_pos[1].w
-            shape = zf.poly\displace(index_r[k].shape, px, py)
+            shape = zf.shape(index_r[k].shape)\displace(px, py)\build!
             -- remove valores de posicionamento
-            if tags\match "\\move%b()" or tags\match "\\pos%b()"
-                tags = tags\gsub "\\pos%b()", "\\pos(0,0)"
-                tags = tags\gsub "\\move%b()", "\\pos(0,0)"
+            if (tags\match("\\move%b()")) or (tags\match("\\pos%b()"))
+                tags = tags\gsub("\\pos%b()", "\\pos(0,0)")\gsub("\\move%b()", "\\pos(0,0)")
             else
                 tags ..= "\\pos(0,0)"
             __tags = zf.tags\clean("{#{tags}}")

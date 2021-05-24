@@ -1,7 +1,7 @@
 export script_name        = "Everything Shape"
 export script_description = "Do \"everything\" you need for a shape!"
 export script_author      = "Zeref"
-export script_version     = "1.2.0"
+export script_version     = "0.0.0"
 -- LIB
 zf = require "ZF.utils"
 
@@ -14,12 +14,8 @@ macros_list = {
 }
 
 m_c = {
-    shape_simplify: {
-        "Line Only", "Line and Bezier"
-    }
-    shape_split: {
-        "Full", "Line Only", "Bezier Only"
-    }
+    shape_simplify: {"Line Only", "Line and Bezier"}
+    shape_split: {"Full", "Line Only", "Bezier Only"}
 }
 
 interfaces = {
@@ -52,7 +48,8 @@ SAVECONFIG = (subs, sel, gui, elements) ->
         vals_write ..= "{#{v.name} = #{v.value}}\n" if v.name
     dir = aegisub.decode_path("?user")
     unless zf.util\file_exist("#{dir}\\zeref-cfg", true)
-        os.execute("mkdir #{dir .. "\\zeref-cfg"}") -- create folder zeref-cfg
+        os.execute("cd #{dir}")
+        os.execute("mkdir zeref-cfg") -- create folder zeref-cfg
     cfg_save = "#{dir}\\zeref-cfg\\everything_shape.cfg"
     file = io.open cfg_save, "w"
     file\write vals_write
@@ -97,8 +94,7 @@ configure_macros = (subs, sel) ->
     return
 
 merge_shapes = (subs, sel) ->
-    mg = {shapes: {}, an: {}, pos: {}, result: {}}
-    line = {}
+    mg, line = {shapes: {}, an: {}, pos: {}, result: {}}, {}
     for _, i in ipairs(sel)
         l = subs[i]
         l.comment = true
@@ -116,9 +112,9 @@ merge_shapes = (subs, sel) ->
             error("shape expected")
     mg.final = ""
     for k = 1, #mg.shapes
-        mg.result[k] = zf.poly\to_clip(mg.shapes[k], mg.an[k], mg.pos[k].x, mg.pos[k].y)
+        mg.result[k] = zf.shape(mg.shapes[k])\to_clip(mg.an[k], mg.pos[k].x, mg.pos[k].y)\build!
         mg.final ..= mg.result[k]
-    mg.final = zf.poly\simplify(zf.poly\unclip(mg.final, mg.an[1], mg.pos[1].x, mg.pos[1].y))
+    mg.final = zf.poly\simplify(zf.shape(mg.final)\unclip(mg.an[1], mg.pos[1].x, mg.pos[1].y)\build!, true, 3)
     return mg, line
 
 main = (subs, sel) ->
@@ -152,7 +148,7 @@ main = (subs, sel) ->
                         tags ..= "\\pos(#{px},#{py})" unless tags\match("\\pos%b()") and not tags\match("\\move%b()")
                         shape = detect\match("m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*")
                         if shape
-                            shape_to_clip = "#{icp_cp}(#{zf.poly\to_clip(shape, l.styleref.align, px, py)})"
+                            shape_to_clip = "#{icp_cp}(#{zf.shape(shape)\to_clip(l.styleref.align, px, py)\build!})"
                             __tags = zf.tags\clean("{#{tags .. shape_to_clip}}")
                             l.text = "#{__tags}#{shape}"
                         else
@@ -163,7 +159,7 @@ main = (subs, sel) ->
                         clip = tags\match "\\i?clip%b()"
                         if clip
                             tags = tags\gsub "\\i?clip%b()", ""
-                            clip_to_shape = zf.poly\unclip(clip, l.styleref.align, px, py)
+                            clip_to_shape = zf.shape(clip)\unclip(l.styleref.align, px, py)\build!
                             __tags = zf.tags\clean("{#{tags}}")
                             l.text = "#{__tags}#{clip_to_shape}"
                         else
@@ -173,7 +169,7 @@ main = (subs, sel) ->
                         tags ..= "\\pos(#{px},#{py})" unless tags\match("\\pos%b()") and not tags\match("\\move%b()")
                         shape = detect\match("m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*")
                         if shape
-                            shape_origin, nx, ny = zf.poly\origin(shape, true)
+                            shape_origin, nx, ny = zf.shape(shape)\origin(true)
                             if tags\match("\\pos%b()")
                                 tags = tags\gsub "\\pos%((%-?%d+[%.%d+]*),(%-?%d+[%.%d+]*)%)", (x, y) ->
                                     x += nx
@@ -189,7 +185,7 @@ main = (subs, sel) ->
                             else
                                 tags ..= "\\pos(#{px + nx},#{py + ny})"
                             __tags = zf.tags\clean("{#{tags}}")
-                            l.text = "#{__tags}#{shape_origin}"
+                            l.text = "#{__tags}#{shape_origin\build!}"
                         else
                             error("shape expected")
                     when macros_list[4]
@@ -197,7 +193,7 @@ main = (subs, sel) ->
                         tags ..= "\\pos(#{px},#{py})" unless tags\match("\\pos%b()") and not tags\match("\\move%b()")
                         shape = detect\match("m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*")
                         if shape
-                            shape_poly = zf.poly\org_points(shape, l.styleref.align)
+                            shape_poly = zf.shape(shape)\org_points(l.styleref.align)\build!
                             __tags = zf.tags\clean("{#{tags}}")
                             l.text = "#{__tags}#{shape_poly}"
                         else
@@ -207,7 +203,7 @@ main = (subs, sel) ->
                         tags ..= "\\pos(#{px},#{py})" unless tags\match("\\pos%b()") and not tags\match("\\move%b()")
                         shape = detect\match("m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*")
                         if shape
-                            shape_expand = zf.poly\expand(shape, l, meta)
+                            shape_expand = zf.shape(shape)\expand(l, meta)\build!
                             __tags = zf.tags\clean("{#{tags}}")
                             l.text = "#{__tags}#{shape_expand}"
                         else
@@ -217,10 +213,9 @@ main = (subs, sel) ->
                         tags ..= "\\pos(#{px},#{py})" unless tags\match("\\pos%b()") and not tags\match("\\move%b()")
                         shape = detect\match("m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*")
                         if shape
-                            shape = zf.poly\org_points(shape, l.styleref.align)
-                            shape_smooth_edges = zf.poly\smooth_edges(shape, elements.tol)
+                            shape_smooth = zf.shape(shape, false)\org_points(l.styleref.align)\smooth_edges(elements.tol)
                             __tags = zf.tags\clean("{#{tags}}")
-                            l.text = "#{__tags}#{shape_smooth_edges}"
+                            l.text = "#{__tags}#{zf.shape(shape_smooth)\build!}"
                         else
                             error("shape expected")
                     when macros_list[7]
@@ -228,7 +223,7 @@ main = (subs, sel) ->
                         tags ..= "\\pos(#{px},#{py})" unless tags\match("\\pos%b()") and not tags\match("\\move%b()")
                         shape = detect\match("m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*")
                         if shape
-                            shape = zf.poly\org_points(shape, l.styleref.align)
+                            shape = zf.shape(shape)\org_points(l.styleref.align)\build!
                             n = elements.tol
                             shape_simplify = (config.sym == "Line Only") and zf.poly\simplify(shape, nil, (n > 50) and 50 or n) or zf.poly\simplify(shape, true, n)
                             __tags = zf.tags\clean("{#{tags}}")
@@ -240,11 +235,11 @@ main = (subs, sel) ->
                         tags ..= "\\pos(#{px},#{py})" unless tags\match("\\pos%b()") and not tags\match("\\move%b()")
                         shape = detect\match("m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*")
                         if shape
-                            shape = zf.poly\org_points(shape, l.styleref.align)
+                            shape = zf.shape(shape)\org_points(l.styleref.align)
                             shape_split = switch config.spm
-                                when "Full"        then zf.shape(shape)\redraw(elements.tol).code
-                                when "Line Only"   then zf.shape(shape)\redraw(elements.tol, "line").code
-                                when "Bezier Only" then zf.shape(shape)\redraw(elements.tol, "bezier").code
+                                when "Full"        then shape\split(elements.tol)\build!
+                                when "Line Only"   then shape\split(elements.tol, "line")\build!
+                                when "Bezier Only" then shape\split(elements.tol, "bezier")\build!
                             __tags = zf.tags\clean("{#{tags}}")
                             l.text = "#{__tags}#{shape_split}"
                         else
@@ -254,7 +249,7 @@ main = (subs, sel) ->
                         tags ..= "\\pos(#{px},#{py})" unless tags\match("\\pos%b()") and not tags\match("\\move%b()")
                         shape = detect\match("m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*")
                         if shape
-                            shape_move = zf.poly\displace(shape, elements.px, elements.py)
+                            shape_move = zf.shape(shape)\displace(elements.px, elements.py)\build!
                             __tags = zf.tags\clean("{#{tags}}")
                             l.text = "#{__tags}#{shape_move}"
                         else
@@ -264,7 +259,7 @@ main = (subs, sel) ->
                         tags ..= "\\pos(#{px},#{py})" unless tags\match("\\pos%b()") and not tags\match("\\move%b()")
                         shape = detect\match("m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*")
                         if shape
-                            shape_round = zf.poly\round(shape, elements.tol)
+                            shape_round = zf.shape(shape)\build(nil, elements.tol)
                             __tags = zf.tags\clean("{#{tags}}")
                             l.text = "#{__tags}#{shape_round}"
                         else
@@ -275,7 +270,7 @@ main = (subs, sel) ->
                         shape = detect\match("m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*") or error("shape expected")
                         clip = tags\match("\\i?clip%b()") or error("clip expected")
                         tags = tags\gsub("\\i?clip%b()", "")
-                        shape_clip = zf.poly\clip(zf.poly\org_points(shape, l.styleref.align), zf.util\clip_to_draw(clip), px, py, clip\match "iclip")
+                        shape_clip = zf.poly\clip(zf.shape(shape)\org_points(l.styleref.align)\build!, zf.util\clip_to_draw(clip), px, py, clip\match "iclip")
                         __tags = zf.tags\clean("{#{tags}}")
                         l.text = "#{__tags}#{shape_clip}" if shape_clip != ""
                     when macros_list[13]
@@ -291,11 +286,11 @@ main = (subs, sel) ->
                         else
                             error("text expected")
                     when macros_list[14]
-                        tags = zf.tags(l.text)\remove("shape")
+                        tags = zf.tags(l.text)\remove("text_shape")
                         tags ..= "\\pos(#{px},#{py})" unless tags\match("\\pos%b()") and not tags\match("\\move%b()")
                         text = l.text\gsub("%b{}", "")\gsub("\\h", " ")
                         if text != " " or text != text\match("m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*")
-                            text_shape = zf.poly\unclip(zf.text\to_clip(l, text), l.styleref.align)
+                            text_shape = zf.shape(zf.text\to_clip(l, text))\unclip(l.styleref.align)\build!
                             __tags = zf.tags\clean("{#{tags}}")
                             l.text = "#{__tags}#{text_shape}"
                         else

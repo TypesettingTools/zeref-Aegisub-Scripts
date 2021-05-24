@@ -1,7 +1,7 @@
 export script_name        = "Interpolate Master"
 export script_description = "Does a linear interpolation between values of the first and last selected line"
 export script_author      = "Zeref"
-export script_version     = "1.0.4"
+export script_version     = "0.0.0"
 -- LIB
 zf = require "ZF.utils"
 
