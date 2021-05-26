@@ -1045,27 +1045,10 @@ class SHAPER
                 shape[i] = {}
                 for j = 1, #@points[i]
                     shape[i][j] = ""
-                    local p0, p1, p2, x1, y1, x2, y2, x3, y3
-                    if (@points[i][j].typer != "b")
-                        p0, p1, p2 = @points[i][j], @points[i][j + 1], @points[i][j - 1]
-                        -- Remove duplicate points
-                        if p1 and (floor(p0[1]) == floor(p1[1])) and (floor(p0[2]) == floor(p1[2]))
-                            continue
-                        elseif p2 and p2.typer == "b" and (floor(p0[1]) == floor(p2[#p2 - 1])) and (floor(p0[2]) == floor(p2[#p2]))
-                            continue
-                        x1, y1 = MATH\round(p0[1], dec), MATH\round(p0[2], dec)
-                        shape[i][j] ..= "#{p0.typer} #{x1} #{y1} "
-                    else
-                        p0, x1, y1, x2, y2, x3, y3 = @points[i][j]
-                        if #p0 > 6
-                            x1, y1 = MATH\round(p0[3], dec), MATH\round(p0[4], dec)
-                            x2, y2 = MATH\round(p0[5], dec), MATH\round(p0[6], dec)
-                            x3, y3 = MATH\round(p0[7], dec), MATH\round(p0[8], dec)
-                        else
-                            x1, y1 = MATH\round(p0[1], dec), MATH\round(p0[2], dec)
-                            x2, y2 = MATH\round(p0[3], dec), MATH\round(p0[4], dec)
-                            x3, y3 = MATH\round(p0[5], dec), MATH\round(p0[6], dec)
-                        shape[i][j] ..= "b #{x1} #{y1} #{x2} #{y2} #{x3} #{y3} "
+                    for k = 1, #@points[i][j], 2
+                        x, y = MATH\round(@points[i][j][k], dec), MATH\round(@points[i][j][k + 1], dec)
+                        shape[i][j] ..= "#{x} #{y} "
+                    shape[i][j] = "#{@points[i][j].typer} #{shape[i][j]}"
                 shape[i] = table.concat(shape[i])
                 if (shape[i]\find("l") == 1)
                     shape[i] = shape[i]\gsub("l", "m", 1)
@@ -1201,7 +1184,7 @@ class POLY
 
 class TEXT
 
-    to_shape: (line, text = line.text_stripped, raw) => -- converts your text into shape
+    to_shape: (line, text = line.text_stripped) => -- converts your text into shape
         headtail = (s, div) ->
             a, b, head, tail = s\find("(.-)#{div}(.*)")
             if a then head, tail else s, ""
