@@ -1045,11 +1045,13 @@ class SHAPER
                 shape[i] = {}
                 for j = 1, #@points[i]
                     shape[i][j] = ""
+                    if @points[i][j - 1] and (floor(@points[i][j][1]) == floor(@points[i][j - 1][1])) and (floor(@points[i][j][2]) == floor(@points[i][j - 1][2])) -- fix duplicate
+                        continue
                     for k = 1, #@points[i][j], 2
                         x, y = MATH\round(@points[i][j][k], dec), MATH\round(@points[i][j][k + 1], dec)
                         shape[i][j] ..= "#{x} #{y} "
                     shape[i][j] = "#{@points[i][j].typer} #{shape[i][j]}"
-                shape[i] = table.concat(shape[i])
+                shape[i] = table.concat(shape[i] or {})
                 if (shape[i]\find("l") == 1)
                     shape[i] = shape[i]\gsub("l", "m", 1)
                 elseif (shape[i]\find("b") == 1)
