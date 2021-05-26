@@ -642,7 +642,7 @@ class SHAPER
                     if (@points[i][j].typer != "m")
                         table.insert(@points[i][j], 1, @points[i][j - 1][#@points[i][j - 1] - 0])
                         table.insert(@points[i][j], 1, @points[i][j - 1][#@points[i][j - 1] - 1])
-            table.remove(@points[i], 1)
+            table.remove(@points[i], 1) if (seg != "line")
             if (@points[i][#@points[i]].typer == "l") and (@points[i][1][1] == @points[i][#@points[i]][1]) and (@points[i][1][2] == @points[i][#@points[i]][2])
                 table.remove(@points[i])
         for i = 1, #@points
@@ -655,6 +655,7 @@ class SHAPER
                             len = bz\len!
                             bz = bz\create(not len_t and (len / size) or len_t)
                             for k = 1, #bz
+                                continue if (bz[k][1] != bz[k][1]) -- skip nan
                                 index[i][#index[i] + 1] = bz[k]
                         else
                             index[i][#index[i] + 1] = @points[i][j]
@@ -665,6 +666,7 @@ class SHAPER
                             len = bz\len!
                             bz = bz\create(not len_t and (len / size) or len_t)
                             for k = 1, #bz
+                                continue if (bz[k][1] != bz[k][1]) -- skip nan
                                 index[i][#index[i] + 1] = bz[k]
                         else
                             index[i][#index[i] + 1] = @points[i][j]
@@ -675,6 +677,7 @@ class SHAPER
                             len = bz\len!
                             bz = bz\create(not len_t and (len / size) or len_t)
                             for k = 1, #bz
+                                continue if (bz[k][1] != bz[k][1]) -- skip nan
                                 index[i][#index[i] + 1] = bz[k]
                         else
                             index[i][#index[i] + 1] = @points[i][j]
@@ -1522,11 +1525,12 @@ class TAGS
         @tags
 
 return {
-    math:  MATH
-    table: TABLE
-    poly:  POLY
-    shape: SHAPER
-    text:  TEXT
-    util:  SUPPORT
-    tags:  TAGS
+    math:   MATH
+    table:  TABLE
+    poly:   POLY
+    shape:  SHAPER
+    bezier: BEZIER
+    text:   TEXT
+    util:   SUPPORT
+    tags:   TAGS
 }
