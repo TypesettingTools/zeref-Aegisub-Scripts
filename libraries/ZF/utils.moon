@@ -30,7 +30,8 @@ class TABLE
 
     push: (t, ...) => -- adds one or more elements to the end of an table
         n = select("#", ...)
-        t = [select(i, ...) for i = 1, n]
+        for i = 1, n
+            t[#t + 1] = select(i, ...)
         return ...
 
     slice: (t, f, l, s) => -- returns a copy of part of an array from a subarray created between the start and end positions
@@ -383,64 +384,51 @@ class l2b
         @fitCurve(d, #d + 1, ____error)
         return bezier_segments
 
-    solution: (shape, dist = math.pi, ____error) => -- by Itachi --> https://github.com/KaraEffect0r/Kara_Effector
+    solution: (shape, dist = 3, ____error) =>
         shape = (type(shape) == "table" and SHAPER(shape)\build(true) or shape)
-        dis__one = (shape, dist) ->
-            shapes = [s for s in shape\gmatch "m%s+%-?%d[%.%-%d l]*"]
-            shape_simple = (shape) ->
-                distance = (P1, P2) ->
-                    return ((P1.x - P2.x) ^ 2 + (P1.y - P2.y) ^ 2) ^ 0.5
-                inpack = {}
-                points = [{x: tonumber(x), y: tonumber(y)} for x, y in shape\gmatch "(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)"]
-                points[0] = points[2]
-                state = distance(points[1], points[2]) <= dist
-                for i = 1, #points
-                    if distance(points[i], points[i - 1]) <= dist == state
-                        inpack[#inpack + 1] = {bezier: state and "ok" or nil}
-                        state = not state
-                    inpack[#inpack][#inpack[#inpack] + 1] = points[i]
-                for i = 1, #inpack - 1
-                    unless inpack[i].bezier
-                        table.insert(inpack[i + 1], 1, inpack[i][#inpack[i]])
-                        inpack[i][#inpack[i]] = nil
-                return inpack
-            for i = 1, #shapes
-                shapes[i] = shape_simple(shapes[i])
-            return shapes
-
-        make_shape = (shape, dist) ->
-            sol = (points, bl = "bezier") ->
+        shapes = [m for m in shape\gmatch "m [^m]*"]
+        get_dist = (shape) ->
+            distance = (p0, p1) -> sqrt((p0.x - p1.x) ^ 2 + (p0.y - p1.y) ^ 2)
+            points = [{x: tonumber(x), y: tonumber(y)} for x, y in shape\gmatch "(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)"]
+            points[0] = points[2]
+            state = distance(points[1], points[2]) <= dist
+            inpack = {}
+            for i = 1, #points
+                if distance(points[i], points[i - 1]) <= dist == state
+                    inpack[#inpack + 1] = {bezier: state and "ok" or nil}
+                    state = not state
+                inpack[#inpack][#inpack[#inpack] + 1] = points[i]
+            for i = 1, #inpack - 1
+                unless inpack[i].bezier
+                    table.insert(inpack[i + 1], 1, inpack[i][#inpack[i]])
+                    inpack[i][#inpack[i]] = nil
+            return inpack
+        maker = (shapes, dist) ->
+            shaper = (pts, ty) ->
                 shape = ""
-                if bl == "line"
-                    shape = "l "
-                    for k = 1, #points
-                        shape ..= "#{points[k].x} #{points[k].y} l "
+                if ty
+                    for i = 1, #pts
+                        shape ..= "l #{pts[i].x} #{pts[i].y} "
                     return shape
                 else
-                    for k = 1, #points
-                        x1 = MATH\round(points[k][1].x)
-                        y1 = MATH\round(points[k][1].y)
-                        x2 = MATH\round(points[k][2].x)
-                        y2 = MATH\round(points[k][2].y)
-                        x3 = MATH\round(points[k][3].x)
-                        y3 = MATH\round(points[k][3].y)
+                    x0, y0 = MATH\round(pts[1][0].x), MATH\round(pts[1][0].y)
+                    for k = 1, #pts
+                        x1, y1 = MATH\round(pts[k][1].x), MATH\round(pts[k][1].y)
+                        x2, y2 = MATH\round(pts[k][2].x), MATH\round(pts[k][2].y)
+                        x3, y3 = MATH\round(pts[k][3].x), MATH\round(pts[k][3].y)
                         shape ..= "b #{x1} #{y1} #{x2} #{y2} #{x3} #{y3} "
-                    x0 = MATH\round(points[1][0].x)
-                    y0 = MATH\round(points[1][0].y)
-                    return "#{x0} #{y0} #{shape}"
-            points = dis__one(shape, dist)
-            for k = 1, #points
-                for j = 1, #points[k]
-                    if points[k][j].bezier
-                        points[k][j] = @polyline2bezier(points[k][j], ____error)
-                        points[k][j] = sol(points[k][j])
+                    return "l #{x0} #{y0} #{shape}"
+            for k = 1, #shapes
+                shapes[k] = get_dist(shapes[k])
+                for j = 1, #shapes[k]
+                    if shapes[k][j].bezier
+                        shapes[k][j] = shaper(@polyline2bezier(shapes[k][j], ____error))
                     else
-                        points[k][j] = #points[k][j] > 0 and sol(points[k][j], "line") or "l "
-                points[k] = "m " .. table.concat(points[k])
-                points[k] = points[k]\gsub("m l", "m")
-                points[k] = points[k]\sub(-2, -2) == "l" and points[k]\sub(1, -3) or points[k]
-            return table.concat(points)
-        return make_shape(shape, dist)
+                        shapes[k][j] = shaper(shapes[k][j], true)
+                shapes[k] = table.concat(shapes[k])
+                shapes[k] = shapes[k]\gsub("l", "m", 1)
+            return table.concat(shapes)
+        return maker(shapes, dist)
 
 class l2l
 
@@ -652,8 +640,7 @@ class SHAPER
                     for j = 1, #@points[i]
                         if (@points[i][j].typer == "l")
                             bz = BEZIER(@points[i][j])
-                            len = bz\len!
-                            bz = bz\create(not len_t and (len / size) or len_t)
+                            bz = bz\create(not len_t and (bz\len! / size) or len_t)
                             for k = 1, #bz
                                 continue if (bz[k][1] != bz[k][1]) -- skip nan
                                 index[i][#index[i] + 1] = bz[k]
@@ -663,8 +650,7 @@ class SHAPER
                     for j = 1, #@points[i]
                         if (@points[i][j].typer == "b")
                             bz = BEZIER(@points[i][j])
-                            len = bz\len!
-                            bz = bz\create(not len_t and (len / size) or len_t)
+                            bz = bz\create(not len_t and (bz\len! / size) or len_t)
                             for k = 1, #bz
                                 continue if (bz[k][1] != bz[k][1]) -- skip nan
                                 index[i][#index[i] + 1] = bz[k]
@@ -674,8 +660,7 @@ class SHAPER
                     for j = 1, #@points[i]
                         if (@points[i][j].typer != "m")
                             bz = BEZIER(@points[i][j])
-                            len = bz\len!
-                            bz = bz\create(not len_t and (len / size) or len_t)
+                            bz = bz\create(not len_t and (bz\len! / size) or len_t)
                             for k = 1, #bz
                                 continue if (bz[k][1] != bz[k][1]) -- skip nan
                                 index[i][#index[i] + 1] = bz[k]
@@ -1045,8 +1030,6 @@ class SHAPER
                 shape[i] = {}
                 for j = 1, #@points[i]
                     shape[i][j] = ""
-                    if @points[i][j - 1] and (floor(@points[i][j][1]) == floor(@points[i][j - 1][1])) and (floor(@points[i][j][2]) == floor(@points[i][j - 1][2])) -- fix duplicate
-                        continue
                     for k = 1, #@points[i][j], 2
                         x, y = MATH\round(@points[i][j][k], dec), MATH\round(@points[i][j][k + 1], dec)
                         shape[i][j] ..= "#{x} #{y} "
@@ -1243,11 +1226,11 @@ class SUPPORT
     interpolation: (pct = 0.5, tp = "number", ...) =>
         values = (type(...) == "table" and ... or {...})
         --
-        ipol_function = util.interpolate if (tp == "number")
-        ipol_function = util.interpolate_color if (tp == "color")
-        ipol_function = util.interpolate_alpha if (tp == "alpha")
+        ipol_function = interpolate if (tp == "number")
+        ipol_function = interpolate_color if (tp == "color")
+        ipol_function = interpolate_alpha if (tp == "alpha")
         --
-        pct = util.clamp(pct, 0, 1) * (#values - 1)
+        pct = clamp(pct, 0, 1) * (#values - 1)
         valor_i = values[floor(pct) + 1]
         valor_f = values[floor(pct) + 2] or values[floor(pct) + 1]
         return ipol_function(pct - floor(pct), valor_i, valor_f)
@@ -1345,7 +1328,10 @@ class SUPPORT
                 px, py = line.text\match "\\pos%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
                 coords.pos.x = tonumber px
                 coords.pos.y = tonumber py
-            if line.text\match "\\move%(%s*%-?%d[%.%d]*%s*,%s*%-?%d[%.%d]*%s*,%s*%-?%d[%.%d]*%s*,%s*%-?%d[%.%d]*%s*"
+                if ogp
+                    coords.org.x = tonumber px
+                    coords.org.y = tonumber py
+            if line.text\match "\\move%b()"
                 x1, y1, x2, y2, t1, t2 = line.text\match "\\move%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*"
                 coords.move.x1 = tonumber x1
                 coords.move.y1 = tonumber y1
@@ -1357,10 +1343,6 @@ class SUPPORT
                 ox, oy = line.text\match "\\org%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
                 coords.org.x = tonumber ox
                 coords.org.y = tonumber oy
-        if ogp
-            unless line.text\match "\\org%b()"
-                coords.org.x = coords.pos.x
-                coords.org.y = coords.pos.y
         return coords
 
     html_color: (color, mode = "to_rgb") => -- transform an html color to hexadecimal and the other way around
@@ -1371,7 +1353,7 @@ class SUPPORT
                     c = "&H#{r}#{g}#{b}&"
             when "to_html"
                 rgb_color = util.color_from_style(rgb_color)
-                rgb_color = rgb_color\gsub "&[hH](%x%x)(%x%x)(%x%x)&", (r, g, b) ->
+                rgb_color = rgb_color\gsub "&?[hH](%x%x)(%x%x)(%x%x)&?", (r, g, b) ->
                     c = "##{b}#{g}#{r}"
         return c
 
@@ -1455,11 +1437,11 @@ class TAGS
             fn: "\\fn%s*[^\\}]*", fs: "\\fs%s*%d[%.%d]*", fsp: "\\fsp%s*%-?%d[%.%d]*"
             fscx: "\\fscx%s*%d[%.%d]*", fscy: "\\fscy%s*%d[%.%d]*", b: "\\b%s*%d"
             i: "\\i%s*%d", s: "\\s%s*%d", u: "\\u%s*%d"
-            p: "\\p%d", an: "\\an%d", fr: "\\fr%s*[z]?%-?%d+[%.%d]*"
+            p: "\\p%d", an: "\\an%d", fr: "\\frz?%s*%-?%d+[%.%d]*"
             frx: "\\frx%s*%-?%d+[%.%d]*", fry: "\\fry%s*%-?%d+[%.%d]*", fax: "\\fax%s*%-?%d+[%.%d]*"
             fay: "\\fay%s*%-?%d+[%.%d]*", pos: "\\pos%b()", org: "\\org%b()"
-            _1c: "\\1?c%s*&H%x+&", _2c: "\\2c%s*&H%x+&", _3c: "\\3c%s*&H%x+&"
-            _4c: "\\4c%s*&H%x+&", bord: "\\[xy]?bord%s*%d[%.%d]*", clip: "\\i?clip%b()"
+            _1c: "\\1?c%s*&?[Hh]%x+&?", _2c: "\\2c%s*&?[Hh]%x+&?", _3c: "\\3c%s*&?[Hh]%x+&?"
+            _4c: "\\4c%s*&?[Hh]%x+&?", bord: "\\[xy]?bord%s*%d[%.%d]*", clip: "\\i?clip%b()"
             shad: "\\[xy]?shad%s*%-?%d[%.%d]*", move:"\\move%b()"
         }
         switch modes
