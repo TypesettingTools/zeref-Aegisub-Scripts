@@ -9,11 +9,7 @@ rand, ceil, floor, atan2, format = math.random, math.ceil, math.floor, math.atan
 require "karaskel"
 ffi = require "ffi"
 Yutils = require "Yutils" -- https://github.com/Youka/Yutils
-
-if (ffi.os != "Windows")
-    error("This is not compatible with your operating system.")
-else
-    Poly = require "ZF.clipper.clipper"
+Poly = require "ZF.clipper.clipper"
 
 class MATH
 
@@ -46,7 +42,7 @@ class TABLE
             count += 1 for k, v in pairs t
         return count
 
-    view: (Table, table_name, indent) => -- get a table as string
+    view: (Table, table_name = "table_unnamed", indent = "") => -- get a table as string
         cart, autoref = "", ""
         isemptytable = (Table) -> next(Table) == nil
         basicSerialize = (o) ->
@@ -58,10 +54,7 @@ class TABLE
             elseif (type(o) == "number") or (type(o) == "boolean")
                 return so
             format "%q", so
-        addtocart = (value, table_name, indent, saved, field) ->
-            indent or= ""
-            saved or= {}
-            field or= table_name
+        addtocart = (value, table_name, indent, saved = {}, field = table_name) ->
             cart ..= indent .. field
             if type(value) != "table"
                 cart ..= " = " .. basicSerialize(value) .. ";\n"
@@ -81,7 +74,6 @@ class TABLE
                             field = "[ #{k} ]"
                             addtocart v, fname, indent .. "	", saved, field
                         cart = "#{cart}#{indent}};\n"
-        table_name or= "table_unnamed"
         return "#{table_name} = #{basicSerialize(Table)}" if type(Table) != "table"
         addtocart Table, table_name, indent
         return cart .. autoref

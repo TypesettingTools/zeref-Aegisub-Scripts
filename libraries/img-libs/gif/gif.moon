@@ -8,8 +8,8 @@ if (ffi.os == "Windows")
         C = requireffi("img-libs.gif.bin.x64")
     else
         C = requireffi("img-libs.gif.bin.x86")
-else
-    error("This is not compatible with your operating system.")
+elseif (ffi.os == "Linux")
+    C = requireffi("img-libs.gif.bin.libgif")
 
 ffi.cdef [[
     typedef unsigned char GifByteType;

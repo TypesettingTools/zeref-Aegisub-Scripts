@@ -1,11 +1,16 @@
+local ffi, requireffi, C_6
+
 ffi = require("ffi")
 requireffi = require("requireffi.requireffi")
 
-C_6 = switch ffi.arch
-    when "x86"
-        requireffi("ZF.clipper.bin.x86")
-    when "x64"
-        requireffi("ZF.clipper.bin.x64")
+if ffi.os == "Windows"
+    C_6 = switch ffi.arch
+        when "x86"
+            requireffi("ZF.clipper.bin.x86")
+        when "x64"
+            requireffi("ZF.clipper.bin.x64")
+elseif ffi.os == "Linux"
+    C_6 = requireffi("ZF.clipper.bin.libclipper")
 
 ffi.cdef [[
     typedef struct __zf_int_point { int64_t x, y; } zf_int_point;

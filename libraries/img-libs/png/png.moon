@@ -9,8 +9,8 @@ if (ffi.os == "Windows")
         C = requireffi("img-libs.png.bin.x64")
     else
         C = requireffi("img-libs.png.bin.x86")
-else
-    error("This is not compatible with your operating system.")
+elseif (ffi.os == "Linux")
+    C = requireffi("img-libs.png.bin.libpng")
 
 ffi.cdef [[
     typedef enum LodePNGColorType LodePNGColorType;
