@@ -1,7 +1,7 @@
 export script_name        = "Stroke Panel"
 export script_description = "A stroke panel"
 export script_author      = "Zeref"
-export script_version     = "0.0.0"
+export script_version     = "0.0.1"
 -- LIB
 zf = require "ZF.utils"
 
@@ -17,129 +17,83 @@ hints = {
     only_offset: "Return only the offseting text."
 }
 
-INTERFACE = (subs, sel) ->
-    local gui
+interface = (subs, sel) ->
+    local GUI
     for _, i in ipairs(sel)
         l = subs[i]
         meta, styles = zf.util\tags2styles(subs, l)
         karaskel.preproc_line(subs, meta, styles, l)
-        gui = {
+        GUI = {
             {class: "label", label: "Stroke Corner:", x: 0, y: 0},
             {class: "label", label: "Align Stroke:", x: 0, y: 3},
-            {class: "label", label: "Stroke Weight:", x: 8, y: 0},
-            {class: "label", label: "Miter Limit:", x: 8, y: 3},
-            {class: "label", label: "Arc Tolerance:", x: 8, y: 6},
-            {class: "label", label: "Primary Color:                ", x: 0, y: 9},
-            {class: "label", label: "Stroke Color:                     ", x: 8, y: 9},
-            {class: "dropdown", name: "crn", items: stroke.corner, x: 0, y: 1, width: 2, height: 2, value: stroke.corner[2]},
-            {class: "dropdown", name: "alg", items: stroke.align, x: 0, y: 4, width: 2, height: 2, value: stroke.align[3]},
-            {class: "floatedit", name: "ssz", x: 8, y: 1, width: 2, hint: hints.stroke_size, height: 2, value: l.styleref.outline},
-            {class: "floatedit", name: "mtl", x: 8, y: 4, width: 2, hint: hints.miterlimit, height: 2, value: 2},
-            {class: "floatedit", name: "atc", x: 8, y: 7, hint: hints.arctolerance, width: 2, height: 2, min: 0, value: 0.25},
+            {class: "label", label: "Stroke Weight:", x: 1, y: 0},
+            {class: "label", label: "Miter Limit:", x: 1, y: 3},
+            {class: "label", label: "Arc Tolerance:", x: 1, y: 6},
+            {class: "label", label: "Primary Color:", x: 0, y: 9},
+            {class: "label", label: "Stroke Color:", x: 1, y: 9},
+            {class: "dropdown", name: "crn", items: stroke.corner, x: 0, y: 1, height: 2, value: stroke.corner[2]},
+            {class: "dropdown", name: "alg", items: stroke.align, x: 0, y: 4, height: 2, value: stroke.align[3]},
+            {class: "floatedit", name: "ssz", x: 1, y: 1, hint: hints.stroke_size, height: 2, value: l.styleref.outline},
+            {class: "floatedit", name: "mtl", x: 1, y: 4, hint: hints.miterlimit, height: 2, value: 2},
+            {class: "floatedit", name: "atc", x: 1, y: 7, hint: hints.arctolerance, height: 2, min: 0, value: 0.25},
             {class: "coloralpha", name: "color1", x: 0, y: 10, width: 1, height: 2, value: l.styleref.color1},
-            {class: "coloralpha", name: "color3", x: 8, y: 10, width: 1, height: 2, value: l.styleref.color3},
-            {class: "checkbox", label: "Remove first line?", name: "act", x: 0, y: 12, value: true},
-            {class: "checkbox", label: "Only Offset?", name: "olf", x: 8, y: 12, hint: hints.only_offset, value: false}
+            {class: "coloralpha", name: "color3", x: 1, y: 10, width: 1, height: 2, value: l.styleref.color3},
+            {class: "checkbox", label: "Remove selected layers?", name: "act", x: 0, y: 12, value: true},
+            {class: "checkbox", label: "Generate only offset?\t\t", name: "olf", x: 1, y: 12, hint: hints.only_offset, value: false}
         }
-    return gui
+    return GUI
 
-SAVECONFIG = (subs, sel, gui, elements) ->
-    ngui = table.copy(gui)
-    vals_write = "STROKE CONFIG - VERSION #{script_version}\n\n"
-    ngui[8].value, ngui[9].value = elements.crn, elements.alg
-    ngui[11].value, ngui[12].value = elements.mtl, elements.atc
-    ngui[15].value, ngui[16].value = elements.act, elements.olf
-    for k, v in ipairs ngui
-        if v.name == "crn" or v.name == "alg" or v.name == "mtl" or v.name == "atc" or v.name == "act" or v.name == "olf"
-            vals_write ..= "{#{v.name} = #{v.value}}\n"
-    dir = aegisub.decode_path("?user")
-    unless zf.util\file_exist("#{dir}\\zeref-cfg", true)
-        os.execute("cd #{dir}")
-        os.execute("mkdir zeref-cfg") -- create folder zeref-cfg
-    cfg_save = "#{dir}\\zeref-cfg\\stroke_config.cfg"
-    file = io.open cfg_save, "w"
-    file\write vals_write
-    file\close!
+main = (subs, sel) ->
+    inter, j = zf.config\load(interface(subs, sel), script_name), 0
+    local buttons, elements
+    while true
+        buttons, elements = aegisub.dialog.display(inter, {"Ok", "Save", "Reset", "Cancel"}, {close: "Cancel"})
+        inter = switch buttons
+            when "Save"
+                zf.config\save(inter, elements, script_name, script_version)
+                zf.config\load(inter, script_name)
+            when "Reset"
+                interface(subs, sel)
+        break if buttons == "Ok" or buttons == "Cancel"
+    if buttons == "Ok"
+        aegisub.progress.task("Generating Stroke...")
+        for _, i in ipairs sel
+            aegisub.progress.set((i - 1) / #sel * 100)
+            l = subs[i + j]
+            l.comment = true
+            subs[i + j] = l
+            if elements.act == true
+                subs.delete(i + j)
+                j -= 1
+            --
+            meta, styles = zf.util\tags2styles(subs, l)
+            karaskel.preproc_line(subs, meta, styles, l)
+            coords = zf.util\find_coords(l, meta)
+            --
+            text = zf.tags\remove("full", l.text)
+            tags = zf.tags(l.text)\remove("out")
+            tags ..= "\\pos(#{coords.pos.x},#{coords.pos.y})" unless tags\match("\\pos%b()") and not tags\match("\\move%b()")
+            --
+            shape = text\match("m%s+%-?%d[%.%-%d mlb]*")
+            shape or= zf.shape(zf.text\to_clip(l, text))\unclip(l.styleref.align)\build!
+            shape = zf.shape(shape)\org_points(l.styleref.align)\build!
+            --
+            l.comment, out_shape, out_offset = false, "", ""
+            if elements.olf
+                out_offset = zf.poly\simplify(zf.poly\offset(shape, elements.ssz, elements.crn\lower!, nil, elements.mtl, elements.atc, true), true, 3)
+                __tags = zf.tags\clean("{#{tags}\\c#{zf.util\html_color(elements.color1)}}")
+                l.text = "#{__tags}#{out_offset}"
+                subs.insert(i + j + 1, l)
+                j += 1
+            else
+                out_shape, out_offset = zf.poly\to_outline(shape, elements.ssz, elements.crn, elements.alg, elements.mtl, elements.atc)
+                colors, shapes = {elements.color3, elements.color1}, {out_shape, out_offset}
+                for k = 1, 2
+                    __tags = zf.tags\clean("{#{tags}\\c#{zf.util\html_color(colors[k])}}")
+                    l.text = "#{__tags}#{shapes[k]}"
+                    subs.insert(i + j + 1, l)
+                    j += 1
+        aegisub.progress.set(100)
     return
 
-READCONFIG = (filename) ->
-    SEPLINES = (val) ->
-        sep_vals = {n: {}, v: {}}
-        for k = 1, #val
-            sep_vals.n[k] = val[k]\gsub "(.+) %= .+", (vls) ->
-                vls\gsub "%s+", ""
-            rec_names = sep_vals.n[k]
-            sep_vals.v[rec_names] = val[k]\gsub ".+ %= (.+)", (vls) ->
-                vls\gsub "%s+", ""
-        return sep_vals
-    if filename
-        arq = io.open filename, "r"
-        if arq != nil
-            read = arq\read "*a"
-            io.close arq
-            lines = [k for k in read\gmatch "(%{[^\n]+%})"]
-            for j = 1, #lines do lines[j] = lines[j]\sub(2, -2)
-            return SEPLINES(lines), true
-    return _, false
-
-LOADCONFIG = (gui) ->
-    load_config = aegisub.decode_path("?user") .. "\\zeref-cfg\\stroke_config.cfg"
-    read_config, rdn = READCONFIG load_config
-    new_gui = table.copy gui
-    if rdn != false
-        new_gui[8].value = read_config.v.crn
-        new_gui[9].value = read_config.v.alg
-        new_gui[11].value = tonumber read_config.v.mtl
-        new_gui[12].value = tonumber read_config.v.atc
-        new_gui[15].value = (read_config.v.act == "true" and true or false)
-        new_gui[16].value = (read_config.v.olf == "true" and true or false)
-    return new_gui
-
-stroke_panel = (subs, sel) ->
-    inter, add = LOADCONFIG(INTERFACE(subs, sel)), 0
-    local bx, ck
-    while true
-        bx, ck = aegisub.dialog.display(inter, {"Run", "Run - Save", "Reset", "Cancel"}, {close: "Cancel"})
-        inter = INTERFACE(subs, sel) if bx == "Reset"
-        break if (bx == "Run" or bx == "Run - Save" or bx == "Cancel")
-    aegisub.progress.task("Generating Stroke...")
-    switch bx
-        when "Run", "Run - Save"
-            for _, i in ipairs sel
-                aegisub.progress.set((i - 1) / #sel * 100)
-                l = subs[i + add]
-                l.comment = true
-                subs[i + add] = l
-                if ck.act == true
-                    subs.delete(i + add)
-                    add -= 1
-                meta, styles = zf.util\tags2styles(subs, l)
-                karaskel.preproc_line(subs, meta, styles, l)
-                coords = zf.util\find_coords(l, meta)
-                tags = zf.tags(l.text)\remove("out")
-                tags ..= "\\pos(#{coords.pos.x},#{coords.pos.y})" unless tags\match("\\pos%b()") and not tags\match("\\move%b()")
-                detect = zf.tags\remove("full", l.text)
-                shape = detect\match("m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*")
-                shape or= zf.shape(zf.text\to_clip(l, text))\unclip(l.styleref.align)\build!
-                out_shape, out_offset = "", ""
-                if ck.olf
-                    out_shape = zf.poly\offset(zf.shape(shape)\org_points(l.styleref.align)\build!, ck.ssz, ck.crn\lower!, nil, ck.mtl, ck.atc)
-                    l.comment = false
-                    __tags = zf.tags\clean("{#{tags}\\c#{zf.util\html_color(ck.color1)}}")
-                    l.text = "#{__tags}#{out_shape}"
-                    subs.insert(i + add + 1, l)
-                    add += 1
-                else
-                    out_shape, out_offset = zf.poly\to_outline(zf.shape(shape)\org_points(l.styleref.align)\build!, ck.ssz, ck.crn, ck.alg, ck.mtl, ck.atc)
-                    colors, shapes = {ck.color3, ck.color1}, {out_shape, out_offset}
-                    for k = 1, 2
-                        l.comment = false
-                        __tags = zf.tags\clean("{#{tags}\\c#{zf.util\html_color(colors[k])}}")
-                        l.text = "#{__tags}#{shapes[k]}"
-                        subs.insert(i + add + 1, l)
-                        add += 1
-            SAVECONFIG(subs, sel, inter, ck) if bx == "Run - Save"
-            aegisub.progress.set(100)
-
-aegisub.register_macro "Stroke Panel", script_description, stroke_panel
-return
+aegisub.register_macro "Stroke Panel", script_description, main

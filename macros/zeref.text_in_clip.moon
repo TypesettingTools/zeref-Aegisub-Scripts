@@ -1,8 +1,9 @@
 export script_name        = "Text in Clip"
 export script_description = "Causes the characters in your text to go through the coordinates of your clip!"
 export script_author      = "Zeref"
-export script_version     = "0.0.0"
+export script_version     = "0.0.1"
 -- LIB
+Yutils = require "Yutils"
 zf = require "ZF.utils"
 
 BEZIER = (line, shape, char_x, char_y, mode, offset) ->
@@ -190,45 +191,57 @@ BEZIER = (line, shape, char_x, char_y, mode, offset) ->
     return "\\pos(#{zf.math\round(pos_Bezier[1], 3)},#{zf.math\round(pos_Bezier[2], 3)})\\frz#{bezier_angle}"
 
 text_char = (line) ->
-    c_char = [c for c in unicode.chars(line.text_stripped)]
+    c_char = [c for _, c in Yutils.utf8.chars(line.text_stripped)]
     char, char_nob, left = {}, {}, line.left
     char.n = #c_char
     for k = 1, char.n
         char[k] = {}
-        char[k].text_stripped = c_char[k]
+        char[k].text_stripped   = c_char[k]
         char_nob[#char_nob + 1] = char[k] if char[k].text_stripped != " "
-        char[k].width      = aegisub.text_extents line.styleref, c_char[k]
-        char[k].left       = left
-        char[k].center     = left + char[k].width / 2
-        char[k].right      = left + char[k].width
-        char[k].start_time = line.start_time
-        char[k].end_time   = line.end_time
-        char[k].duration   = char[k].end_time - char[k].start_time
-        left              += char[k].width
+        char[k].width           = aegisub.text_extents line.styleref, c_char[k]
+        char[k].left            = left
+        char[k].center          = left + char[k].width / 2
+        char[k].right           = left + char[k].width
+        char[k].start_time      = line.start_time
+        char[k].end_time        = line.end_time
+        char[k].duration        = char[k].end_time - char[k].start_time
+        left                   += char[k].width
     return char_nob
 
-list = {}
-list.modes = {"Center", "Left", "Right", "Around", "Animated - Start to End", "Animated - End to Start   "}
-list.hints = {modes: "Select a mode", offset: "Enter a offset value. \nIn cases of animation, \nthis will be the step."}
-
-INTERFACE = {
-    {class: "label", label: "                     :[Modes]:", x: 0, y: 0}
-    {class: "dropdown", name: "mds", items: list.modes, hint: list.hints.modes, x: 0, y: 1, width: 3, value: list.modes[1]}
-    {class: "label", label: "\n                    :[Offset]:", x: 0, y: 2}
-    {class: "intedit", name: "off", hint: list.hints.offset, x: 0, y: 3, width: 3, value: 0}
-    {class: "checkbox", name: "chk", label: "Remove first line?", x: 0, y: 4, value: true}
+list = {
+    modes: {"Center", "Left", "Right", "Around", "Animated - Start to End", "Animated - End to Start"}
+    hints: {modes: "Select a mode", offset: "Enter a offset value. \nIn cases of animation, \nthis will be the step."}
 }
 
-text_in_clip = (subs, sel) ->
-    add, mds = 0, 1
-    bx, ck = aegisub.dialog.display(INTERFACE, {"Run", "Cancel"}, {close: "Cancel"})
+interface = ->
+    {
+        {class: "label", label: "Modes:", x: 0, y: 0}
+        {class: "dropdown", name: "mds", items: list.modes, hint: list.hints.modes, x: 0, y: 1, value: list.modes[1]}
+        {class: "label", label: "\nOffset:", x: 0, y: 2}
+        {class: "intedit", name: "off", hint: list.hints.offset, x: 0, y: 3, value: 0}
+        {class: "checkbox", name: "chk", label: "Remove selected layers?", x: 0, y: 4, value: true}
+    }
+
+main = (subs, sel) ->
+    j, mds = 0, 1
+    inter = zf.config\load(interface!, script_name)
+    local buttons, elements
+    while true
+        buttons, elements = aegisub.dialog.display(inter, {"Ok", "Save", "Reset", "Cancel"}, {close: "Cancel"})
+        inter = switch buttons
+            when "Save"
+                zf.config\save(inter, elements, script_name, script_version)
+                zf.config\load(inter, script_name)
+            when "Reset"
+                interface!
+        break if buttons == "Ok" or buttons == "Cancel"
     msa, msb = aegisub.ms_from_frame(1), aegisub.ms_from_frame(101)
     frame_dur = msb and zf.math\round((msb - msa) / 100, 3) or 41.708
-    aegisub.progress.task("Generating...")
-    if bx == "Run"
+    if bx == "Ok"
+        aegisub.progress.task("Generating...")
         for _, i in ipairs(sel)
             aegisub.progress.set((i - 1) / #sel * 100)
-            l = subs[i + add]
+            l = subs[i + j]
             l.comment = true
             meta, styles = zf.util\tags2styles(subs, l)
             karaskel.preproc_line(subs, meta, styles, l)
@@ -236,13 +249,13 @@ text_in_clip = (subs, sel) ->
             shape = zf.util\clip_to_draw(l.text)
             tags = zf.tags(l.text)\find!
             error("clip expected") unless tags\match("\\clip%b()")
-            error("text expected") if zf.tags!\remove("full", l.text)\match("m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*")
+            error("text expected") if zf.tags!\remove("full", l.text)\match("m%s+%-?%d[%.%-%d mlb]*")
             tags = zf.tags!\remove("bezier_text", tags)
             line = table.copy(l)
-            subs[i + add] = l
+            subs[i + j] = l
             if ck.chk == true
-                subs.delete(i + add)
-                add -= 1
+                subs.delete(i + j)
+                j -= 1
             mds = switch ck.mds
                 when "Center" then 1
                 when "Left" then 2
@@ -268,8 +281,8 @@ text_in_clip = (subs, sel) ->
                         bez = BEZIER(line, shape, px, py, 4, (c - 1) / (#chars - 1))
                         __tags = zf.tags\clean("{#{bez .. tags}}")
                         line.text = "#{__tags}#{char.text_stripped}"
-                        subs.insert(i + add + 1, line)
-                        add += 1
+                        subs.insert(i + j + 1, line)
+                        j += 1
                     when "Animated - Start to End"
                         ck.off = 1 if ck.off <= 0
                         loop = zf.math\round(line.duration / (frame_dur * ck.off), 3)
@@ -279,8 +292,8 @@ text_in_clip = (subs, sel) ->
                             line.end_time = cs + cd * k / loop
                             __tags = zf.tags\clean("{#{bez .. tags}}")
                             line.text = "#{__tags}#{char.text_stripped}"
-                            subs.insert(i + add + 1, line)
-                            add += 1
+                            subs.insert(i + j + 1, line)
+                            j += 1
                     when "Animated - End to Start   "
                         ck.off = 1 if ck.off <= 0
                         loop = zf.math\round(line.duration / (frame_dur * ck.off), 3)
@@ -290,13 +303,14 @@ text_in_clip = (subs, sel) ->
                             line.end_time = cs + cd * k / loop
                             __tags = zf.tags\clean("{#{bez .. tags}}")
                             line.text = "#{__tags}#{char.text_stripped}"
-                            subs.insert(i + add + 1, line)
-                            add += 1
+                            subs.insert(i + j + 1, line)
+                            j += 1
                     else
                         __tags = zf.tags\clean("{#{bez .. tags}}")
                         line.text = "#{__tags}#{char.text_stripped}"
-                        subs.insert(i + add + 1, line)
-                        add += 1
+                        subs.insert(i + j + 1, line)
+                        j += 1
             aegisub.progress.set(100)
+    return
 
-aegisub.register_macro script_name, script_description, text_in_clip
+aegisub.register_macro script_name, script_description, main

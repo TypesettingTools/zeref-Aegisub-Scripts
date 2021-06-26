@@ -1,7 +1,7 @@
 export script_name        = "Interpolate Master"
 export script_description = "Does a linear interpolation between values of the first and last selected line"
 export script_author      = "Zeref"
-export script_version     = "0.0.0"
+export script_version     = "0.0.1"
 -- LIB
 zf = require "ZF.utils"
 
@@ -15,7 +15,7 @@ tags_full = {
 
 interface = ->
     gui = {}
-    tags_mask = [zf.table\slice(tags_full, k, k + 4) for k = 1, #tags_full, 5]
+    tags_mask = [zf.table(tags_full)\slice(k, k + 4) for k = 1, #tags_full, 5]
     for k = 1, #tags_mask
         for j = 1, #tags_mask[k]
             gui[#gui + 1] = {
@@ -28,57 +28,8 @@ interface = ->
             }
     gui[#gui + 1] = {class: "checkbox", label: "Ignore Text", name: "igt", x: 0, y: 6, value: false}
     gui[#gui + 1] = {class: "label", label: "::Accel::", x: 0, y: 7}
-    gui[#gui + 1] = {class: "floatedit", name: "acc", min: 0, x: 0, y: 8, value: 1}
+    gui[#gui + 1] = {class: "floatedit", name: "acc", hint: "Relative interpolation acceleration.", min: 0, x: 0, y: 8, value: 1}
     return gui
-
-SAVECONFIG = (gui, elements) ->
-    ngui = table.copy(gui)
-    vals_write = "INTERPOLATE MASTER - VERSION #{script_version}\n\n"
-    for k = 1, #tags_full
-        ngui[k].value = elements[tags_full[k]]
-    ngui[30].value = elements["igt"]
-    ngui[32].value = elements["acc"]
-    for k, v in ipairs ngui
-        vals_write ..= "{#{v.name} = #{v.value}}\n" if v.name
-    dir = aegisub.decode_path("?user")
-    unless zf.util\file_exist("#{dir}\\zeref-cfg", true)
-        os.execute("mkdir #{dir .. "\\zeref-cfg"}") -- create folder zeref-cfg
-    cfg_save = "#{dir}\\zeref-cfg\\interpolate_master.cfg"
-    file = io.open cfg_save, "w"
-    file\write vals_write
-    file\close!
-    return
-
-READCONFIG = (filename) ->
-    SEPLINES = (val) ->
-        sep_vals = {n: {}, v: {}}
-        for k = 1, #val
-            sep_vals.n[k] = val[k]\gsub "(.+) %= .+", (vls) ->
-                vls\gsub "%s+", ""
-            rec_names = sep_vals.n[k]
-            sep_vals.v[rec_names] = val[k]\gsub ".+ %= (.+)", (vls) ->
-                vls\gsub "%s+", ""
-        return sep_vals
-    if filename
-        arq = io.open filename, "r"
-        if arq != nil
-            read = arq\read "*a"
-            io.close arq
-            lines = [k for k in read\gmatch "(%{[^\n]+%})"]
-            for j = 1, #lines do lines[j] = lines[j]\sub(2, -2)
-            return SEPLINES(lines), true
-    return _, false
-
-LOADCONFIG = (gui) ->
-    load_config = aegisub.decode_path("?user") .. "\\zeref-cfg\\interpolate_master.cfg"
-    read_config, rdn = READCONFIG load_config
-    new_gui = table.copy gui
-    if rdn != false
-        for k = 1, #tags_full
-            new_gui[k].value = (read_config.v[tags_full[k]] == "true") and true or false
-        new_gui[30].value = (read_config.v.igt == "true") and true or false
-        new_gui[32].value = tonumber read_config.v.acc
-    return new_gui
 
 split_tags = (text) -> -- Splits text into text and tags
     v = {tg: {}, tx: {}}
@@ -101,6 +52,12 @@ concat_4 = (t) -> -- Concatenates tables that have subtables
         for k = 1, #t
             nt[i] ..= (t[k][i] or "")
     return nt
+
+table_len = (t) -> -- get the real length of the table
+    count = 0
+    for k, v in pairs t
+        count += 1
+    return count
 
 interpolation = (first, last, loop, accel = 1, tags = "") -> -- Interpolates any possible tag
     t, ipol = {tostring(first),  tostring(last)}, {}
@@ -146,7 +103,7 @@ interpolation = (first, last, loop, accel = 1, tags = "") -> -- Interpolates any
         first_cp, last_cp = {}, {}
         _type_ = (t[1]\match("\\iclip") or t[2]\match("\\iclip")) and "iclip" or "clip"
         cap_rectangle = "\\i?clip%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
-        cap_vector = "\\i?clip%((m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*)%)"
+        cap_vector = "\\i?clip%((m%s+%-?%d[%.%-%d mlb]*)%)"
         if not t[1]\match(cap_vector) and not t[2]\match(cap_vector)
             fl, ft, fr, fb = t[1]\match(cap_rectangle)
             ll, lt, lr, lb = t[2]\match(cap_rectangle)
@@ -272,7 +229,7 @@ class ipol -- Class for macro main settings
         table.remove(ps, 1) if ps[1] == ""
         for i = 1, #ps
             tags[i], final[i] = {}, ""
-            if (@tags_id.ipol[i] and zf.table\len(@tags_id.ipol[i], "other") == 0) or not @tags_id.ipol[i]
+            if (@tags_id.ipol[i] and table_len(@tags_id.ipol[i]) == 0) or not @tags_id.ipol[i]
                 tags[i][#tags[i] + 1] = interpolation(nil, nil, @tags_id.n)
             else
                 tags[i][#tags[i] + 1] = v for k, v in pairs(@tags_id.ipol[i])
@@ -352,17 +309,21 @@ class build_macro -- Output function, just set some dependencies and return the 
 
     out: =>
         @style_ref!
-        inter, add = LOADCONFIG(interface!), 0
-        local button, elements
+        inter = zf.config\load(interface!, script_name)
+        local buttons, elements
         while true
-            button, elements = aegisub.dialog.display(inter, {"Run", "Run - Save", "Reset", "Close"}, {close: "Close"})
-            inter = interface! if button == "Reset"
-            break if button == "Run" or button == "Run - Save" or button == "Close"
+            buttons, elements = aegisub.dialog.display(inter, {"Ok", "Save", "Reset", "Cancel"}, {close: "Cancel"})
+            inter = switch buttons
+                when "Save"
+                    zf.config\save(inter, elements, script_name, script_version)
+                    zf.config\load(inter, script_name)
+                when "Reset"
+                    interface!
+            break if buttons == "Ok" or buttons == "Cancel"
         make_ipol = ipol(@sel_first.text, @sel_last.text, #@sel_lines, @style_values, elements, @text_ref!, @text_ref(true))
         split, box_true = make_ipol\make_tags!, {}
         box_true[#box_true + 1] = (v == true) or nil for k, v in pairs elements
-        if (button == "Run") or (button == "Run - Save")
-            SAVECONFIG(inter, elements) if (button == "Run - Save")
+        if buttons == "Ok"
             if #box_true > 0
                 for k, v in ipairs @sl
                     l = @sb[v]
@@ -383,4 +344,3 @@ enable = (subs, sel) -> -- Activates the macro when it has more than 2 or more s
     return (#sel > 1) and true or false
 
 aegisub.register_macro script_name, script_description, main, enable
-return
