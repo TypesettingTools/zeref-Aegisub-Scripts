@@ -1,3 +1,23 @@
+-- Copyright (c) 2021 Zeref
+
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-- copies of the Software, and to permit persons to whom the Software is
+-- furnished to do so, subject to the following conditions:
+
+-- The above copyright notice and this permission notice shall be included in all
+-- copies or substantial portions of the Software.
+
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+-- SOFTWARE.
+
 export Yutils, Poly
 
 local *
@@ -24,27 +44,39 @@ class MATH
 
 class TABLE
 
-    push: (t, ...) => -- adds one or more elements to the end of an table
+    new: (t) => @t = t
+
+    copy: => {k, v for k, v in pairs @t} -- shallow copy table
+
+    map: (fn) => {k, fn(v) for k, v in pairs @t} -- creates a new array populated with the results of calling a provided function on every element in the calling array.
+
+    slice: (f, l, s) => [@t[i] for i = f or 1, l or #@t, s or 1] -- returns a copy of part of an array from a subarray created between the start and end positions
+
+    push: (...) => -- adds one or more elements to the end of an table
         n = select("#", ...)
         for i = 1, n
-            t[#t + 1] = select(i, ...)
+            @t[#@t + 1] = select(i, ...)
         return ...
 
-    slice: (t, f, l, s) => -- returns a copy of part of an array from a subarray created between the start and end positions
-        sliced = [t[i] for i = f or 1, l or #t, s or 1]
-        return sliced
+    concat: (...) => -- concat values in table
+        t = @copy!
+        for val in *{...}
+            if type(val) == "table"
+                for k, v in pairs(val)
+                    t[#t + 1] = v if type(k) == "number"
+            else
+                t[#t + 1] = val
+        return t
 
-    len: (t, table_type = "array") => -- get the real length of the table
-        count = 0
-        if (table_type == "array")
-            count += 1 for k, v in ipairs t
-        else
-            count += 1 for k, v in pairs t
-        return count
+    reduce: (fn, init) => -- executes a reducer function on each element of the array
+        acc = init
+        for k, v in pairs @t
+            acc = (k == 1 and not init) and v or fn(acc, v) -- (accumulator, current_value)
+        return acc
 
-    view: (Table, table_name = "table_unnamed", indent = "") => -- get a table as string
+    view: (table_name = "table_unnamed", indent = "") => -- get a table as string
         cart, autoref = "", ""
-        isemptytable = (Table) -> next(Table) == nil
+        isemptytable = (@t) -> next(@t) == nil
         basicSerialize = (o) ->
             so = tostring(o)
             if (type(o) == "function")
@@ -74,11 +106,11 @@ class TABLE
                             field = "[ #{k} ]"
                             addtocart v, fname, indent .. "	", saved, field
                         cart = "#{cart}#{indent}};\n"
-        return "#{table_name} = #{basicSerialize(Table)}" if type(Table) != "table"
-        addtocart Table, table_name, indent
+        return "#{table_name} = #{basicSerialize(@t)}" if type(@t) != "table"
+        addtocart @t, table_name, indent
         return cart .. autoref
 
-class l2b
+class l2b -- Copyright (c) 2015 Yuhta Nakajima --> https://github.com/ynakajima/polyline2bezier
 
     bezier_segments = {}
 
@@ -380,13 +412,12 @@ class l2b
         shape = (type(shape) == "table" and SHAPER(shape)\build(true) or shape)
         shapes = [m for m in shape\gmatch "m [^m]*"]
         get_dist = (shape) ->
-            distance = (p0, p1) -> sqrt((p0.x - p1.x) ^ 2 + (p0.y - p1.y) ^ 2)
             points = [{x: tonumber(x), y: tonumber(y)} for x, y in shape\gmatch "(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)"]
             points[0] = points[2]
-            state = distance(points[1], points[2]) <= dist
+            state = @v2DistanceBetween2Points(points[1], points[2]) <= dist
             inpack = {}
             for i = 1, #points
-                if distance(points[i], points[i - 1]) <= dist == state
+                if @v2DistanceBetween2Points(points[i], points[i - 1]) <= dist == state
                     inpack[#inpack + 1] = {bezier: state and "ok" or nil}
                     state = not state
                 inpack[#inpack][#inpack[#inpack] + 1] = points[i]
@@ -422,7 +453,7 @@ class l2b
             return table.concat(shapes)
         return maker(shapes, dist)
 
-class l2l
+class l2l -- Copyright (c) 2017, Vladimir Agafonkin --> https://github.com/mourner/simplify-js
 
     getSqDist: (p1, p2) =>
         dx = p1.x - p2.x
@@ -590,16 +621,17 @@ class SHAPER
                     k += 1
                     return (k % i == 0) and n .. " " .. bl or n
                 return bl .. nums\sub(1, -3)
+            shape = shape\gsub "m%s+(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)%s+m", "m %1 %2 l" -- fix m 0 0 m
             for m in shape\gmatch("m [^m]*")
                 if closed
-                    fpx, fpy = m\match("(%-?%d[%.%d]*)%s*(%-?%d[%.%d]*)")
-                    lpx, lpy = m\reverse!\match("%d[%.%-%d]*%s*%d[%.%-%d]*")\reverse!\match("(%-?%d[%.%d]*)%s*(%-?%d[%.%d]*)")
+                    fpx, fpy = m\match("(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)")
+                    lpx, lpy = m\reverse!\match("%d[%.%-%d]*%s+%d[%.%-%d]*")\reverse!\match("(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)")
                     if (fpx != lpx) or (fpy != lpy)
                         m ..= "l #{fpx} #{fpy} "
                 @points[#@points + 1] = {}
                 for p in m\gmatch("[mbl]* [^mbl]*")
                     @points[#@points][#@points[#@points] + 1] = {typer: p\match("%a")}
-                    for x, y in p\gmatch("(%-?%d[%.%d]*)%s*(%-?%d[%.%d]*)")
+                    for x, y in p\gmatch("(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)")
                         @points[#@points][#@points[#@points]][#@points[#@points][#@points[#@points]] + 1] = tonumber(x)
                         @points[#@points][#@points[#@points]][#@points[#@points][#@points[#@points]] + 1] = tonumber(y)
         else
@@ -835,9 +867,9 @@ class SHAPER
         line_to_bezier = (x1, y1, x2, y2) ->
             x1, y1, (2 * x1 + x2) / 3, (2 * y1 + y2) / 3, (x1 + 2 * x2) / 3, (y1 + 2 * y2) / 3, x2, y2
         for i = 1, 2
-			shape = shape\gsub "(%-?%d[%.%d]*)%s*(%-?%d[%.%d]*)%s*l%s*(%-?%d[%.%d]*)%s*(%-?%d[%.%d]*)", (px1, py1, px2, py2) ->
+			shape = shape\gsub "(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)%s+l%s+(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)", (px1, py1, px2, py2) ->
                 x1, y1, x2, y2, x3, y3, x4, y4 = line_to_bezier(tonumber(px1), tonumber(py1), tonumber(px2), tonumber(py2))
-                return ("%s %s b %s %s %s %s %s %s")\format(x1, y1, x2, y2, x3, y3, x4, y4)
+                return "#{x1} #{y1} b #{x2} #{y2} #{x3} #{y3} #{x4} #{y4}"
         return SHAPER(shape).points
 
     envelop_distort: (ctrl_p1, ctrl_p2) => -- https://codepen.io/benjamminf/pen/LLmrKN
@@ -901,6 +933,16 @@ class SHAPER
         return @
 
     expand: (line, meta) => -- expands the points of agreement with the values of tags some tags -- By Alen --> https://github.com/Alendt/Aegisub-Scripts
+        local pf
+        pf = (sx = 100, sy = 100, p = 1) ->
+            assert(p > 0 or p == floor(p))
+            if p == 1
+                return sx / 100, sy / 100
+            else
+                p -= 1
+                sx /= 2
+                sy /= 2
+                return pf(sx, sy, p)
         @org_points(line.styleref.align)
         data = SUPPORT\find_coords(line, meta, true)
         frx = pi / 180 * data.rots.frx
@@ -909,8 +951,7 @@ class SHAPER
         sx, cx = -sin(frx), cos(frx)
         sy, cy =  sin(fry), cos(fry)
         sz, cz = -sin(frz), cos(frz)
-        xscale = data.scale.x / 100
-        yscale = data.scale.y / 100
+        xscale, yscale = pf(data.scale.x, data.scale.y, data.p)
         fax = data.rots.fax * data.scale.x / data.scale.y
         fay = data.rots.fay * data.scale.y / data.scale.x
         x1 = {1, fax, data.pos.x - data.org.x}
@@ -1125,16 +1166,16 @@ class POLY
         return @to_shape(final) if sp
         return l2l\solution(@get_solution(final), 0.1) -- simplify :()
 
-    to_outline: (points, size, outline_type = "Round", mode = "Center", miter_limit = 2, arc_tolerance = 0.25) => -- returns an outline and the opposite of it, according to your defined settings
+    to_outline: (points, size, jt = "Round", mode = "Center", mtl = 2, act = 0.25) => -- returns an outline and the opposite of it, according to your defined settings
         error("You need to add a size and it has to be bigger than 0.") unless size or size < 0
-        outline_type = outline_type\lower!
+        jt = jt\lower!
         size = (mode == "Inside" and -size or size)
         points = (mode != "Center" and @simplify(points, nil, nil, true) or points)
         local create_offset
         if (mode == "Center")
-            create_offset = @offset(points, size, outline_type, "closed_line", miter_limit, arc_tolerance, true)
+            create_offset = @offset(points, size, jt, "closed_line", mtl, act, true)
         else
-            create_offset = @offset(points, size, outline_type, nil, miter_limit, arc_tolerance, true)
+            create_offset = @offset(points, size, jt, nil, mtl, act, true)
         outline = switch mode
             when "Outside"
                 @clipper(create_offset, points, nil, "difference", true)
@@ -1153,10 +1194,10 @@ class POLY
             shape = {}
             for k = 1, #clip
                 clip[k] = SHAPER(clip[k])\displace(-x, -y)\build!
-                shape[k] = (iclip and @clipper(subj, clip[k], "even_odd", "difference", true) or @clipper(subj, clip[k], "even_odd", "intersection", true))
+                shape[k] = iclip and @clipper(subj, clip[k], "even_odd", "difference", true) or @clipper(subj, clip[k], "even_odd", "intersection", true)
         else
             clip = SHAPER(clip)\displace(-x, -y)\build!
-            shape = (iclip and @clipper(subj, clip, "even_odd", "difference", true) or @clipper(subj, clip, "even_odd", "intersection", true))
+            shape = iclip and @clipper(subj, clip, "even_odd", "difference", true) or @clipper(subj, clip, "even_odd", "intersection", true)
         return @simplify(shape, true, 3)
 
 class TEXT
@@ -1261,8 +1302,9 @@ class SUPPORT
             pos:   {x: 0, y: 0}
             move:  {x1: 0, y1: 0, x2: 0, y2: 0}
             org:   {x: 0, y: 0}
-            rots:  {frz: line.styleref.angle or 0, fax: 0, fay: 0, frx: 0, fry: 0}
-            scale: {x: line.styleref.scale_x or 0, y: line.styleref.scale_y or 0}
+            rots:  {frz: line.styleref.angle, fax: 0, fay: 0, frx: 0, fry: 0}
+            scale: {x: line.styleref.scale_x, y: line.styleref.scale_y}
+            p: 1
         }
         if meta
             an = line.styleref.align or 7
@@ -1304,6 +1346,9 @@ class SUPPORT
                     coords.move.x1, coords.move.y1 = meta.res_x - line.styleref.margin_r, line.styleref.margin_v
                     coords.org.x, coords.org.y = meta.res_x - line.styleref.margin_r, line.styleref.margin_v
         if line.text\match "%b{}"
+            if line.text\match "\\p%s*%d"
+                p = line.text\match "\\p%s*(%d)"
+                coords.p = tonumber p
             if line.text\match "\\frx%s*%-?%d[%.%d]*"
                 frx = line.text\match "\\frx%s*(%-?%d[%.%d]*)"
                 coords.rots.frx = tonumber frx
@@ -1349,6 +1394,24 @@ class SUPPORT
                     c = "##{b}#{g}#{r}"
         return c
 
+    clip_to_draw: (clip) => -- converts data from clip to shape
+        local shape, caps
+        caps = {
+            v: "\\i?clip%(m%s+%-?%d[%.%-%d mlb]*%)"
+            r: "\\i?clip%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
+        }
+        if clip\match "\\i?clip%b()"
+            unless clip\match caps.v
+                l, t, r, b = clip\match caps.r
+                shape = "m #{l} #{t} l #{r} #{t} l #{r} #{b} l #{l} #{b}"
+            else
+                shape = clip\match caps.v
+        else
+            shape = clip
+        return shape
+
+class CONFIG
+
     file_exist: (file, dir) =>
         file ..= "/" if dir
         ok, err, code = os.rename(file, file)
@@ -1356,17 +1419,43 @@ class SUPPORT
             return true if code == 13
         return ok, err
 
-    clip_to_draw: (clip) => -- converts data from clip to shape
-        local shape
-        if clip\match("\\i?clip%b()")
-            unless clip\match("\\i?clip%(m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*%)")
-                l, t, r, b = clip\match "\\i?clip%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
-                shape = "m #{l} #{t} l #{r} #{t} l #{r} #{b} l #{l} #{b}"
-            else
-                shape = clip\match("\\i?clip%((m%s+%-?%d+[%.%d]*%s+%-?%d+[%.%-%dmlb ]*)%)")
-        else
-            shape = clip
-        return shape
+    read: (filename) =>
+        split = (t) ->
+            s = {n: {}, v: {}}
+            for k = 1, #t
+                s.n[k] = t[k]\gsub "(.+) %= .+", "%1"
+                s.v[s.n[k]] = t[k]\gsub ".+ %= (.+)", "%1"
+            return s
+        if filename
+            arq = io.open filename, "r"
+            if arq != nil
+                read = arq\read "*a"
+                arq\close!
+                lines = [k for k in read\gmatch "%{([^\n]+)%}"]
+                return split(lines), true, #lines
+        return _, false
+
+    load: (GUI, macro_name) =>
+        dir = aegisub.decode_path("?user") .. "\\zeref-cfg\\#{macro_name\lower!\gsub "%s", "_"}.cfg"
+        read, has, len = @read dir
+        new_gui = TABLE(GUI)\copy!
+        if has
+            for k, v in ipairs new_gui
+                v.value = read.v[v.name] == "true" and true or read.v[v.name] if v.name
+        return new_gui, read, len
+
+    save: (GUI, elements, macro_name, macro_version) =>
+        writing = "#{macro_name\upper!} - VERSION #{macro_version}\n\n"
+        for k, v in ipairs GUI
+            writing ..= "{#{v.name} = #{elements[v.name]}}\n" if v.name
+        dir = aegisub.decode_path "?user"
+        if not @file_exist "#{dir}\\zeref-cfg", true
+            os.execute "mkdir #{dir}\\zeref-cfg"
+        save = "#{dir}\\zeref-cfg\\#{macro_name\lower!\gsub "%s", "_"}.cfg"
+        file = io.open save, "w"
+        file\write writing
+        file\close!
+        return
 
 class TAGS
 
@@ -1434,7 +1523,7 @@ class TAGS
             fay: "\\fay%s*%-?%d+[%.%d]*", pos: "\\pos%b()", org: "\\org%b()"
             _1c: "\\1?c%s*&?[Hh]%x+&?", _2c: "\\2c%s*&?[Hh]%x+&?", _3c: "\\3c%s*&?[Hh]%x+&?"
             _4c: "\\4c%s*&?[Hh]%x+&?", bord: "\\[xy]?bord%s*%d[%.%d]*", clip: "\\i?clip%b()"
-            shad: "\\[xy]?shad%s*%-?%d[%.%d]*", move:"\\move%b()"
+            shad: "\\[xy]?shad%s*%-?%d[%.%d]*", move:"\\move%b()", p: "\\p%s*%d"
         }
         switch modes
             when "shape"
@@ -1456,6 +1545,8 @@ class TAGS
             when "text_shape"
                 @tags = @tags\gsub(caps.fn, "")\gsub(caps.fs, "")\gsub(caps.fsp, "")\gsub(caps.fscx, "\\fscx100")
                 @tags = @tags\gsub(caps.fscy, "\\fscy100")\gsub(caps.b, "")\gsub(caps.i, "")\gsub(caps.s, "")\gsub(caps.u, "")
+                @tags ..= "\\fscx100" unless @tags\match(caps.fscx)
+                @tags ..= "\\fscy100" unless @tags\match(caps.fscy)
                 @tags ..= "\\p1" unless @tags\match(caps.p)
             when "shape_clip"
                 @tags ..= "\\p1" unless @tags\match(caps.p)
@@ -1467,7 +1558,7 @@ class TAGS
                 @tags = @tags\gsub(caps.fn, "")\gsub(caps.fs, "")\gsub(caps.fsp, "")\gsub(caps.fscx, "\\fscx100")
                 @tags = @tags\gsub(caps.fscy, "\\fscy100")\gsub(caps.fr, "")\gsub(caps.frx, "")\gsub(caps.fry, "")
                 @tags = @tags\gsub(caps.b, "")\gsub(caps.i, "")\gsub(caps.s, "")\gsub(caps.u, "")\gsub(caps.fay, "")\gsub(caps.org, "")
-                @tags = @tags\gsub(caps.fax, "")\gsub(caps.an, "\\an7")
+                @tags = @tags\gsub(caps.fax, "")\gsub(caps.an, "\\an7")\gsub(caps.p, "\\p1")
                 @tags ..= "\\an7" unless @tags\match(caps.an)
                 @tags ..= "\\p1" unless @tags\match(caps.p)
             when "full"
@@ -1491,5 +1582,6 @@ return {
     bezier: BEZIER
     text:   TEXT
     util:   SUPPORT
+    config: CONFIG
     tags:   TAGS
 }
