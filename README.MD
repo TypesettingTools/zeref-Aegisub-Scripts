@@ -44,7 +44,7 @@ In the macros, I have standardized a few things.
 
 ## "_Save_ and _Reset_" Buttons
 
-![N|Solid](images_macros/buttons.png)
+![buttons](https://user-images.githubusercontent.com/71021203/123507104-12ffc300-d63e-11eb-83dc-edbf570285ad.png)
 
 Almost all macros have these two buttons.
 
@@ -69,7 +69,7 @@ the default values of the interface.
 
 ## _"Remove selected layers?"_ Checkbox
 
-![N|Solid](images_macros/remove.png)
+![remove](https://user-images.githubusercontent.com/71021203/123507144-3e82ad80-d63e-11eb-8ee0-2a088e1592c2.png)
 
 In some macros you will come across this checkbox.
 
@@ -79,9 +79,9 @@ after generating the result of the given macro.
 ---
 ### <span style="color:red">__Envelope Distort__</span>
 
-![N|Solid](images_macros/envelope.png)
+![envelope](https://user-images.githubusercontent.com/71021203/123507131-3c205380-d63e-11eb-9951-e17105f436ee.png)
 
-![N|Solid](images_macros/envelope_mesh.png)
+![envelope_mesh](https://user-images.githubusercontent.com/71021203/123507137-3d518080-d63e-11eb-80a8-1f08cb6a604b.png)
 
 As you can see, there are 2 macros inside the _Envelope Distort._
 
@@ -141,7 +141,7 @@ four line points forming a Bounding box.
 ---
 ### <span style="color:red">__Everything Shape__</span>
 
-![N|Solid](images_macros/every_shape.png)
+![every_shape](https://user-images.githubusercontent.com/71021203/123507138-3d518080-d63e-11eb-9283-5e38f526e391.png)
 
 __Definition__:
 
@@ -195,7 +195,7 @@ The X axis will be moved by the _X - Axis_ box and the Y axis will be moved by t
 
 ### <span style="color:red">_Botão Configure_</span>
 
-![N|Solid](images_macros/every_shape_config.png)
+![every_shape_config](https://user-images.githubusercontent.com/71021203/123507139-3dea1700-d63e-11eb-95cf-7c8aab660928.png)
 
 Here is another interface contained within the _Everything Shape_ macro.
 
@@ -228,7 +228,7 @@ The elements contained in _Split Modes_ are:
 ---
 ### <span style="color:red">__Gradient Cut__</span>
 
-![N|Solid](images_macros/gradient_cut.png)
+![gradient_cut](https://user-images.githubusercontent.com/71021203/123507140-3dea1700-d63e-11eb-8b87-610c711e03b7.png)
 
 __Definition__:
 
@@ -262,7 +262,7 @@ This button will add more color palettes to the interface.
 ---
 ### <span style="color:red">__Interpolate Master__</span>
 
-![N|Solid](images_macros/interpolate.png)
+![interpolate](https://user-images.githubusercontent.com/71021203/123507143-3e82ad80-d63e-11eb-8451-079fb6b0ecf0.png)
 
 __Definition__:
 
@@ -287,7 +287,7 @@ Sets the relative acceleration of the interpolation.
 ---
 ### <span style="color:red">__Stroke Panel__</span>
 
-![N|Solid](images_macros/stroke_panel.png)
+![stroke_panel](https://user-images.githubusercontent.com/71021203/123507145-3f1b4400-d63e-11eb-81ec-95882be2b051.png)
 
 __Definition__:
 
@@ -338,7 +338,7 @@ If checked, returns only the offset.
 ---
 ### <span style="color:red">__Text in Clip__</span>
 
-![N|Solid](images_macros/text_in_clip.png)
+![text_in_clip](https://user-images.githubusercontent.com/71021203/123507146-3f1b4400-d63e-11eb-8de7-6a524b75b1b1.png)
 
 __Definition__:
 
@@ -364,7 +364,7 @@ equivalent to the frame duration step.
 ---
 ### <span style="color:red">__Image Trace__</span>
 
-![N|Solid](images_macros/image_tracer.png)
+![image_tracer](https://user-images.githubusercontent.com/71021203/123507142-3e82ad80-d63e-11eb-93a4-4ceb768c5bd1.png)
 
 __Definition__:
 
