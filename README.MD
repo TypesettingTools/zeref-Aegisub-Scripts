@@ -185,7 +185,7 @@ length of the sequences of line or bezier points.
 
 For _Shape Round_, it is the definition of the amount of decimals after the point.
 
-#### <span style="color:red">_X - Axis e Y - Axis_</span>
+#### <span style="color:red">_X - Axis and Y - Axis_</span>
 
 This is the definition of x and y values.
 
@@ -193,7 +193,7 @@ These values are unique to the Shape Move element of _Mode List_.
 
 The X axis will be moved by the _X - Axis_ box and the Y axis will be moved by the _Y - Axis_ box.
 
-### <span style="color:red">_Botão Configure_</span>
+### <span style="color:red">_Configure Button_</span>
 
 ![every_shape_config](https://user-images.githubusercontent.com/71021203/123507139-3dea1700-d63e-11eb-95cf-7c8aab660928.png)
 

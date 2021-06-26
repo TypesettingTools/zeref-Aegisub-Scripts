@@ -6,7 +6,7 @@ Os arquivos contidos na pasta macros devem ser copiados para a
 pasta _autoload_ no diretório do Aegisub.
 
 Os arquivos contidos na pasta libraries devem ser copiados para a
-pasta include no diretório do Aegisub.
+pasta _include_ no diretório do Aegisub.
 
 ## __Compatibilidade__
 
