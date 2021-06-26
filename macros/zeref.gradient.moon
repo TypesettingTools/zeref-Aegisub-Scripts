@@ -54,7 +54,7 @@ make_cuts = (shape, pixel = 2, nx = 0, ny = 0, mode = "horizontal") ->
     return clipped
 
 gradient = (subs, sel) ->
-    rest = (t, read, len) -> -- adds in the GUI, the colors that were added
+    rest = (t, read, len = 6) -> -- adds in the GUI, the colors that were added
         for i = 7, len
             t[i + 4] = {class: "color", name: "color#{i - 4}", x: 8, y: i + 3, value: read.v["color#{i - 4}"]}
         return t
