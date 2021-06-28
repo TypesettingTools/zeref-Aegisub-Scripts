@@ -92,7 +92,7 @@ __Definition__:
 
 >Makes Envelope and Perspective distortions on shapes and text.
 
-### Elementos da macro _Make with - Mesh_:
+### Elements of the _Make with - Mesh_ macro:
 
 #### <span style="color:red">_Control Points_</span>
 
@@ -255,7 +255,7 @@ Sets the relative acceleration of the color interpolation.
 
 These are the color palettes that will decrementally define the gradient.
 
-### <span style="color:red">_Botão Add+_</span>
+### <span style="color:red">_Add+ Button_</span>
 
 This button will add more color palettes to the interface.
 
