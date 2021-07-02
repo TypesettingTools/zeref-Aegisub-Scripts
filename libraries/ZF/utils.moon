@@ -1397,11 +1397,11 @@ class SUPPORT
     clip_to_draw: (clip) => -- converts data from clip to shape
         local shape, caps
         caps = {
-            v: "\\i?clip%(m%s+%-?%d[%.%-%d mlb]*%)"
+            v: "\\i?clip%((m%s+%-?%d[%.%-%d mlb]*)%)"
             r: "\\i?clip%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
         }
         if clip\match "\\i?clip%b()"
-            unless clip\match caps.v
+            if not clip\match caps.v
                 l, t, r, b = clip\match caps.r
                 shape = "m #{l} #{t} l #{r} #{t} l #{r} #{b} l #{l} #{b}"
             else
