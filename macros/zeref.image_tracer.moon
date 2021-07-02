@@ -1,7 +1,7 @@
 export script_name        = "Image Trace"
 export script_description = "Image Trace lets you convert raster images [png, jpeg, bmp, gif] to shape"
 export script_author      = "Zeref"
-export script_version     = "0.0.0"
+export script_version     = "0.0.1"
 -- LIB
 zf = require "ZF.utils"
 import image_tracer, gif from require "img-libs/image_tracer/image_tracer"
@@ -87,6 +87,7 @@ load_preset = (tracer, elements) ->
     default.colorquantcycles  = elements.cqcs
     default.strokewidth       = elements.skw 
     default.scale             = elements.scl
+    default.roundcoords       = elements.rud
     default.blurradius        = elements.brr
     default.blurdelta         = elements.brd
     default.deletewhite       = elements.igw
@@ -138,6 +139,7 @@ load_preset = (tracer, elements) ->
             default.numberofcolors = 7
     return default
 
+local main
 main = (subs, sel) ->
     exts = "*.png;*.jpeg;*.jpe;*.jpg;*.jfif;*.jfi;*.bmp;*.gif"
     filename = aegisub.dialog.open("Open Image File", "", "", "Image extents (#{exts})|#{exts};", false, true)
@@ -154,37 +156,34 @@ main = (subs, sel) ->
                 interface!
         break if buttons == "Ok" or buttons == "Cancel"
     --
-    switch buttons
-        when "Ok"
-            aegisub.progress.task("Generating Trace...")
-            if filename\match("^.+%.(.+)$") != "gif"
-                tracer = image_tracer(filename)
+    if buttons == "Ok"
+        aegisub.progress.task("Generating Trace...")
+        if filename\match("^.+%.(.+)$") != "gif"
+            tracer = image_tracer(filename)
+            preset = load_preset(tracer, elements)
+            --
+            l, j = zf.table(subs[sel[#sel]])\copy!, 1
+            for k, v in ipairs tracer\to_shape(preset)
+                l.text = v
+                subs.insert(sel[#sel] + j, l)
+                j += 1
+        else
+            l, i, j = zf.table(subs[sel[#sel]])\copy!, 1, 1
+            frames, f_dur = gif(filename)\map!, 42
+            while #frames >= i
+                tracer = image_tracer(frames[i])
                 preset = load_preset(tracer, elements)
                 --
-                l, j = zf.table(subs[sel[#sel]])\copy!, 1
+                l.start_time = subs[sel[#sel]].start_time + #frames * f_dur * (i - 1) / #frames
+                l.end_time = subs[sel[#sel]].start_time + #frames * f_dur * i / #frames
                 for k, v in ipairs tracer\to_shape(preset)
+                    v = v\gsub "m%s+%-?%d[%.%-%d mlb]*", (s) ->
+                        s = zf.shape(s)\displace(frames[i].x, frames[i].y)\build!
+                        return s
                     l.text = v
                     subs.insert(sel[#sel] + j, l)
                     j += 1
-            else
-                l, i, j = zf.table(subs[sel[#sel]])\copy!, 1, 1
-                frames, f_dur = gif(filename)\map!, 42
-                while #frames >= i
-                    tracer = image_tracer(frames[i])
-                    preset = load_preset(tracer, elements)
-                    --
-                    l.start_time = subs[sel[#sel]].start_time + #frames * f_dur * (i - 1) / #frames
-                    l.end_time = subs[sel[#sel]].start_time + #frames * f_dur * i / #frames
-                    for k, v in ipairs tracer\to_shape(preset)
-                        v = v\gsub "m%s+%-?%d[%.%-%d mlb]*", (s) ->
-                            s = zf.shape(s)\displace(frames[i].x, frames[i].y)\build!
-                            return s
-                        l.text = v
-                        subs.insert(sel[#sel] + j, l)
-                        j += 1
-                    i += 1
-        when "Cancel"
-            aegisub.cancel!
+                i += 1
     return
 
 aegisub.register_macro script_name, script_description, main
