@@ -1,7 +1,7 @@
 export script_name        = "Text in Clip"
 export script_description = "Causes the characters in your text to go through the coordinates of your clip!"
 export script_author      = "Zeref"
-export script_version     = "0.0.1"
+export script_version     = "0.0.2"
 -- LIB
 Yutils = require "Yutils"
 zf = require "ZF.utils"
@@ -237,7 +237,7 @@ main = (subs, sel) ->
         break if buttons == "Ok" or buttons == "Cancel"
     msa, msb = aegisub.ms_from_frame(1), aegisub.ms_from_frame(101)
     frame_dur = msb and zf.math\round((msb - msa) / 100, 3) or 41.708
-    if bx == "Ok"
+    if buttons == "Ok"
         aegisub.progress.task("Generating...")
         for _, i in ipairs(sel)
             aegisub.progress.set((i - 1) / #sel * 100)
@@ -253,10 +253,10 @@ main = (subs, sel) ->
             tags = zf.tags!\remove("bezier_text", tags)
             line = table.copy(l)
             subs[i + j] = l
-            if ck.chk == true
+            if elements.chk == true
                 subs.delete(i + j)
                 j -= 1
-            mds = switch ck.mds
+            mds = switch elements.mds
                 when "Center" then 1
                 when "Left" then 2
                 when "Right" then 3
@@ -274,9 +274,9 @@ main = (subs, sel) ->
                     when 7 then char.left, line.top
                     when 8 then char.center, line.top
                     when 9 then char.right, line.top
-                bez = BEZIER(line, shape, px, py, mds, ck.off)
+                bez = BEZIER(line, shape, px, py, mds, elements.off)
                 cs, cd = char.start_time, char.duration
-                switch ck.mds
+                switch elements.mds
                     when "Around"
                         bez = BEZIER(line, shape, px, py, 4, (c - 1) / (#chars - 1))
                         __tags = zf.tags\clean("{#{bez .. tags}}")
@@ -284,8 +284,8 @@ main = (subs, sel) ->
                         subs.insert(i + j + 1, line)
                         j += 1
                     when "Animated - Start to End"
-                        ck.off = 1 if ck.off <= 0
-                        loop = zf.math\round(line.duration / (frame_dur * ck.off), 3)
+                        elements.off = 1 if elements.off <= 0
+                        loop = zf.math\round(line.duration / (frame_dur * elements.off), 3)
                         for k = 1, loop
                             bez = BEZIER(line, shape, px, py, 4, (k - 1) / (loop - 1))
                             line.start_time = cs + cd * (k - 1) / loop
@@ -294,9 +294,9 @@ main = (subs, sel) ->
                             line.text = "#{__tags}#{char.text_stripped}"
                             subs.insert(i + j + 1, line)
                             j += 1
-                    when "Animated - End to Start   "
-                        ck.off = 1 if ck.off <= 0
-                        loop = zf.math\round(line.duration / (frame_dur * ck.off), 3)
+                    when "Animated - End to Start"
+                        elements.off = 1 if elements.off <= 0
+                        loop = zf.math\round(line.duration / (frame_dur * elements.off), 3)
                         for k = 1, loop
                             bez = BEZIER(line, shape, px, py, 5, (k - 1) / (loop - 1))
                             line.start_time = cs + cd * (k - 1) / loop
