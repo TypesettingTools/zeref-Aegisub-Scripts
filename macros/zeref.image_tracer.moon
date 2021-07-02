@@ -139,7 +139,6 @@ load_preset = (tracer, elements) ->
             default.numberofcolors = 7
     return default
 
-local main
 main = (subs, sel) ->
     exts = "*.png;*.jpeg;*.jpe;*.jpg;*.jfif;*.jfi;*.bmp;*.gif"
     filename = aegisub.dialog.open("Open Image File", "", "", "Image extents (#{exts})|#{exts};", false, true)
