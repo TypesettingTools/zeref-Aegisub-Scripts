@@ -1,7 +1,7 @@
 export script_name        = "Interpolate Master"
 export script_description = "Does a linear interpolation between values of the first and last selected line"
 export script_author      = "Zeref"
-export script_version     = "0.0.1"
+export script_version     = "0.0.2"
 -- LIB
 zf = require "ZF.utils"
 
@@ -34,11 +34,8 @@ interface = ->
 split_tags = (text) -> -- Splits text into text and tags
     v = {tg: {}, tx: {}}
     v.tg = [t for t in text\gmatch "%b{}"]
-    string.headtail = (s, div) ->
-        a, b, head, tail = s\find("(.-)#{div}(.*)")
-        if a then head, tail else s, ""
     while text != ""
-        c, d = text\headtail("%b{}")
+        c, d = zf.util\headtail(text, "%b{}")
         v.tx[#v.tx + 1] = c
         text = d
     return v
@@ -50,7 +47,7 @@ concat_4 = (t) -> -- Concatenates tables that have subtables
     for i = 1, sizes[1] or 0
         nt[i] = ""
         for k = 1, #t
-            nt[i] ..= (t[k][i] or "")
+            nt[i] ..= t[k][i] or ""
     return nt
 
 table_len = (t) -> -- get the real length of the table
@@ -61,44 +58,32 @@ table_len = (t) -> -- get the real length of the table
 
 interpolation = (first, last, loop, accel = 1, tags = "") -> -- Interpolates any possible tag
     t, ipol = {tostring(first),  tostring(last)}, {}
-    interpolate_shape = (pct, f, l) ->
-        fs = [tonumber(s) for s in f\gmatch "%-?%d[%.%d]*"]
-        ls = [tonumber(s) for s in l\gmatch "%-?%d[%.%d]*"]
-        if #fs != #ls
-            error("The shapes must have the same stitch length")
-        else
-            j = 1
-            f = f\gsub "%-?%d[%.%d]*", (s) ->
-                s = zf.math\interpolation(pct, fs[j], ls[j])
-                j += 1
-                return s
-            return f
-    pol = (pct, first, last) -> zf.math\interpolation(pct, first, last)
-    for k = 1, #t
-        if t[k]\match "&?[Hh]%x%x%x%x%x%x&?"
+    pol = interpolate
+    for v in *t
+        if v\match "&?[Hh]%x%x%x%x%x%x&?"
             pol = interpolate_color
-        elseif t[k]\match "&?[Hh]%x%x&?"
+        elseif v\match "&?[Hh]%x%x&?"
             pol = interpolate_alpha
     if t[1]\match("\\pos%b()") and t[2]\match("\\pos%b()")
         fx, fy = t[1]\match "\\pos%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
         lx, ly = t[2]\match "\\pos%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
         fx, fy, lx, ly = tonumber(fx), tonumber(fy), tonumber(lx), tonumber(ly)
         for k = 1, loop
-            px = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, fx, lx)
-            py = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, fy, ly)
+            px = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "number", fx, lx)
+            py = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "number", fy, ly)
             ipol[#ipol + 1] = "\\pos(#{px},#{py})"
     elseif (not t[1]\match("\\pos%b()") and t[2]\match("\\pos%b()")) or (t[1]\match("\\pos%b()") and not t[2]\match("\\pos%b()"))
-        error("You must have the \\pos in both positions")
+        error "You must have the \\pos in both positions"
     elseif t[1]\match("\\org%b()") and t[2]\match("\\org%b()")
         fx, fy = t[1]\match "\\org%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
         lx, ly = t[2]\match "\\org%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
         fx, fy, lx, ly = tonumber(fx), tonumber(fy), tonumber(lx), tonumber(ly)
         for k = 1, loop
-            px = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, fx, lx)
-            py = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, fy, ly)
+            px = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "number", fx, lx)
+            py = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "number", fy, ly)
             ipol[#ipol + 1] = "\\org(#{px},#{py})"
     elseif (not t[1]\match("\\org%b()") and t[2]\match("\\org%b()")) or (t[1]\match("\\org%b()") and not t[2]\match("\\org%b()"))
-        error("You must have the \\org in both positions")
+        error "You must have the \\org in both positions"
     elseif t[1]\match("\\i?clip%b()") and t[2]\match("\\i?clip%b()")
         first_cp, last_cp = {}, {}
         _type_ = (t[1]\match("\\iclip") or t[2]\match("\\iclip")) and "iclip" or "clip"
@@ -110,31 +95,31 @@ interpolation = (first, last, loop, accel = 1, tags = "") -> -- Interpolates any
             fl, ft, fr, fb = tonumber(fl), tonumber(ft), tonumber(fr), tonumber(fb)
             ll, lt, lr, lb = tonumber(ll), tonumber(lt), tonumber(lr), tonumber(lb)
             for k = 1, loop
-                l = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, fl, ll)
-                t = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, ft, lt)
-                r = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, fr, lr)
-                b = zf.math\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, fb, lb)
+                l = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "number", fl, ll)
+                t = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "number", ft, lt)
+                r = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "number", fr, lr)
+                b = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "number", fb, lb)
                 ipol[#ipol + 1] = "\\#{_type_}(#{l},#{t},#{r},#{b})"
         elseif not t[1]\match(cap_vector) and t[2]\match(cap_vector)
             f = zf.util\clip_to_draw t[1]\match("\\i?clip%b()")
             l = t[2]\match(cap_vector)
             for k = 1, loop
-                s = interpolate_shape((k - 1) ^ accel / (loop - 1) ^ accel, f, l)
+                s = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "shape", f, l)
                 ipol[#ipol + 1] = "\\#{_type_}(#{s})"
         elseif t[1]\match(cap_vector) and not t[2]\match(cap_vector)
             f = t[1]\match(cap_vector)
             l = zf.util\clip_to_draw t[2]\match("\\i?clip%b()")
             for k = 1, loop
-                s = interpolate_shape((k - 1) ^ accel / (loop - 1) ^ accel, f, l)
+                s = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "shape", f, l)
                 ipol[#ipol + 1] = "\\#{_type_}(#{s})"
         else
             f = t[1]\match(cap_vector)
             l = t[2]\match(cap_vector)
             for k = 1, loop
-                s = interpolate_shape((k - 1) ^ accel / (loop - 1) ^ accel, f, l)
+                s = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "shape", f, l)
                 ipol[#ipol + 1] = "\\#{_type_}(#{s})"
     elseif (not t[1]\match("\\i?clip%b()") and t[2]\match("\\i?clip%b()")) or (t[1]\match("\\i?clip%b()") and not t[2]\match("\\i?clip%b()"))
-        error("You must have the (\\clip - \\iclip) in both positions")
+        error "You must have the (\\clip - \\iclip) in both positions"
     else
         for k = 1, loop
             if not first and not last

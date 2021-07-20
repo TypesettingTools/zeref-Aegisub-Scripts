@@ -1,46 +1,43 @@
 export script_name        = "Stroke Panel"
 export script_description = "A stroke panel"
 export script_author      = "Zeref"
-export script_version     = "0.0.1"
+export script_version     = "0.0.2"
 -- LIB
 zf = require "ZF.utils"
 
-stroke = {
-    corner: {"Miter", "Round", "Square"}
-    align: {"Center", "Inside", "Outside"}
-}
-
-hints = {
-    arctolerance: "The default ArcTolerance is 0.25 units. \nThis means that the maximum distance \nthe flattened path will deviate from the \n\"true\" arc will be no more than 0.25 units \n(before rounding)."
-    stroke_size: "Stroke Size."
-    miterlimit: "The default value for MiterLimit is 2 (ie twice delta). \nThis is also the smallest MiterLimit that's allowed. \nIf mitering was unrestricted (ie without any squaring), \nthen offsets at very acute angles would generate \nunacceptably long \"spikes\"."
-    only_offset: "Return only the offseting text."
-}
-
 interface = (subs, sel) ->
-    local GUI
-    for _, i in ipairs(sel)
-        l = subs[i]
-        meta, styles = zf.util\tags2styles(subs, l)
-        karaskel.preproc_line(subs, meta, styles, l)
-        GUI = {
-            {class: "label", label: "Stroke Corner:", x: 0, y: 0},
-            {class: "label", label: "Align Stroke:", x: 0, y: 3},
-            {class: "label", label: "Stroke Weight:", x: 1, y: 0},
-            {class: "label", label: "Miter Limit:", x: 1, y: 3},
-            {class: "label", label: "Arc Tolerance:", x: 1, y: 6},
-            {class: "label", label: "Primary Color:", x: 0, y: 9},
-            {class: "label", label: "Stroke Color:", x: 1, y: 9},
-            {class: "dropdown", name: "crn", items: stroke.corner, x: 0, y: 1, height: 2, value: stroke.corner[2]},
-            {class: "dropdown", name: "alg", items: stroke.align, x: 0, y: 4, height: 2, value: stroke.align[3]},
-            {class: "floatedit", name: "ssz", x: 1, y: 1, hint: hints.stroke_size, height: 2, value: l.styleref.outline},
-            {class: "floatedit", name: "mtl", x: 1, y: 4, hint: hints.miterlimit, height: 2, value: 2},
-            {class: "floatedit", name: "atc", x: 1, y: 7, hint: hints.arctolerance, height: 2, min: 0, value: 0.25},
-            {class: "coloralpha", name: "color1", x: 0, y: 10, width: 1, height: 2, value: l.styleref.color1},
-            {class: "coloralpha", name: "color3", x: 1, y: 10, width: 1, height: 2, value: l.styleref.color3},
-            {class: "checkbox", label: "Remove selected layers?", name: "act", x: 0, y: 12, value: true},
-            {class: "checkbox", label: "Generate only offset?\t\t", name: "olf", x: 1, y: 12, hint: hints.only_offset, value: false}
+    stroke = {
+        corner: {"Miter", "Round", "Square"}
+        align: {"Center", "Inside", "Outside"}
+        hints: {
+            arctolerance: "The default ArcTolerance is 0.25 units. \nThis means that the maximum distance \nthe flattened path will deviate from the \n\"true\" arc will be no more than 0.25 units \n(before rounding)."
+            stroke_size: "Stroke Size."
+            miterlimit: "The default value for MiterLimit is 2 (ie twice delta). \nThis is also the smallest MiterLimit that's allowed. \nIf mitering was unrestricted (ie without any squaring), \nthen offsets at very acute angles would generate \nunacceptably long \"spikes\"."
+            only_offset: "Return only the offseting text."
         }
+    }
+    l = subs[sel[#sel]]
+    meta, styles = zf.util\tags2styles(subs, l)
+    karaskel.preproc_line(subs, meta, styles, l)
+    GUI = {
+        {class: "label", label: "Stroke Corner:", x: 0, y: 0}
+        {class: "label", label: "Align Stroke:",  x: 0, y: 3}
+        {class: "label", label: "Stroke Weight:", x: 1, y: 0}
+        {class: "label", label: "Miter Limit:",   x: 1, y: 3}
+        {class: "label", label: "Arc Tolerance:", x: 1, y: 6}
+        {class: "label", label: "Primary Color:", x: 0, y: 9}
+        {class: "label", label: "Stroke Color:",  x: 1, y: 9}
+        {class: "dropdown", name: "crn", items: stroke.corner, x: 0, y: 1, height: 2, value: stroke.corner[2]}
+        {class: "dropdown", name: "alg", items: stroke.align, x: 0, y: 4, height: 2, value: stroke.align[3]}
+        {class: "floatedit", name: "ssz", x: 1, y: 1, hint: stroke.hints.stroke_size, height: 2, min: 0, value: l.styleref.outline}
+        {class: "floatedit", name: "mtl", x: 1, y: 4, hint: stroke.hints.miterlimit, height: 2, min: 0, value: 2}
+        {class: "floatedit", name: "atc", x: 1, y: 7, hint: stroke.hints.arctolerance, height: 2, min: 0, value: 0.25}
+        {class: "coloralpha", name: "color1", x: 0, y: 10, width: 1, height: 2, value: l.styleref.color1}
+        {class: "coloralpha", name: "color3", x: 1, y: 10, width: 1, height: 2, value: l.styleref.color3}
+        {class: "checkbox", label: "Simplify?", name: "smp", x: 0, y: 6, value: true}
+        {class: "checkbox", label: "Remove selected layers?", name: "act", x: 0, y: 12, value: true}
+        {class: "checkbox", label: "Generate only offset?\t\t", name: "olf", x: 1, y: 12, hint: stroke.hints.only_offset, value: false}
+    }
     return GUI
 
 main = (subs, sel) ->
@@ -86,7 +83,7 @@ main = (subs, sel) ->
                 subs.insert(i + j + 1, l)
                 j += 1
             else
-                out_shape, out_offset = zf.poly\to_outline(shape, elements.ssz, elements.crn, elements.alg, elements.mtl, elements.atc)
+                out_shape, out_offset = zf.poly\to_outline(shape, elements.ssz, elements.crn, elements.alg, elements.mtl, elements.atc, elements.smp)
                 colors, shapes = {elements.color3, elements.color1}, {out_shape, out_offset}
                 for k = 1, 2
                     __tags = zf.tags\clean("{#{tags}\\c#{zf.util\html_color(colors[k])}}")

@@ -4,7 +4,6 @@ export script_author      = "Zeref"
 export script_version     = "0.0.1"
 -- LIB
 zf = require "ZF.utils"
-import image_tracer, gif from require "img-libs/image_tracer/image_tracer"
 
 drops = {
     presets: {
@@ -140,7 +139,7 @@ load_preset = (tracer, elements) ->
     return default
 
 main = (subs, sel) ->
-    exts = "*.png;*.jpeg;*.jpe;*.jpg;*.jfif;*.jfi;*.bmp;*.gif"
+    exts = "*.png;*.jpeg;*.jpe;*.jpg;*.jfif;*.jfi;*.bmp;*.dib;*.gif"
     filename = aegisub.dialog.open("Open Image File", "", "", "Image extents (#{exts})|#{exts};", false, true)
     aegisub.cancel! unless filename
     inter = zf.config\load(interface!, script_name)
@@ -154,11 +153,13 @@ main = (subs, sel) ->
             when "Reset"
                 interface!
         break if buttons == "Ok" or buttons == "Cancel"
-    --
+    -- export concat and round functions
+    conc = (t, ...) -> zf.table(t)\concat(...)
+    roun = (v, n) -> zf.math\round(v, n)
     if buttons == "Ok"
         aegisub.progress.task("Generating Trace...")
         if filename\match("^.+%.(.+)$") != "gif"
-            tracer = image_tracer(filename)
+            tracer = zf.img(filename)\tracer(conc, roun)
             preset = load_preset(tracer, elements)
             --
             l, j = zf.table(subs[sel[#sel]])\copy!, 1
@@ -168,9 +169,9 @@ main = (subs, sel) ->
                 j += 1
         else
             l, i, j = zf.table(subs[sel[#sel]])\copy!, 1, 1
-            frames, f_dur = gif(filename)\map!, 42
+            frames, f_dur = zf.img(filename)\gif(false), 42
             while #frames >= i
-                tracer = image_tracer(frames[i])
+                tracer = zf.img(frames[i])\tracer(conc, roun)
                 preset = load_preset(tracer, elements)
                 --
                 l.start_time = subs[sel[#sel]].start_time + #frames * f_dur * (i - 1) / #frames
