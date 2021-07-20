@@ -100,7 +100,7 @@ make_cuts = (shape, pixel = 10, mode = "Horizontal", ang = 0) ->
     for k = 1, len
         t = (k - 1) / (len - 1)
         ipol = zf.util\interpolation(t, "shape", line_first, line_last) -- interpolation between first and last line
-        ipol = zf.poly\offset(ipol, pixel, "miter", "open_joined", nil, nil, true) -- fills the line through the pixel value
+        ipol = zf.poly\offset(ipol, pixel, "miter", "closed_line", nil, nil, true) -- fills the line through the pixel value
         ipol = zf.shape(ipol)\displace(fl - ll, ft - lt)\build!
         clip = zf.poly\clip(shape, ipol)
         clipped[#clipped + 1] = clip if clip != ""
