@@ -648,12 +648,10 @@ class SHAPER
             shape = shape\gsub "m [^m]*", (p) ->
                 p = p\gsub "m%s+(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)%s+m", "m %1 %2 l"
                 if closed
-                    shape = shape\gsub "m [^m]*", (p) ->
-                        v = p\reverse!\match("%d[%-?%.%d]*%s+%d[%-?%.%d]*")\reverse!
-                        fx, fy = p\match "(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)"
-                        lx, ly = v\match "(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)"
-                        p ..= " l #{fx} #{fy} " if fx != lx or fy != ly
-                        return p
+                    v = p\reverse!\match("%d[%-?%.%d]*%s+%d[%-?%.%d]*")\reverse!
+                    fx, fy = p\match "(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)"
+                    lx, ly = v\match "(%-?%d[%.%d]*)%s+(%-?%d[%.%d]*)"
+                    p ..= " l #{fx} #{fy} " if fx != lx or fy != ly
                 return p
             paths = [s for s in shape\gmatch "%S+"]
             for k = 1, #paths
