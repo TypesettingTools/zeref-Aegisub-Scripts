@@ -39,7 +39,8 @@ interface = ->
 
 merge_shapes = (subs, sel) ->
     mg, line = {shapes: {}, pos: {}, an: {}}, nil
-    for k, v in ipairs(sel)
+    for k, v in ipairs sel
+        aegisub.progress.set k / #sel * 100
         l = subs[v]
         l.comment = true
         line = zf.table(l)\copy!
@@ -67,6 +68,7 @@ shape_relocator = (subs, sel) ->
     -- organizes the table from the area of the shape
     table.sort(index_p, (a, b) -> a.a < b.a) if index_p[1] != nil
     for k, v in ipairs sel
+        aegisub.progress.set k / #sel * 100
         l = subs[v]
         meta, styles = zf.util\tags2styles(subs, l)
         karaskel.preproc_line(subs, meta, styles, l)
@@ -74,7 +76,7 @@ shape_relocator = (subs, sel) ->
         detect = zf.tags\remove("full", l.text)
         shape = assert detect\match("m%s+%-?%d[%.%-%d mlb]*"), "shape expected"
         shape, nx, ny = relocator(shape)
-        index_r[#index_r + 1] = {shape: shape, nx: nx, ny: ny}
+        index_r[#index_r + 1] = {:shape, :nx, :ny}
     return index_r, index_p
 
 main = (subs, sel) ->
@@ -95,14 +97,14 @@ main = (subs, sel) ->
         tags = zf.tags\clean("{#{tags}}")
         shape = assert detect\match("m%s+%-?%d[%.%-%d mlb]*"), "shape expected" unless clip
         return shape, tags
-    aegisub.progress.task("Generating...")
+    aegisub.progress.task "Generating..."
     switch buttons
         when "Ok"
             if elements.modes == "Shape Relocator"
                 index_r, index_p = shape_relocator(subs, sel)
                 r_inf = {["sh"]: {}, ["1c"]: {}, ["2c"]: {}, ["3c"]: {}, ["4c"]: {}}
             for k, i in ipairs(sel)
-                aegisub.progress.set((i - 1) / #sel * 100)
+                aegisub.progress.set i / #sel * 100
                 l = subs[i + j]
                 l.comment = true
                 subs[i + j] = l
@@ -150,8 +152,14 @@ main = (subs, sel) ->
                         l.text = "#{tags}#{shape_smooth}"
                     when m_list["ssy"]
                         shape, tags = help(l.text, detect, "shape_poly", px, py)
-                        shape = zf.shape(shape)\org_points(l.styleref.align)\build!
-                        shape_simplify = (elements.sym == "Line Only") and zf.poly\simplify(shape, nil, elements.tol > 50 and 50 or elements.tol) or zf.poly\simplify(shape, true, elements.tol)
+                        shape = zf.poly(zf.shape(shape)\org_points(l.styleref.align)\build!)\simplify!
+                        local shape_simplify
+                        if elements.sym == "Line Only"
+                            shape.smp = "line"
+                            shape_simplify = shape\build(nil, nil, elements.tol > 50 and 50 or elements.tol)
+                        else
+                            shape.smp = "full"
+                            shape_simplify = shape\build(nil, nil, elements.tol)
                         l.text = "#{tags}#{shape_simplify}"
                     when m_list["sst"]
                         shape, tags = help(l.text, detect, "shape_poly", px, py)
@@ -173,7 +181,10 @@ main = (subs, sel) ->
                         shape, tags = help(l.text, detect, "shape_poly", px, py)
                         clip = assert tags\match("\\i?clip%b()"), "clip expected"
                         tags = tags\gsub "\\i?clip%b()", ""
-                        shape_clip = zf.poly\clip(zf.shape(shape)\org_points(l.styleref.align)\build!, zf.util\clip_to_draw(clip), px, py, clip\match("iclip"), elements.smp)
+                        clip_fixed = zf.shape(zf.util\clip_to_draw(clip))\displace(-px, -py)\build!
+                        shape_clip = zf.poly(zf.shape(shape)\org_points(l.styleref.align)\build!, clip_fixed, elements.smp)\clip(clip\match("iclip"))
+                        shape_clip.smp = elements.smp == false and "line" or "full"
+                        shape_clip = shape_clip\build(nil, nil, 3)
                         l.text = "#{tags}#{shape_clip}" if shape_clip != ""
                     when m_list["srr"]
                         shape, tags = help(l.text, detect, "shape_poly", px, py)
@@ -197,6 +208,9 @@ main = (subs, sel) ->
                             when 6
                                 px -= index_p[1].w
                                 py -= index_p[1].h / 2
+                            when 7
+                                px = px
+                                py = py
                             when 8
                                 px -= index_p[1].w / 2
                                 py = py
@@ -253,7 +267,6 @@ main = (subs, sel) ->
                 _3c = m_inf r_inf["3c"]
                 _4c = m_inf r_inf["4c"]
                 aegisub.log("shapes = {#{_sh}}\nc1 = {#{_1c}}\nc2 = {#{_2c}}\nc3 = {#{_3c}}\nc4 = {#{_4c}}")
-            aegisub.progress.set(100)
     return
 
 aegisub.register_macro script_name, script_description, main

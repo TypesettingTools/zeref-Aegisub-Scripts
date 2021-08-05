@@ -33,7 +33,7 @@ genr_ctrl_pts = (shape, size, bezier) ->
     -- generates a bounding box around the shape
     box, l, t, r, b = zf.shape(shape)\bounding(true)
     box = size > 1 and zf.shape(box)\split(nil, "all", size) or zf.shape(box)
-    box.paths = box\to_bezier! if bezier
+    box\to_bezier! if bezier
     return box\build!
 
 genr_warp = (shape, mesh, TOLERANCE = 50, perspective) ->
@@ -53,7 +53,7 @@ genr_warp = (shape, mesh, TOLERANCE = 50, perspective) ->
         mesh_i = size > 1 and zf.shape(box)\split(nil, "all", size) or zf.shape(box)
         -- sets up the points for bezier, if necessary
         if bezier
-            mesh_i.paths = mesh_i\to_bezier!
+            mesh_i\to_bezier!
             mesh_i\split(nil, "all", TOLERANCE)
             mesh_o = mesh_o\split(nil, "all", TOLERANCE)
         table.remove(mesh_i.paths[1])

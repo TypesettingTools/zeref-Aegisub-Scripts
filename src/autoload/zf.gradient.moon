@@ -66,12 +66,7 @@ make_cuts = (shape, pixel = 10, mode = "Horizontal", ang = 0) ->
     line_first\rotate(ang + 90)
     ls = line_first.paths[1]
     -- returns the point of intersection of the center line and the left line
-    get_inter = line_intersection(
-        {x: lp[1][1], y: lp[1][2]}
-        {x: lp[2][1], y: lp[2][2]}
-        {x: ls[1][1], y: ls[1][2]}
-        {x: ls[2][1], y: ls[2][2]}
-    )
+    get_inter = line_intersection({x: lp[1][1], y: lp[1][2]}, {x: lp[2][1], y: lp[2][2]}, {x: ls[1][1], y: ls[1][2]}, {x: ls[2][1], y: ls[2][2]})
     -- repositions the line on the left so that it tangents to the one in the center
     disx_f = get_inter.x - lp[1][1]
     disy_l = get_inter.y - lp[1][2]
@@ -83,12 +78,7 @@ make_cuts = (shape, pixel = 10, mode = "Horizontal", ang = 0) ->
     line_last\rotate(ang + 90)
     ls = line_last.paths[1]
     -- returns the point of intersection of the center line and the right line
-    get_inter = line_intersection(
-        {x: lp[1][1], y: lp[1][2]}
-        {x: lp[2][1], y: lp[2][2]}
-        {x: ls[1][1], y: ls[1][2]}
-        {x: ls[2][1], y: ls[2][2]}
-    )
+    get_inter = line_intersection({x: lp[1][1], y: lp[1][2]}, {x: lp[2][1], y: lp[2][2]}, {x: ls[1][1], y: ls[1][2]}, {x: ls[2][1], y: ls[2][2]})
     -- repositions the line on the right so that it tangents to the one in the center
     disx_f = get_inter.x - lp[2][1]
     disy_f = get_inter.y - lp[2][2]
@@ -100,9 +90,11 @@ make_cuts = (shape, pixel = 10, mode = "Horizontal", ang = 0) ->
     for k = 1, len
         t = (k - 1) / (len - 1)
         ipol = zf.util\interpolation(t, "shape", line_first, line_last) -- interpolation between first and last line
-        ipol = zf.poly\offset(ipol, pixel, "miter", "closed_line", nil, nil, true) -- fills the line through the pixel value
+        ipol = zf.poly(ipol)\offset(pixel, "miter", "closed_line")\build! -- fills the line through the pixel value
         ipol = zf.shape(ipol)\displace(fl - ll, ft - lt)\build!
-        clip = zf.poly\clip(shape, ipol)
+        clip = zf.poly(shape, ipol)\clip(false)
+        clip.smp = "line"
+        clip = clip\build!
         clipped[#clipped + 1] = clip if clip != ""
     return clipped
 

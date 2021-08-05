@@ -3,7 +3,6 @@ export script_description = "Causes the characters in your text to go through th
 export script_author      = "Zeref"
 export script_version     = "0.0.2"
 -- LIB
-Yutils = require "Yutils"
 zf = require "ZF.utils"
 
 BEZIER = (line, shape, char_x, char_y, mode, offset) ->
@@ -191,7 +190,7 @@ BEZIER = (line, shape, char_x, char_y, mode, offset) ->
     return "\\pos(#{zf.math\round(pos_Bezier[1], 3)},#{zf.math\round(pos_Bezier[2], 3)})\\frz#{bezier_angle}"
 
 text_char = (line) ->
-    c_char = [c for _, c in Yutils.utf8.chars(line.text_stripped)]
+    c_char = [c for _, c in zf.yut.utf8.chars(line.text_stripped)]
     char, char_nob, left = {}, {}, line.left
     char.n = #c_char
     for k = 1, char.n

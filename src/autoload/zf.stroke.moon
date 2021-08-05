@@ -53,9 +53,9 @@ main = (subs, sel) ->
                 interface(subs, sel)
         break if buttons == "Ok" or buttons == "Cancel"
     if buttons == "Ok"
-        aegisub.progress.task("Generating Stroke...")
+        aegisub.progress.task "Generating Stroke..."
         for _, i in ipairs sel
-            aegisub.progress.set((i - 1) / #sel * 100)
+            aegisub.progress.set i / #sel * 100
             l = subs[i + j]
             l.comment = true
             subs[i + j] = l
@@ -77,20 +77,18 @@ main = (subs, sel) ->
             --
             l.comment, out_shape, out_offset = false, "", ""
             if elements.olf
-                out_offset = zf.poly\simplify(zf.poly\offset(shape, elements.ssz, elements.crn\lower!, nil, elements.mtl, elements.atc, true), true, 3)
+                out_offset = zf.poly(shape, nil, elements.smp)\offset(elements.ssz, elements.crn\lower!, nil, elements.mtl, elements.atc)\build(nil, nil, 3)
                 __tags = zf.tags\clean("{#{tags}\\c#{zf.util\html_color(elements.color1)}}")
                 l.text = "#{__tags}#{out_offset}"
                 subs.insert(i + j + 1, l)
                 j += 1
             else
-                out_shape, out_offset = zf.poly\to_outline(shape, elements.ssz, elements.crn, elements.alg, elements.mtl, elements.atc, elements.smp)
-                colors, shapes = {elements.color3, elements.color1}, {out_shape, out_offset}
+                out_shape, out_offset = zf.poly(shape, nil, elements.smp)\to_outline(elements.ssz, elements.crn, elements.alg, elements.mtl, elements.atc)
+                colors, shapes = {elements.color3, elements.color1}, {out_shape\build(nil, nil, 3), out_offset\build(nil, nil, 3)}
                 for k = 1, 2
                     __tags = zf.tags\clean("{#{tags}\\c#{zf.util\html_color(colors[k])}}")
                     l.text = "#{__tags}#{shapes[k]}"
                     subs.insert(i + j + 1, l)
                     j += 1
-        aegisub.progress.set(100)
-    return
 
 aegisub.register_macro "Stroke Panel", script_description, main
