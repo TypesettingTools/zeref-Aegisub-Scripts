@@ -3,7 +3,7 @@ export script_description = "Does a linear interpolation between values of the f
 export script_author      = "Zeref"
 export script_version     = "0.0.2"
 -- LIB
-zf = require "ZF.utils"
+zf = require "ZF.main"
 
 tags_full = {
     "bord", "xbord", "ybord", "be", "shad", "xshad", "yshad", "blur"
@@ -12,24 +12,6 @@ tags_full = {
     "_c", "_2c", "_3c", "_4c", "_1a", "_2a", "_3a", "_4a", "alpha"
     "pos", "org", "clip"
 }
-
-interface = ->
-    gui = {}
-    tags_mask = [zf.table(tags_full)\slice(k, k + 4) for k = 1, #tags_full, 5]
-    for k = 1, #tags_mask
-        for j = 1, #tags_mask[k]
-            gui[#gui + 1] = {
-                class: "checkbox"
-                label: tags_mask[k][j]\gsub("_", "")
-                name: tags_mask[k][j]
-                x: (k - 1)
-                y: (j - 1)
-                value: false
-            }
-    gui[#gui + 1] = {class: "checkbox", label: "Ignore Text", name: "igt", x: 0, y: 6, value: false}
-    gui[#gui + 1] = {class: "label", label: "::Accel::", x: 0, y: 7}
-    gui[#gui + 1] = {class: "floatedit", name: "acc", hint: "Relative interpolation acceleration.", min: 0, x: 0, y: 8, value: 1}
-    return gui
 
 split_tags = (text) -> -- Splits text into text and tags
     v = {tg: {}, tx: {}}
@@ -294,7 +276,7 @@ class build_macro -- Output function, just set some dependencies and return the 
 
     out: =>
         @style_ref!
-        inter = zf.config\load(interface!, script_name)
+        inter = zf.config\load(zf.config\interface(script_name)(tags_full), script_name)
         local buttons, elements
         while true
             buttons, elements = aegisub.dialog.display(inter, {"Ok", "Save", "Reset", "Cancel"}, {close: "Cancel"})
@@ -303,7 +285,7 @@ class build_macro -- Output function, just set some dependencies and return the 
                     zf.config\save(inter, elements, script_name, script_version)
                     zf.config\load(inter, script_name)
                 when "Reset"
-                    interface!
+                    zf.config\interface(script_name)(tags_full)
             break if buttons == "Ok" or buttons == "Cancel"
         make_ipol = ipol(@sel_first.text, @sel_last.text, #@sel_lines, @style_values, elements, @text_ref!, @text_ref(true))
         split, box_true = make_ipol\make_tags!, {}

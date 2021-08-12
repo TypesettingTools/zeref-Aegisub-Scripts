@@ -3,24 +3,7 @@ export script_description = "Generate a gradient from cuts in sequence."
 export script_author      = "Zeref"
 export script_version     = "0.0.2"
 -- LIB
-zf = require "ZF.utils"
-
-interface = ->
-    modes = {"Vertical", "Horizontal", "Diagonal 1", "Diagonal 2", "By Angle"}
-    {
-        {class: "dropdown", name: "mode", items: modes, value: "Vertical", x: 8, y: 1}
-        {class: "label", label: "Gradient Types:", x: 8, y: 0}
-        {class: "label", label: "Gap Size: ", x: 8, y: 2}
-        {class: "intedit", name: "px", x: 8, y: 3, min: 1, value: 2}
-        {class: "label", label: "Accel: ", x: 8, y: 4}
-        {class: "floatedit", name: "ac", x: 8, y: 5, value: 1}
-        {class: "label", label: "Angle: ", x: 8, y: 6}
-        {class: "floatedit", name: "ag", x: 8, y: 7, value: 0}
-        {class: "checkbox", label: "Remove selected layers?", name: "act", x: 8, y: 8, value: true}
-        {class: "label", label: "\nColors: ", x: 8, y: 9}
-        {class: "color", name: "color1", x: 8, y: 10, height: 2, value: "#FFFFFF"}
-        {class: "color", name: "color2", x: 8, y: 12, height: 2, value: "#FF0000"}
-    }
+zf = require "ZF.main"
 
 -- https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
 line_intersection = (a, b, c, d) ->
@@ -40,6 +23,7 @@ line_intersection = (a, b, c, d) ->
         y: parallel and 0 or c.y + f.y * h1
     }
 
+-- cuts shapes into several pieces
 make_cuts = (shape, pixel = 10, mode = "Horizontal", ang = 0) ->
     ang = switch mode
         when "Horizonal"  then 0
@@ -48,9 +32,10 @@ make_cuts = (shape, pixel = 10, mode = "Horizontal", ang = 0) ->
         when "Diagonal 2" then -45
     -- gets left and top values from the original value and from the source value
     fl, ft = zf.shape(shape)\bounding! -- left and top
-    ll, lt = zf.shape(shape)\origin!\bounding! -- left and top origin
+    shapeo = zf.shape(shape)\origin! -- moves to origin
+    ll, lt = shapeo\bounding! -- left and top origin
     -- saves the real width and height values
-    owi, ohe = w_shape, h_shape
+    owi, ohe = shapeo.w_shape, shapeo.h_shape
     -- gets the new width and height after rotation
     cos = math.cos(math.rad(ang))
     sin = math.sin(math.rad(ang))
@@ -88,8 +73,7 @@ make_cuts = (shape, pixel = 10, mode = "Horizontal", ang = 0) ->
     clipped = {}
     len = zf.math\round(new_w / pixel, 0)
     for k = 1, len
-        t = (k - 1) / (len - 1)
-        ipol = zf.util\interpolation(t, "shape", line_first, line_last) -- interpolation between first and last line
+        ipol = zf.util\interpolation((k - 1) / (len - 1), "shape", line_first, line_last) -- interpolation between first and last line
         ipol = zf.poly(ipol)\offset(pixel, "miter", "closed_line")\build! -- fills the line through the pixel value
         ipol = zf.shape(ipol)\displace(fl - ll, ft - lt)\build!
         clip = zf.poly(shape, ipol)\clip(false)
@@ -99,17 +83,19 @@ make_cuts = (shape, pixel = 10, mode = "Horizontal", ang = 0) ->
     return clipped
 
 gradient = (subs, sel) ->
-    rest = (t, read, len = 6) -> -- adds in the GUI, the colors that were added
+    -- adds in the GUI, the colors that were added
+    rest = (t, read, len = 6) ->
         j = 1
         for i = 7, len
-            t[i + 5] = {class: "color", name: "color#{i - 5}", x: 8, y: i + j + 4, height: 2, value: read.v["color#{i - 5}"]}
+            t[i + 5] = {class: "color", name: "color#{i - 5}", x: t[1].x, y: i + j + 4, height: 2, value: read.v["color#{i - 5}"]}
             j += 1
         return t
+    -- adds new color palettes to the interface
     add_colors = (t, j) ->
-        GUI = zf.table(t)\copy!
-        table.insert(GUI, {class: "color", name: "color#{(#GUI - 10) + 1}", x: 8, y: GUI[#GUI].y + j, height: 2, value: "#000000"})
-        return GUI
-    inter, read, len = zf.config\load(interface!, script_name)
+        gui = zf.table(t)\copy!
+        table.insert(gui, {class: "color", name: "color#{(#gui - 10) + 1}", x: 8, y: gui[#gui].y + j, height: 2, value: "#000000"})
+        return gui
+    inter, read, len = zf.config\load(zf.config\interface(script_name)!, script_name)
     inter = rest(inter, read, len)
     local buttons, elements, j
     while true
@@ -124,44 +110,44 @@ gradient = (subs, sel) ->
                 j += 2
                 add_colors(inter, j)
             when "Reset"
-                interface!
+                zf.config\interface(script_name)!
         break if buttons == "Ok" or buttons == "Cancel"
     cap_colors, j = {}, 0
     for i = 11, #inter
         table.insert(cap_colors, zf.util\html_color(elements["color#{i - 10}"]))
     if buttons == "Ok"
-        aegisub.progress.task("Generating Gradient...")
-        for _, i in ipairs(sel)
-            aegisub.progress.set (i - 1) / #sel * 100
+        aegisub.progress.task "Generating Gradient..."
+        for _, i in ipairs sel
+            aegisub.progress.set i / #sel * 100
             l = subs[i + j]
             l.comment = true
+            --
+            meta, styles = zf.util\tags2styles(subs, l)
+            karaskel.preproc_line(subs, meta, styles, l)
+            coords = zf.util\find_coords(l, meta, true)
+            --
+            line = zf.table(l)\copy!
             subs[i + j] = l
             if elements.act == true
                 subs.delete(i + j)
                 j -= 1
             --
-            meta, styles = zf.util\tags2styles(subs, l)
-            karaskel.preproc_line(subs, meta, styles, l)
-            coords = zf.util\find_coords(l, meta)
-            --
-            text = zf.tags\remove("full", l.text)
-            tags = zf.tags(l.text)\remove("shape_gradient")
-            tags ..= "\\pos(#{coords.pos.x},#{coords.pos.y})" unless tags\match("\\pos%b()") and not tags\match("\\move%b()")
-            --
-            shape = text\match("m%s+%-?%d[%.%-%d mlb]*")
-            shape or= zf.shape(zf.text\to_clip(l, text))\unclip(l.styleref.align)\build!
-            shape = zf.shape(shape)\org_points(l.styleref.align)\build!
-            --
-            cuts = make_cuts(shape, elements.px, elements.mode, elements.ag, meta)
-            line = table.copy(l)
-            for k = 1, #cuts
-                line.comment = false
-                color = "\\c#{zf.util\interpolation((k - 1) ^ elements.ac / (#cuts - 1) ^ elements.ac, "color", cap_colors)}"
-                __tag = zf.tags\clean("{#{tags .. color}}")
-                line.text = "#{__tag}#{cuts[k]}"
-                subs.insert(i + j + 1, line)
-                j += 1
-        aegisub.progress.set(100)
-    return
+            line.comment = false
+            tags = zf.text(subs, line, line.text)\tags!
+            for t, tag in ipairs tags
+                px, py, org = zf.text\org_pos(coords, tag, line)
+                shape = tag.text_stripped\match("m%s+%-?%d[%.%-%d mlb]*")
+                is_text = not shape
+                shape or=  zf.shape(zf.text(subs, tag, tag.text_stripped)\to_clip!)\unclip(tag.styleref.align)\build!
+                shape = zf.shape(shape)\org_points(line.styleref.align)\build!
+                --
+                __tags = zf.tags(tag.text)\remove(is_text and "text_gradient" or "shape_gradient")
+                cuts = make_cuts(shape, elements.px, elements.mode, elements.ag, meta)
+                for k = 1, #cuts
+                    color = "\\c#{zf.util\interpolation((k - 1) ^ elements.ac / (#cuts - 1) ^ elements.ac, "color", cap_colors)}"
+                    __tag = zf.tags\clean("{\\pos(#{px},#{py})#{org .. __tags .. color}}")
+                    tag.text = "#{__tag}#{cuts[k]}"
+                    subs.insert(i + j + 1, tag)
+                    j += 1
 
 aegisub.register_macro script_name, script_description, gradient

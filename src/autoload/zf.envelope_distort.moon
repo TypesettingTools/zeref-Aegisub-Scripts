@@ -3,43 +3,19 @@ export script_description = "Makes distortions in shapes by means of control poi
 export script_author      = "Zeref"
 export script_version     = "0.0.2"
 -- LIB
-zf = require "ZF.utils"
+zf = require "ZF.main"
 
-interface = ->
-    inter_utils = {
-        m: { -- mesh
-            t: {"Bezier", "Line"} -- types
-            g: {"Mesh", "Warp", "Perspective"} -- types
-            h: {
-                "Interpolation of the control points around the bounding box.",
-                "Mesh, will generate the control points.\nWarp, will generate the distortion from the control points."
-                "Interpolation tolerance of the control points that are of Bezier type."
-                "Control points style type."
-            }
-        }
-    }
-    {
-        {class: "label", label: "Control Points: ", x: 0, y: 0}
-        {class: "intedit", name: "siz", hint: inter_utils.m.h[1], x: 0, y: 1, width: 5, min: 1, value: 1}
-        {class: "label", label: "Generator: ", x: 0, y: 2}
-        {class: "dropdown", name: "gmw", items: inter_utils.m.g, hint: inter_utils.m.h[2], x: 0, y: 3, width: 5, value: inter_utils.m.g[1]}
-        {class: "label", label: "Tolerance:  ", x: 5, y: 0}
-        {class: "intedit", name: "tol", hint: inter_utils.m.h[3], x: 5, y: 1, width: 7, min: 1, value: 50}
-        {class: "label", label: "Type:  ", x: 5, y: 2}
-        {class: "dropdown", name: "tpc", items: inter_utils.m.t, hint: inter_utils.m.h[4], x: 5, y: 3, width: 7, value: inter_utils.m.t[2]}
-    }
-
-genr_ctrl_pts = (shape, size, bezier) ->
-    -- generates a bounding box around the shape
-    box, l, t, r, b = zf.shape(shape)\bounding(true)
+-- generates the inspection points
+genr_mesh = (shape, size, bezier) ->
+    box = zf.shape(shape)\bounding(true)
     box = size > 1 and zf.shape(box)\split(nil, "all", size) or zf.shape(box)
     box\to_bezier! if bezier
     return box\build!
 
+-- generates the output with the deformation
 genr_warp = (shape, mesh, TOLERANCE = 50, perspective) ->
     unless perspective
         get_mesh = {i: {}, o: {}}
-        -- generates a bounding box around the shape
         box, l, t, r, b = zf.shape(shape)\bounding(true)
         -- recreates the mesh points from the information given by the mesh point present in the clip
         bezier = mesh\match "b"
@@ -79,7 +55,7 @@ genr_warp = (shape, mesh, TOLERANCE = 50, perspective) ->
         return zf.shape(shape)\perspective(destin)\build!
 
 main = (subs, sel) ->
-    inter = zf.config\load(interface!, script_name)
+    inter, j = zf.config\load(zf.config\interface(script_name)!, script_name), 0
     local buttons, elements
     while true
         buttons, elements = aegisub.dialog.display(inter, {"Ok", "Save", "Reset", "Cancel"}, {close: "Cancel"})
@@ -88,45 +64,57 @@ main = (subs, sel) ->
                 zf.config\save(inter, elements, script_name, script_version)
                 zf.config\load(inter, script_name)
             when "Reset"
-                interface!
+                zf.config\interface(script_name)!
         break if buttons == "Ok" or buttons == "Cancel"
+    aegisub.progress.task "Processing..."
     if buttons == "Ok"
-        for k, v in ipairs(sel)
-            l = subs[v]
+        for _, i in ipairs sel
+            aegisub.progress.set i / #sel * 100
+            l = subs[i + j]
+            l.comment = true
+            --
             meta, styles = zf.util\tags2styles(subs, l)
             karaskel.preproc_line(subs, meta, styles, l)
-            coords = zf.util\find_coords(l, meta)
+            coords = zf.util\find_coords(l, meta, true)
             --
-            text = zf.tags\remove("full", l.text)
-            tags = zf.tags(l.text)\remove("shape_poly")
+            line = zf.table(l)\copy!
+            subs[i + j] = l
+            if elements.rfl == true
+                subs.delete(i + j)
+                j -= 1
             --
-            shape = text\match("m%s+%-?%d[%.%-%d mlb]*")
-            shape or= zf.shape(zf.text\to_clip(l, text))\unclip(l.styleref.align)\build!
-            shape = zf.shape(shape)\org_points(l.styleref.align)\build!
-            px, py = coords.pos.x, coords.pos.y
-            switch elements.gmw
-                when "Mesh"
-                    tags = tags\gsub("{(.-)}", "%1", 1)
-                    --
-                    ctrl_pts = genr_ctrl_pts(shape, elements.siz, (elements.tpc == "Bezier") and true or false)
-                    ctrl_pts = zf.shape(ctrl_pts)\to_clip(7, px, py)\build(nil, 0)
-                    ctrl_pts = "\\clip(#{ctrl_pts})"
-                    --
-                    tags = zf.tags\clean("{#{tags\gsub("\\i?clip%b()", "") .. ctrl_pts}}")
-                    l.text = "#{tags}#{shape}"
-                when "Warp"
-                    assert l.text\match("\\i?clip()"), "You did not generate the control points!"
-                    ctrl_pts = zf.shape(l.text)\unclip(7, px, py)\build!
-                    --
-                    tags = zf.tags\clean("{#{tags\gsub("\\i?clip%b()", "")}}")
-                    l.text = "#{tags}#{genr_warp(shape, ctrl_pts, elements.tol)}"
-                when "Perspective"
-                    assert l.text\match("\\i?clip()"), "You did not generate the control points!"
-                    ctrl_pts = zf.shape(l.text)\unclip(7, px, py)\build!
-                    --
-                    tags = zf.tags\clean("{#{tags\gsub("\\i?clip%b()", "")}}")
-                    l.text = "#{tags}#{genr_warp(shape, ctrl_pts, nil, true)}"
-            subs[v] = l
-    return
+            line.comment = false
+            for t, tag in ipairs zf.text(subs, line, line.text)\tags!
+                px, py, org = zf.text\org_pos(coords, tag, line)
+                shape = tag.text_stripped\match("m%s+%-?%d[%.%-%d mlb]*")
+                shape or=  zf.shape(zf.text(subs, tag, tag.text_stripped)\to_clip!)\unclip(tag.styleref.align)\build!
+                shape = zf.shape(shape)\org_points(line.styleref.align)\build!
+                --
+                __tags = zf.tags(tag.text)\remove("envelope")
+                switch elements.gmw
+                    when "Mesh"
+                        ctrl_pts = genr_mesh(shape, elements.siz, elements.tpc == "Bezier" and true or false)
+                        ctrl_pts = "\\clip(#{zf.shape(ctrl_pts)\to_clip(7, px, py)\build(nil, 0)})"
+                        --
+                        __tags = zf.tags\clean("{\\pos(#{px},#{py})#{org .. __tags\gsub("\\i?clip%b()", "") .. ctrl_pts}}")
+                        line.text = "#{__tags}#{shape}"
+                        subs.insert(i + j + 1, line)
+                        j += 1
+                    when "Warp"
+                        assert tag.tags\match("\\i?clip"), "clip expected"
+                        ctrl_pts = zf.shape(tag.text)\unclip(7, coords.pos.x, coords.pos.y)\build!
+                        --
+                        __tags = zf.tags\clean("{#{__tags\gsub("\\i?clip%b()", "")}}")
+                        tag.text = "#{__tags}#{genr_warp(shape, ctrl_pts, elements.tol)}"
+                        subs.insert(i + j + 1, tag)
+                        j += 1
+                    when "Perspective"
+                        assert tag.tags\match("\\i?clip"), "clip expected"
+                        ctrl_pts = zf.shape(tag.text)\unclip(7, coords.pos.x, coords.pos.y)\build!
+                        --
+                        __tags = zf.tags\clean("{#{__tags\gsub("\\i?clip%b()", "")}}")
+                        tag.text = "#{__tags}#{genr_warp(shape, ctrl_pts, nil, true)}"
+                        subs.insert(i + j + 1, tag)
+                        j += 1
 
-aegisub.register_macro "#{script_name}", script_description, main
+aegisub.register_macro script_name, script_description, main
