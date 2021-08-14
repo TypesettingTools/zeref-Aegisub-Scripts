@@ -125,6 +125,7 @@ gradient = (subs, sel) ->
             meta, styles = zf.util\tags2styles(subs, l)
             karaskel.preproc_line(subs, meta, styles, l)
             coords = zf.util\find_coords(l, meta, true)
+            px, py = coords.pos.x, coords.pos.y
             --
             line = zf.table(l)\copy!
             subs[i + j] = l
@@ -133,21 +134,29 @@ gradient = (subs, sel) ->
                 j -= 1
             --
             line.comment = false
-            tags = zf.text(subs, line, line.text)\tags!
-            for t, tag in ipairs tags
-                px, py, org = zf.text\org_pos(coords, tag, line)
-                shape = tag.text_stripped\match("m%s+%-?%d[%.%-%d mlb]*")
-                is_text = not shape
-                shape or=  zf.shape(zf.text(subs, tag, tag.text_stripped)\to_clip!)\unclip(tag.styleref.align)\build!
+            shape = zf.tags\remove("full", line.text)\match("m%s+%-?%d[%.%-%d mlb]*")
+            unless shape
+                for t, tag in ipairs zf.text(subs, line, line.text)\tags!
+                    px, py, org = zf.text\org_pos(coords, tag, line)
+                    shape = zf.shape(zf.text(subs, tag, tag.text_stripped)\to_clip!)\unclip(tag.styleref.align)\build!
+                    shape = zf.shape(shape)\org_points(line.styleref.align)\build!
+                    _tags = zf.tags(tag.tags)\remove("text_gradient")
+                    cuts = make_cuts(shape, elements.px, elements.mode, elements.ag, meta)
+                    for k = 1, #cuts
+                        color = "\\c#{zf.util\interpolation((k - 1) ^ elements.ac / (#cuts - 1) ^ elements.ac, "color", cap_colors)}"
+                        __tags = zf.tags\clean("{\\pos(#{px},#{py})#{org .. _tags .. color}}")
+                        tag.text = "#{__tags}#{cuts[k]}"
+                        subs.insert(i + j + 1, tag)
+                        j += 1
+            else
                 shape = zf.shape(shape)\org_points(line.styleref.align)\build!
-                --
-                __tags = zf.tags(tag.text)\remove(is_text and "text_gradient" or "shape_gradient")
+                _tags = zf.tags(zf.tags(line.text)\find!)\remove("shape_gradient")
                 cuts = make_cuts(shape, elements.px, elements.mode, elements.ag, meta)
                 for k = 1, #cuts
                     color = "\\c#{zf.util\interpolation((k - 1) ^ elements.ac / (#cuts - 1) ^ elements.ac, "color", cap_colors)}"
-                    __tag = zf.tags\clean("{\\pos(#{px},#{py})#{org .. __tags .. color}}")
-                    tag.text = "#{__tag}#{cuts[k]}"
-                    subs.insert(i + j + 1, tag)
+                    __tags = zf.tags\clean("{\\pos(#{px},#{py})#{_tags .. color}}")
+                    line.text = "#{__tags}#{cuts[k]}"
+                    subs.insert(i + j + 1, line)
                     j += 1
 
 aegisub.register_macro script_name, script_description, gradient

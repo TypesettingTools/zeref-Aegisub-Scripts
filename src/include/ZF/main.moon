@@ -1,9 +1,9 @@
 -- globalize lib math
 with math
-    export pi, ln, sin, cos, tan, max, min    = .pi, .log, .sin, .cos, .tan, .max, .min
-    export abs, deg, rad, log, asin, sqrt     = .abs, .deg, .rad, .log10, .asin, .sqrt
-    export acos, atan, sinh, cosh, tanh, rand = .acos, .atan, .asin, .cosh, .tanh, .random
-    export ceil, floor, atan2, format, unpack = .ceil, .floor, .atan2, string.format, table.unpack or unpack
+    export pi, ln, sin, cos, tan, max, min      = .pi, .log, .sin, .cos, .tan, .max, .min
+    export abs, deg, rad, log, asin, sqrt       = .abs, .deg, .rad, .log10, .asin, .sqrt
+    export acos, atan, sinh, cosh, tanh, random = .acos, .atan, .asin, .cosh, .tanh, .random
+    export ceil, floor, atan2, format, unpack   = .ceil, .floor, .atan2, string.format, table.unpack or unpack
 
 -- globalize Yutils
 export Yutils = require "Yutils"
