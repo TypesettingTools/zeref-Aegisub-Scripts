@@ -25,8 +25,7 @@ merge_shapes = (subs, sel, simp) ->
         meta, styles = zf.util\tags2styles(subs, l)
         karaskel.preproc_line(subs, meta, styles, l)
         coords = zf.util\find_coords(l, meta)
-        detect = zf.tags\remove("full", l.text)
-        shape = assert detect\match("m%s+%-?%d[%.%-%d mlb]*"), "shape expected"
+        shape = assert zf.tags\remove("full", l.text)\match("m%s+%-?%d[%.%-%d mlb]*"), "shape expected"
         table.insert(mg.shapes, shape)
         table.insert(mg.pos, coords.pos)
         table.insert(mg.an, l.styleref.align)
@@ -141,11 +140,11 @@ main = (subs, sel) ->
                             shape, tags = help(line.text, detect, "shape", px, py)
                             shape_origin, nx, ny = zf.shape(shape)\origin(true)
                             if tags\match("\\pos%b()")
-                                tags = tags\gsub "\\pos%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)", (x, y) ->
-                                    return "\\pos(#{x + nx},#{y + ny}"
+                                capt = "\\pos%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)"
+                                tags = tags\gsub capt, (x, y) -> "\\pos(#{x + nx},#{y + ny}"
                             elseif tags\match "\\move%b()"
-                                tags = tags\gsub "\\move%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)", (x1, y1, x2, y2) ->
-                                    return "\\move(#{x1 + nx},#{y1 + ny},#{x2 + nx},#{y2 + ny}"
+                                capt = "\\move%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)"
+                                tags = tags\gsub capt, (x1, y1, x2, y2) -> "\\move(#{x1 + nx},#{y1 + ny},#{x2 + nx},#{y2 + ny}"
                             line.text = "#{tags}#{shape_origin\build!}"
                             subs.insert(i + j + 1, line)
                             j += 1
@@ -250,10 +249,9 @@ main = (subs, sel) ->
                             subs.insert(i + j + 1, line)
                             j += 1
                         when m_list["tts"]
-                            tags = zf.text(subs, line, line.text)\tags!
-                            for t, tag in ipairs tags
-                                __tags = zf.tags(tag.text)\remove("text_shape")
-                                assert not detect\match("m%s+%-?%d[%.%-%d mlb]*"), "text expected"
+                            assert not zf.tags\remove("full", line.text)\match("m%s+%-?%d[%.%-%d mlb]*"), "text expected"
+                            for t, tag in ipairs zf.text(subs, line, line.text)\tags!
+                                __tags = zf.tags(tag.tags)\remove("text_shape")
 
                                 px, py, org = zf.text\org_pos(coords, tag, line)
                                 text_shape = zf.shape(zf.text(subs, tag, tag.text_stripped)\to_clip!)\unclip(tag.styleref.align)\build!
@@ -262,17 +260,15 @@ main = (subs, sel) ->
                                 subs.insert(i + j + 1, tag)
                                 j += 1
                         when m_list["ttc"]
-                            tags = zf.text(subs, line, line.text)\tags!
-                            for t, tag in ipairs tags
-                                cp_tag = line.text\match("\\iclip") and "\\iclip" or "\\clip"
-                                __tags = zf.tags(tag.text)\remove("text_clip")
-                                assert not detect\match("m%s+%-?%d[%.%-%d mlb]*"), "text expected"
+                            cp_tag = line.text\match("\\iclip") and "\\iclip" or "\\clip"
+                            assert not zf.tags\remove("full", line.text)\match("m%s+%-?%d[%.%-%d mlb]*"), "text expected"
+                            for t, tag in ipairs zf.text(subs, line, line.text)\tags!
+                                __tags = zf.tags(tag.tags)\remove("text_clip")
 
                                 px, py, org = zf.text\org_pos(coords, tag, line)
-                                text_clip = zf.text(subs, tag, tag.text_stripped)\to_clip(line.styleref.align, px, py)
-                                __tags ..= "#{org}\\pos(#{px},#{py})#{cp_tag}(#{text_clip})"
+                                text_clip = zf.shape(zf.text(subs, tag, tag.text_stripped)\to_clip(line.styleref.align, px, py))\build!
 
-                                tag.text = "#{zf.tags\clean("{#{__tags}}")}#{tag.text_stripped}"
+                                tag.text = "#{zf.tags\clean("{#{org}\\pos(#{px},#{py})#{__tags}#{cp_tag}(#{text_clip})}")}#{tag.text_stripped}"
                                 subs.insert(i + j + 1, tag)
                                 j += 1
 

@@ -67,21 +67,21 @@ class TEXT
     -- organize positioning in tags
     org_pos: (coord, tag, line) =>
         ox, oy, vx, vy = coord.org.x, coord.org.y, coord.pos.x, coord.pos.y
-        tx, ty, lx, ly = switch tag.styleref.align
-            when 1 then tag.left,   tag.bottom, line.left,   line.bottom
-            when 2 then tag.center, tag.bottom, line.center, line.bottom
-            when 3 then tag.right,  tag.bottom, line.right,  line.bottom
-            when 4 then tag.left,   tag.middle, line.left,   line.middle
-            when 5 then tag.center, tag.middle, line.center, line.middle
-            when 6 then tag.right,  tag.middle, line.right,  line.middle
-            when 7 then tag.left,   tag.top,    line.left,   line.top
-            when 8 then tag.center, tag.top,    line.center, line.top
-            when 9 then tag.right,  tag.top,    line.right,  line.top
+        tx, ty, lx, ly, ofx = switch tag.styleref.align
+            when 1 then tag.left,   tag.bottom, line.left,   line.bottom, tag.offset
+            when 2 then tag.center, tag.bottom, line.center, line.bottom, 0
+            when 3 then tag.right,  tag.bottom, line.right,  line.bottom, -tag.offset
+            when 4 then tag.left,   tag.middle, line.left,   line.middle, tag.offset
+            when 5 then tag.center, tag.middle, line.center, line.middle, 0
+            when 6 then tag.right,  tag.middle, line.right,  line.middle, -tag.offset
+            when 7 then tag.left,   tag.top,    line.left,   line.top,    tag.offset
+            when 8 then tag.center, tag.top,    line.center, line.top,    0
+            when 9 then tag.right,  tag.top,    line.right,  line.top,    -tag.offset
         frz = tag.tags\match "\\frz?%-?%d[%.%d]*"
         frx = tag.tags\match "\\frx%-?%d[%.%d]*"
         fry = tag.tags\match "\\fry%-?%d[%.%d]*"
         org = (frz or frx or fry) and "\\org(#{ox},#{oy})" or ""
-        return MATH\round(tx - lx + vx), MATH\round(ty - ly + vy), org
+        return MATH\round(tx - lx - ofx + vx), MATH\round(ty - ly + vy), org
 
     -- gets character information from a text
     chars: =>
@@ -165,6 +165,7 @@ class TEXT
                 tag.left   += offset
                 tag.center += offset
                 tag.right  += offset
+                tag.offset = offset
                 -- adds chars and words infos to the tag values
                 @line      = tag
                 @text      = tag.text_stripped
