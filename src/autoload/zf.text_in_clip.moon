@@ -191,7 +191,7 @@ main = (subs, sel) ->
             line.width += dif
             for t, tag in ipairs tags
                 rtags = zf.tags\remove("text_in_clip", tag.tags\sub(2, -2))
-                for c, char in ipairs tag.chars
+                for c, char in ipairs elements.wwd and tag.words or tag.chars
                     tag.comment = false
                     px, py = switch tag.styleref.align
                         when 1 then char.left,   tag.bottom
