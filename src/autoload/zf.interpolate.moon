@@ -1,313 +1,271 @@
-export script_name        = "Interpolate Master"
-export script_description = "Does a linear interpolation between values of the first and last selected line"
+export script_name        = "Interpolate Tags"
+export script_description = "Interpolates values of selected tags"
 export script_author      = "Zeref"
-export script_version     = "0.0.2"
+export script_version     = "0.0.3"
 -- LIB
 zf = require "ZF.main"
 
-tags_full = {
-    "bord", "xbord", "ybord", "be", "shad", "xshad", "yshad", "blur"
-    "fs", "fscx", "fscy", "fsp"
-    "frx", "fry", "frz", "fax", "fay"
-    "_c", "_2c", "_3c", "_4c", "_1a", "_2a", "_3a", "_4a", "alpha"
-    "pos", "org", "clip"
+-- captures of all interpolable tags
+tagsIpol = {
+    fs:   "\\fs%s*(%d[%.%d]*)",      fsp:   "\\fsp%s*(%-?%d[%.%d]*)",   fscx:  "\\fscx%s*(%d[%.%d]*)"
+    fscy: "\\fscy%s*(%d[%.%d]*)",    frz:   "\\frz%s*(%-?%d[%.%d]*)",   frx:   "\\frx%s*(%-?%d[%.%d]*)"
+    fry:  "\\fry%s*(%-?%d[%.%d]*)",  fax:   "\\fax%s*(%-?%d[%.%d]*)",   fay:   "\\fay%s*(%-?%d[%.%d]*)"
+    bord: "\\bord%s*(%d[%.%d]*)",    xbord: "\\xbord%s*(%d[%.%d]*)",    ybord: "\\ybord%s*(%d[%.%d]*)"
+    shad: "\\shad%s*(%-?%d[%.%d]*)", xshad: "\\xshad%s*(%-?%d[%.%d]*)", yshad: "\\yshad%s*(%-?%d[%.%d]*)"
+    "1c": "\\1c%s*(&?[Hh]%x+&?)",    "2c":  "\\2c%s*(&?[Hh]%x+&?)",     "3c":  "\\3c%s*(&?[Hh]%x+&?)"
+    "4c": "\\4c%s*(&?[Hh]%x+&?)",    "1a":  "\\1a%s*(&?[Hh]%x+&?)",     "2a":  "\\2a%s*(&?[Hh]%x+&?)"
+    "3a": "\\3a%s*(&?[Hh]%x+&?)",    "4a":  "\\4a%s*(&?[Hh]%x+&?)",     alpha: "\\alpha%s*(&?[Hh]%x+&?)"
+    pos:  "\\pos%b()",               move:  "\\move%b()",               org:   "\\org%b()"
+    clip: "\\i?clip%b()"
 }
 
-split_tags = (text) -> -- Splits text into text and tags
-    v = {tg: {}, tx: {}}
-    v.tg = [t for t in text\gmatch "%b{}"]
-    while text != ""
-        c, d = zf.util\headtail(text, "%b{}")
-        v.tx[#v.tx + 1] = c
-        text = d
-    return v
+-- interpolates all selected tags
+ipolTags = (firstLine, lastLine, length, selectedTags, accel, layer) ->
+    -- if no tag is selected, returns nil
+    return nil if #selectedTags <= 0
 
-concat_4 = (t) -> -- Concatenates tables that have subtables
-    nt = {}
-    sizes = [#t[i] for i = 1, #t]
-    table.sort(sizes, (a, b) -> a > b)
-    for i = 1, sizes[1] or 0
-        nt[i] = ""
-        for k = 1, #t
-            nt[i] ..= t[k][i] or ""
-    return nt
+    -- gets the tag type
+    getTyper = (tag) ->
+        if tag\match "%dc"
+            return "color"
+        elseif tag\match("%da") or tag == "alpha"
+            return "alpha"
+        elseif tag == "pos" or tag == "move" or tag == "org" or tag == "clip"
+            return "other"
+        return "number"
 
-table_len = (t) -> -- get the real length of the table
-    count = 0
-    for k, v in pairs t
-        count += 1
-    return count
+    -- does the interpolation from two values
+    makeIpol = (first, last, tag, typer = "number") ->
+        -- transforms values between commas into numbers
+        toNumber = (value, tagCurr) ->
+            args = {}
+            value = value\gsub("%s+", "")\gsub("\\#{tagCurr}%((.-)%)", "%1")\gsub "[^,]*", (i) ->
+                args[#args + 1] = tonumber i
+            return unpack args
+        if typer != "other"
+            ipol = {}
+            for k = 1, length
+                t = (k - 1) ^ accel / (length - 1) ^ accel
+                val = zf.util\interpolation(t, typer, first, last)
+                val = (typer != "color" and typer != "alpha") and zf.math\round(val) or val
+                ipol[#ipol + 1] = "\\#{tag}#{val}"
+            return ipol
+        interpol = {}
+        switch tag
+            when "pos"
+                assert first and last, "expected tag \" \\pos \""
+                fx, fy = toNumber(first, "pos")
+                lx, ly = toNumber(last, "pos")
+                for k = 1, length
+                    t = (k - 1) ^ accel / (length - 1) ^ accel
+                    px = zf.math\round zf.util\interpolation(t, "number", fx, lx)
+                    py = zf.math\round zf.util\interpolation(t, "number", fy, ly)
+                    interpol[k] = "\\pos(#{px},#{py})"
+            when "org"
+                assert first and last, "expected tag \" \\org \""
+                fx, fy = toNumber(first, "org")
+                lx, ly = toNumber(last, "org")
+                for k = 1, length
+                    t = (k - 1) ^ accel / (length - 1) ^ accel
+                    px = zf.math\round zf.util\interpolation(t, "number", fx, lx)
+                    py = zf.math\round zf.util\interpolation(t, "number", fy, ly)
+                    interpol[k] = "\\org(#{px},#{py})"
+            when "move"
+                -- gets the start and end time of the move tag
+                getTime = (args) -> if args[1] then args[1], args[2] elseif args[3] then args[3], args[4]
+                assert first and last, "expected tag \" \\move \""
+                fx1, fy1, fx2, fy2, ft1, ft2 = toNumber(first, "move")
+                lx1, ly1, lx2, ly2, lt1, lt2 = toNumber(last, "move")
+                tms, tme = getTime({ft1, ft2, lt1, lt2})
+                for k = 1, length
+                    t = (k - 1) ^ accel / (length - 1) ^ accel
+                    px1 = zf.math\round zf.util\interpolation(t, "number", fx1, lx1)
+                    py1 = zf.math\round zf.util\interpolation(t, "number", fy1, ly1)
+                    px2 = zf.math\round zf.util\interpolation(t, "number", fx2, lx2)
+                    py2 = zf.math\round zf.util\interpolation(t, "number", fy2, ly2)
+                    mve = "\\move(#{px1},#{py1},#{px2},#{py2}"
+                    interpol[k] = (tms and tme) and "#{mve},#{tms},#{tme})" or "#{mve})"
+            when "clip"
+                assert first and last, "expected tag \" \\i?clip \""
+                cp = first\match("\\iclip") and "\\iclip" or "\\clip"
+                fv = zf.util\clip_to_draw first
+                lv = zf.util\clip_to_draw last
+                for k = 1, length
+                    t = (k - 1) ^ accel / (length - 1) ^ accel
+                    shape = zf.util\interpolation(t, "shape", fv, lv)
+                    interpol[k] = "#{cp}(#{shape})"
+        return interpol
 
-interpolation = (first, last, loop, accel = 1, tags = "") -> -- Interpolates any possible tag
-    t, ipol = {tostring(first),  tostring(last)}, {}
-    pol = interpolate
-    for v in *t
-        if v\match "&?[Hh]%x%x%x%x%x%x&?"
-            pol = interpolate_color
-        elseif v\match "&?[Hh]%x%x&?"
-            pol = interpolate_alpha
-    if t[1]\match("\\pos%b()") and t[2]\match("\\pos%b()")
-        fx, fy = t[1]\match "\\pos%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
-        lx, ly = t[2]\match "\\pos%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
-        fx, fy, lx, ly = tonumber(fx), tonumber(fy), tonumber(lx), tonumber(ly)
-        for k = 1, loop
-            px = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "number", fx, lx)
-            py = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "number", fy, ly)
-            ipol[#ipol + 1] = "\\pos(#{px},#{py})"
-    elseif (not t[1]\match("\\pos%b()") and t[2]\match("\\pos%b()")) or (t[1]\match("\\pos%b()") and not t[2]\match("\\pos%b()"))
-        error "You must have the \\pos in both positions"
-    elseif t[1]\match("\\org%b()") and t[2]\match("\\org%b()")
-        fx, fy = t[1]\match "\\org%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
-        lx, ly = t[2]\match "\\org%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
-        fx, fy, lx, ly = tonumber(fx), tonumber(fy), tonumber(lx), tonumber(ly)
-        for k = 1, loop
-            px = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "number", fx, lx)
-            py = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "number", fy, ly)
-            ipol[#ipol + 1] = "\\org(#{px},#{py})"
-    elseif (not t[1]\match("\\org%b()") and t[2]\match("\\org%b()")) or (t[1]\match("\\org%b()") and not t[2]\match("\\org%b()"))
-        error "You must have the \\org in both positions"
-    elseif t[1]\match("\\i?clip%b()") and t[2]\match("\\i?clip%b()")
-        first_cp, last_cp = {}, {}
-        _type_ = (t[1]\match("\\iclip") or t[2]\match("\\iclip")) and "iclip" or "clip"
-        cap_rectangle = "\\i?clip%(%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*,%s*(%-?%d[%.%d]*)%s*%)"
-        cap_vector = "\\i?clip%((m%s+%-?%d[%.%-%d mlb]*)%)"
-        if not t[1]\match(cap_vector) and not t[2]\match(cap_vector)
-            fl, ft, fr, fb = t[1]\match(cap_rectangle)
-            ll, lt, lr, lb = t[2]\match(cap_rectangle)
-            fl, ft, fr, fb = tonumber(fl), tonumber(ft), tonumber(fr), tonumber(fb)
-            ll, lt, lr, lb = tonumber(ll), tonumber(lt), tonumber(lr), tonumber(lb)
-            for k = 1, loop
-                l = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "number", fl, ll)
-                t = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "number", ft, lt)
-                r = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "number", fr, lr)
-                b = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "number", fb, lb)
-                ipol[#ipol + 1] = "\\#{_type_}(#{l},#{t},#{r},#{b})"
-        elseif not t[1]\match(cap_vector) and t[2]\match(cap_vector)
-            f = zf.util\clip_to_draw t[1]\match("\\i?clip%b()")
-            l = t[2]\match(cap_vector)
-            for k = 1, loop
-                s = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "shape", f, l)
-                ipol[#ipol + 1] = "\\#{_type_}(#{s})"
-        elseif t[1]\match(cap_vector) and not t[2]\match(cap_vector)
-            f = t[1]\match(cap_vector)
-            l = zf.util\clip_to_draw t[2]\match("\\i?clip%b()")
-            for k = 1, loop
-                s = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "shape", f, l)
-                ipol[#ipol + 1] = "\\#{_type_}(#{s})"
-        else
-            f = t[1]\match(cap_vector)
-            l = t[2]\match(cap_vector)
-            for k = 1, loop
-                s = zf.util\interpolation((k - 1) ^ accel / (loop - 1) ^ accel, "shape", f, l)
-                ipol[#ipol + 1] = "\\#{_type_}(#{s})"
-    elseif (not t[1]\match("\\i?clip%b()") and t[2]\match("\\i?clip%b()")) or (t[1]\match("\\i?clip%b()") and not t[2]\match("\\i?clip%b()"))
-        error "You must have the (\\clip - \\iclip) in both positions"
-    else
-        for k = 1, loop
-            if not first and not last
-                ipol[#ipol + 1] = ""
-            else
-                ipol[#ipol + 1] = tags .. pol((k - 1) ^ accel / (loop - 1) ^ accel, first, last)
-    return ipol
+    -- sets up the interpolation specifically
+    interpolations = {}
+    for s, sel in pairs selectedTags
+        for tag, cap in pairs tagsIpol
+            if tag == sel
+                typer = getTyper tag
+                getFirst = firstLine.tags\gsub("\\t%b()", "")\match cap
+                getLast = lastLine.tags\gsub("\\t%b()", "")\match cap
+                if typer != "other"
+                    if getFirst and not getLast
+                        getLast = lastLine.style[tag]
+                    elseif getLast and not getFirst
+                        getFirst = firstLine.style[tag]
+                    interpolations[s] = (getFirst and getLast) and makeIpol(getFirst, getLast, tag, typer) or {}
+                else
+                    interpolations[s] = makeIpol(getFirst, getLast, tag, "other") if layer == 1
 
-class ipol -- Class for macro main settings
+    -- concatenates the interpolated tag layers
+    concatIpol = {}
+    lens = [interpolations[k] and #interpolations[k] or 0 for k = 1, #interpolations]
+    table.sort lens, (a, b) -> a > b
+    len = lens[1] or 0
 
-    new: (text_f, text_l, n, style_tags, elements, old, mac) =>
-        text_f = text_f\gsub("\\1c", "\\c")\gsub("\\frz?", "\\frz")\gsub("\\t%b()", "")
-        text_l = text_l\gsub("\\1c", "\\c")\gsub("\\frz?", "\\frz")\gsub("\\t%b()", "")
-        a = text_f\gsub("%s+", "")\find("%b{}")
-        b = text_l\gsub("%s+", "")\find("%b{}")
-        text_f = (a != 1) and "{}#{text_f}" or text_f
-        text_l = (b != 1) and "{}#{text_l}" or text_l
-        @info_v = {:text_f, :text_l, :old, :mac, backup_t: {}}
-        @info_v.f = split_tags(text_f)
-        @info_v.l = split_tags(text_l)
-        @tags_id = {f: {}, l: {}, ipol: {}, :n, :elements, styles: style_tags}
+    for k = 1, len
+        concatIpol[k] = ""
+        for i = 1, #interpolations
+            concatIpol[k] ..= interpolations[i] and (interpolations[i][k] or "") or ""
 
-    tags_splitter: => -- Organizes the tags from the selected tags in the macro and removes the old values from them
-        split = (t, ivf) ->
-            for _, i in pairs(tags_full)
-                if @tags_id.elements[i]
-                    tif = t[i]
-                    if i\match("_") or (i == "alpha")
-                        i = i\gsub("_", "")
-                        if i\match("\\%da") or (i == "alpha")
-                            tif = ivf\match("\\#{i}%s*&?[Hh]%x%x&?") and ivf\match("\\#{i}%s*(&?[Hh]%x%x&?)") or nil
-                            ivf = ivf\gsub("\\#{i}%s*&?[Hh]%x%x&?", "")
-                        else
-                            tif = ivf\match("\\#{i}%s*&?[Hh]%x%x%x%x%x%x&?") and ivf\match("\\#{i}%s*(&?[Hh]%x%x%x%x%x%x&?)") or nil
-                            ivf = ivf\gsub("\\#{i}%s*&?[Hh]%x%x%x%x%x%x&?", "")
-                            ivf = ivf\gsub("\\1c%s*&?[Hh]%x%x%x%x%x%x&?", "") if (i == "c")
-                    elseif (i == "pos") or (i == "org") or (i == "clip")
-                        tif = ivf\match("\\i?#{i}%b()")
-                        ivf = ivf\gsub("\\i?#{i}%b()", "")
-                    else
-                        tif = ivf\match("\\#{i}%s*%-?%d[%.%d]*") and tonumber(ivf\match("\\#{i}%s*(%-?%d[%.%d]*)")) or nil
-                        ivf = ivf\gsub("\\#{i}%s*%-?%d[%.%d]*", "")
-                        ivf = ivf\gsub("\\fr%s*%-?%d[%.%d]*", "") if (i == "frz")
-                    t[i] = tif
-            return ivf
-        for j = 1, #@info_v.old
-            @info_v.backup_t[j] = {}
-            for k = 1, #@info_v.old[j].tg
-                ivf = @info_v.old[j].tg[k]
-                @info_v.backup_t[j][k] = {}
-                @info_v.backup_t[j][k] = [t for t in ivf\gmatch "\\t%b()"]
-                ivf = ivf\gsub "\\t%b()", ""
-                ivf = split({}, ivf)
-                @info_v.old[j].tg[k] = ivf
-        for k = 1, #@info_v.f.tg
-            ivf = @info_v.f.tg[k]
-            @tags_id.f[k] = {}
-            split(@tags_id.f[k], ivf)
-        for k = 1, #@info_v.l.tg
-            ivf = @info_v.l.tg[k]
-            @tags_id.l[k] = {}
-            split(@tags_id.l[k], ivf)
+    return concatIpol
 
-    tags_ipol: => -- interpolates the selected tags
-        @tags_splitter!
-        interpol, len = {}, #@tags_id.f > #@tags_id.l and #@tags_id.f or #@tags_id.l
-        for i = 1, len
-            @tags_id.ipol[i] = {}
-            if @tags_id.f[i]
-                continue if @tags_id.ipol[i][k]
-                for k, v in pairs(@tags_id.f[i])
-                    k = k\gsub("_", "")
-                    fix_color = (k\find("%d") == 1 or k == "c") and "_#{k}" or k
-                    if (@tags_id.f[i][k] and not @tags_id.l[i]) or (@tags_id.f[i][k] and (@tags_id.l[i] and not @tags_id.l[i][k]))
-                        @tags_id.ipol[i][k] = interpolation(@tags_id.f[i][k], @tags_id.styles.last[fix_color], @tags_id.n, @tags_id.elements.acc, "\\#{k}")
-                    elseif @tags_id.f[i][k] and (@tags_id.l[i] and @tags_id.l[i][k])
-                        @tags_id.ipol[i][k] = interpolation(@tags_id.f[i][k], @tags_id.l[i][k], @tags_id.n, @tags_id.elements.acc, "\\#{k}")
-            if @tags_id.l[i]
-                continue if @tags_id.ipol[i][k]
-                for k, v in pairs(@tags_id.l[i])
-                    k = k\gsub("_", "")
-                    fix_color = (k\find("%d") == 1 or k == "c") and "_#{k}" or k
-                    if (@tags_id.l[i][k] and not @tags_id.f[i]) or (@tags_id.l[i][k] and (@tags_id.f[i] and not @tags_id.f[i][k]))
-                        @tags_id.ipol[i][k] = interpolation(@tags_id.styles.first[fix_color], @tags_id.l[i][k], @tags_id.n, @tags_id.elements.acc, "\\#{k}")
-                    elseif @tags_id.l[i][k] and (@tags_id.f[i] and @tags_id.f[i][k])
-                        @tags_id.ipol[i][k] = interpolation(@tags_id.f[i][k], @tags_id.l[i][k], @tags_id.n, @tags_id.elements.acc, "\\#{k}")
+-- Creates the entire structure for the interpolation
+class CreateIpol
 
-    make_tags: => -- Organizes the output of the ready-made tags
-        @tags_ipol!
-        tags, final = {}, {}
-        ps = #@info_v.f.tx > #@info_v.l.tx and @info_v.f.tx or @info_v.l.tx
-        table.remove(ps, 1) if ps[1] == ""
-        for i = 1, #ps
-            tags[i], final[i] = {}, ""
-            if (@tags_id.ipol[i] and table_len(@tags_id.ipol[i]) == 0) or not @tags_id.ipol[i]
-                tags[i][#tags[i] + 1] = interpolation(nil, nil, @tags_id.n)
-            else
-                tags[i][#tags[i] + 1] = v for k, v in pairs(@tags_id.ipol[i])
-            tags[i] = concat_4 tags[i]
-            if @tags_id.elements.igt
-                for j = 1, #tags[i]
-                    old_tags = (@info_v.old[j].tg[i] or "")\sub(2, -2)
-                    old_tags ..= table.concat(@info_v.backup_t[j][i] or {})
-                    tags[i][j] = ("{#{tags[i][j] .. old_tags}}#{ps[i]}")\gsub("{}", "", 1)
-        if not @tags_id.elements.igt
-            for i = 1, #tags[1]
-                text = @info_v.mac[i]
-                a = text\gsub("%s+", "")\find("%b{}")
-                text = (a != 1) and "{}#{text}" or text
-                old_tags = (@info_v.old[i].tg[1] or "")\sub(2, -2)
-                old_tags ..= table.concat(@info_v.backup_t[i][1] or {})
-                text = "{#{tags[1][i] .. old_tags}}" .. text\gsub("%b{}", "", 1)
-                @info_v.mac[i] = text
-            return @info_v.mac
-        else
-            return concat_4 tags
+    new: (subs, sel, selectedTags, elements) =>
+        @subs, @sel = subs, sel
+        @selectedTags = selectedTags
+        @ignoreText = elements.igt
+        @acc = elements.acc
 
-class build_macro -- Output function, just set some dependencies and return the build
+    -- index all selected lines
+    allLines: =>
+        lines = {}
+        for _, i in ipairs @sel
+            l = @subs[i]
+            -- checks if the lines are really text
+            text = zf.tags\remove("full", l.text)
+            assert not text\match("m%s+%-?%d[%.%-%d mlb]*"), "text expected"
+            assert text\gsub("%s+", "") != "", "text expected"
+            -- gets text metrics
+            meta, styles = zf.util\tags2styles(@subs, l)
+            karaskel.preproc_line(@subs, meta, styles, l)
+            -- fixes problems for different tags with equal values
+            l.text = l.text\gsub("\\c%s*(&?[Hh]%x+&?)", "\\1c%1")
+            l.text = l.text\gsub("\\fr%s*(%-?%d[%.%d]*)", "\\frz%1")
+            lines[#lines + 1] = l
+        return lines
 
-    new: (subs, sel) =>
-        @sb, @sl = subs, sel
-        @sel_lines = [subs[i] for _, i in ipairs(sel)]
-        @sel_first, @sel_last = @sel_lines[1], @sel_lines[#@sel_lines]
+    -- get all selected lines
+    getLines: => @lines = @allLines!
 
-    style_ref: =>
-        meta, styles = karaskel.collect_head(@sb)
-        karaskel.preproc_line(@sb, meta, styles, @sel_first)
-        karaskel.preproc_line(@sb, meta, styles, @sel_last)
+    -- splits the lines into tags and text and adds the style 
+    sptLines: =>
+        @getLines!
         cfs, afs = util.color_from_style, util.alpha_from_style
-        @style_values = {
-            first: {
-                bord: @sel_first.styleref.outline, xbord: 0, ybord: 0
-                be: 0, shad: @sel_first.styleref.shadow, xshad: 0
-                yshad: 0, blur: 0, fs: @sel_first.styleref.fontsize
-                fscx: @sel_first.styleref.scale_x, fscy: @sel_first.styleref.scale_x
-                fsp: @sel_first.styleref.spacing, frx: 0, fry: 0
-                frz: @sel_first.styleref.angle, fax: 0, fay: 0
-                _c:  cfs(@sel_first.styleref.color1)
-                _2c: cfs(@sel_first.styleref.color2)
-                _3c: cfs(@sel_first.styleref.color3)
-                _4c: cfs(@sel_first.styleref.color4)
-                _1a: afs(@sel_first.styleref.color1)
-                _2a: afs(@sel_first.styleref.color2)
-                _3a: afs(@sel_first.styleref.color3)
-                _4a: afs(@sel_first.styleref.color4)
-            }
-            last: {
-                bord: @sel_last.styleref.outline, xbord: 0, ybord: 0
-                be: 0, shad: @sel_last.styleref.shadow, xshad: 0
-                yshad: 0, blur: 0, fs: @sel_last.styleref.fontsize
-                fscx: @sel_last.styleref.scale_x, fscy: @sel_last.styleref.scale_x
-                fsp: @sel_last.styleref.spacing, frx: 0, fry: 0
-                frz: @sel_last.styleref.angle, fax: 0, fay: 0
-                _c:  cfs(@sel_last.styleref.color1)
-                _2c: cfs(@sel_last.styleref.color2)
-                _3c: cfs(@sel_last.styleref.color3)
-                _4c: cfs(@sel_last.styleref.color4)
-                _1a: afs(@sel_last.styleref.color1)
-                _2a: afs(@sel_last.styleref.color2)
-                _3a: afs(@sel_last.styleref.color3)
-                _4a: afs(@sel_last.styleref.color4)
-            }
-        }
+        for k = 1, #@lines
+            splited = zf.text(@subs, @lines[k], @lines[k].text)\tags(false)
+            @lines[k] = {}
+            for t, tag in ipairs splited
+                @lines[k][t] = {
+                    tags: tag.tags
+                    text: tag.text_stripped_with_space
+                    style: {
+                        "fs":    tag.styleref.fontsize
+                        "fsp":   tag.styleref.spacing
+                        "fscx":  tag.styleref.scale_x
+                        "fscy":  tag.styleref.scale_y
+                        "frz":   tag.styleref.angle
+                        "bord":  tag.styleref.outline
+                        "xbord": 0
+                        "ybord": 0
+                        "shad":  tag.styleref.shadow
+                        "xshad": 0
+                        "yshad": 0
+                        "frx":   0
+                        "fry":   0
+                        "fax":   0
+                        "fay":   0
+                        "1c":    cfs tag.styleref.color1
+                        "2c":    cfs tag.styleref.color2
+                        "3c":    cfs tag.styleref.color3
+                        "4c":    cfs tag.styleref.color4
+                        "1a":    afs tag.styleref.color1
+                        "2a":    afs tag.styleref.color2
+                        "3a":    afs tag.styleref.color3
+                        "4a":    afs tag.styleref.color4
+                        "alpha": afs tag.styleref.color1
+                    }
+                }
 
-    text_ref: (other) =>
-        local old
-        if other
-            old = [v.text for k, v in ipairs @sel_lines]
+    -- gets the interpolation for all tag layers
+    getIpol: =>
+        @sptLines! -- gets the split line values
+        -- @param len = length of the line
+        -- @param lenTL = length of the line tag layers
+        @interpolatedTags, len, lenTL = {}, #@lines, nil
+        if @ignoreText
+            lenTL = math.max(#@lines[1], #@lines[len])
+            for k = 1, lenTL
+                first = @lines[1][k] or @lines[1][#@lines[1]]
+                last = @lines[len][k] or @lines[len][#@lines[len]]
+                @interpolatedTags[k] = ipolTags(first, last, len, @selectedTags, @acc, k)
         else
-            old = [split_tags(v.text) for k, v in ipairs @sel_lines]
-        return old
+            lenTL = math.min(#@lines[1], #@lines[len])
+            for k = 1, lenTL
+                first = @lines[1][k]
+                last = @lines[len][k]
+                @interpolatedTags[k] = ipolTags(first, last, len, @selectedTags, @acc, k)
 
-    out: =>
-        @style_ref!
-        inter = zf.config\load(zf.config\interface(script_name)(tags_full), script_name)
-        local buttons, elements
-        while true
-            buttons, elements = aegisub.dialog.display(inter, {"Ok", "Save", "Reset", "Cancel"}, {close: "Cancel"})
-            inter = switch buttons
-                when "Save"
-                    zf.config\save(inter, elements, script_name, script_version)
-                    zf.config\load(inter, script_name)
-                when "Reset"
-                    zf.config\interface(script_name)(tags_full)
-            break if buttons == "Ok" or buttons == "Cancel"
-        make_ipol = ipol(@sel_first.text, @sel_last.text, #@sel_lines, @style_values, elements, @text_ref!, @text_ref(true))
-        split, box_true = make_ipol\make_tags!, {}
-        box_true[#box_true + 1] = (v == true) or nil for k, v in pairs elements
-        if buttons == "Ok"
-            if #box_true > 0
-                for k, v in ipairs @sl
-                    l = @sb[v]
-                    text = l.text
-                    l.text = split[k]
-                    @sb[v] = l
+    -- configures and concatenates all output
+    concat: =>
+        @getIpol!
+        -- deletes the origin tags that were interpolated
+        deleteOld = (src, new) ->
+            for t, tag in pairs tagsIpol
+                -- hides transformations
+                src = src\gsub "\\t%b()", (v) ->
+                    v = v\gsub "\\", "\\XT"
+                    return v
+                if src\match(tag) and new\match(tag)
+                    src = src\gsub tag, ""
+            return new .. src\gsub "\\XT", "\\"
+        @result = {}
+        for k, i in ipairs @sel
+            l = @subs[i]
+            @result[k] = {}
+            if @ignoreText
+                -- gets the line that has the most tag layers
+                mostTags = #@lines[1] > #@lines[#@lines] and @lines[1] or @lines[#@lines]
+                for t, tag in ipairs mostTags
+                    inTag = @interpolatedTags[t] and (@interpolatedTags[t][k] or "") or ""
+                    srTag = (@lines[k][t] and @lines[k][t].tags or "")\sub(2, -2)
+                    nwTag = deleteOld(srTag, inTag)
+                    @result[k][t] = "{#{nwTag}}" .. tag.text
             else
-                aegisub.cancel!
-        else
-            aegisub.cancel!
-        return
+                for t, tag in ipairs @lines[k]
+                    inTag = @interpolatedTags[t] and (@interpolatedTags[t][k] or "") or ""
+                    srTag = tag.tags\sub(2, -2)
+                    nwTag = deleteOld(srTag, inTag)
+                    @result[k][t] = "{#{nwTag}}" .. tag.text
+            l.text = table.concat(@result[k])\gsub "{}", ""
+            @subs[i] = l
+        return @subs
 
-main = (subs, sel) -> -- Only function to store the class construct for the Aegisub API to recognize
-    build_macro(subs, sel)\out!
-    return
+main = (subs, sel) ->
+    inter = zf.config\load(zf.config\interface(script_name)(tagsIpol), script_name)
+    local buttons, elements
+    while true
+        buttons, elements = aegisub.dialog.display(inter, {"Ok", "Save", "Reset", "Cancel"}, {close: "Cancel"})
+        inter = switch buttons
+            when "Save"
+                zf.config\save(inter, elements, script_name, script_version)
+                zf.config\load(inter, script_name)
+            when "Reset"
+                zf.config\interface(script_name)(tagsIpol)
+        break if buttons == "Ok" or buttons == "Cancel"
+    selecteds = {}
+    for e, element in pairs elements
+        if e != "igt" and e != "acc"
+            selecteds[#selecteds + 1] = element == true and e or nil
+    aegisub.progress.task "Processing..."
+    subs = CreateIpol(subs, sel, selecteds, elements)\concat! if buttons == "Ok"
 
-enable = (subs, sel) -> -- Activates the macro when it has more than 2 or more selections
-    return (#sel > 1) and true or false
-
-aegisub.register_macro script_name, script_description, main, enable
+aegisub.register_macro script_name, script_description, main, (subs, sel) -> #sel > 1
