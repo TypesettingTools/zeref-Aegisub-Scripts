@@ -11,7 +11,7 @@ class TAGS
         return cleantags text
 
     -- returns a table containing tag captures
-    get: (full = true) ->
+    get: (full = true) =>
         list_0 = {
             fn: "\\fn%s*[^\\}]*",               fs: "\\fs%s*%d[%.%d]*",          fsp: "\\fsp%s*%-?%d[%.%d]*"
             fscx: "\\fscx%s*%d[%.%d]*",         fscy: "\\fscy%s*%d[%.%d]*",      b: "\\b%s*%d"
