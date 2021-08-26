@@ -96,7 +96,7 @@ class CONFIG
                             {class: "label", label: "Generator: ", x: 0, y: 2}
                             {class: "dropdown", name: "gmw", items: items[2], hint: hints[2], x: 0, y: 3, width: 4, value: items[2][1]}
                             {class: "label", label: "Tolerance:  ", x: 4, y: 0}
-                            {class: "intedit", name: "tol", hint: hints[3], x: 4, y: 1, width: 7, min: 1, value: 1}
+                            {class: "intedit", name: "tol", hint: hints[3], x: 4, y: 1, width: 7, min: 1, value: 50}
                             {class: "label", label: "Type:  ", x: 4, y: 2}
                             {class: "dropdown", name: "tpc", items: items[1], hint: hints[4], x: 4, y: 3, width: 7, value: items[1][2]}
                             {class: "checkbox", name: "rfl", label: "Remove selected layers?   ", x: 0, y: 4, width: 4, value: true}
@@ -174,23 +174,25 @@ class CONFIG
                             {class: "color", name: "color1", x: 10, y: 10, height: 2, value: "#FFFFFF"}
                             {class: "color", name: "color2", x: 10, y: 12, height: 2, value: "#FF0000"}
                         }
-            when "Interpolate Master"
-                (tags_full) ->
+            when "Interpolate Tags"
+                (allTags) ->
                     gui = {}
-                    tags = [TABLE(tags_full)\slice(k, k + 4) for k = 1, #tags_full, 5]
+                    allTags = [k for k, v in pairs allTags]
+                    table.sort allTags
+                    tags = [TABLE(allTags)\slice(k, k + 6) for k = 1, #allTags, 7]
                     for k = 1, #tags
                         for j = 1, #tags[k]
                             gui[#gui + 1] = {
                                 class: "checkbox"
-                                label: tags[k][j]\gsub "_", ""
+                                label: "\\" .. tags[k][j]
                                 name: tags[k][j]
                                 x: k - 1
                                 y: j - 1
                                 value: false
                             }
-                    gui[#gui + 1] = {class: "checkbox", label: "Ignore Text", name: "igt", x: 0, y: 6, value: false}
-                    gui[#gui + 1] = {class: "label", label: "::Accel::", x: 0, y: 7}
-                    gui[#gui + 1] = {class: "floatedit", name: "acc", hint: "Relative interpolation acceleration.", min: 0, x: 0, y: 8, value: 1}
+                    gui[#gui + 1] = {class: "checkbox", label: "Ignore Text", name: "igt", x: 0, y: 8, value: false}
+                    gui[#gui + 1] = {class: "label", label: "::Acceleration::", x: 0, y: 9}
+                    gui[#gui + 1] = {class: "floatedit", name: "acc", hint: "Relative interpolation acceleration.", min: 0, x: 0, y: 10, value: 1}
                     return gui
             when "Make Image"
                 (typer = "tracer") ->
@@ -337,9 +339,10 @@ class CONFIG
                     {
                         {class: "label", label: "Modes:", x: 0, y: 0}
                         {class: "dropdown", name: "mds", :items, hint: hints.items, x: 0, y: 1, value: items[1]}
-                        {class: "label", label: "\nOffset:", x: 0, y: 2}
-                        {class: "intedit", name: "off", hint: hints.offset, x: 0, y: 3, value: 0}
-                        {class: "checkbox", name: "chk", label: "Remove selected layers?", x: 0, y: 4, value: true}
+                        {class: "checkbox", name: "wwd", label: "With words?", x: 0, y: 2, value: false}
+                        {class: "label", label: "\nOffset:", x: 0, y: 3}
+                        {class: "intedit", name: "off", hint: hints.offset, x: 0, y: 4, value: 0}
+                        {class: "checkbox", name: "chk", label: "Remove selected layers?", x: 0, y: 5, value: true}
                     }
 
 {:CONFIG}
