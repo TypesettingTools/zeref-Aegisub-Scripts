@@ -176,14 +176,14 @@ class UTIL
     -- splits text into tags and text
     split_text: (text) =>
         solve_tags = (prev, curr) ->
-            tags = TAGS.get(false)
+            tags = TAGS\get(false)
             for t, tag in pairs tags
                 val_prev = prev\gsub("\\t%b()", "")\match tag
                 val_curr = curr\gsub("\\t%b()", "")\match tag
                 if val_prev and not val_curr
                     curr = val_prev .. curr
             return "{#{curr}}"
-        text = text\gsub("{}", "")\gsub "\\h", " "
+        text = text\gsub("{}", "")\gsub("\\h", " ")\match("^%s*(.-)%s*$")
         hast = text\gsub("%s+", "")\find "%b{}"
         text = hast != 1 and "{}#{text}" or text
         v = {tags: {}, text: {}}
@@ -198,8 +198,6 @@ class UTIL
                 .text[#.text + 1] = c
                 text = d
             table.remove(.text, 1) if .text[1] == ""
-            .text[1] = .text[1]\gsub "^%s*(.-%s*)$", "%1"
-            .text[#.text] = .text[#.text]\gsub "^(%s*.-)%s*$", "%1"
             return v
 
 {:UTIL}
