@@ -94,6 +94,9 @@ class TEXT
             left                                     = MATH\round(left, @dec)
             center                                   = MATH\round(left + width / 2, @dec)
             right                                    = MATH\round(left + width, @dec)
+            top                                      = MATH\round(line.top, @dec)
+            middle                                   = MATH\round(line.middle, @dec)
+            bottom                                   = MATH\round(line.bottom, @dec)
             start_time                               = line.start_time
             end_time                                 = line.end_time
             duration                                 = end_time - start_time
@@ -101,10 +104,11 @@ class TEXT
                 -- adds values in table
                 chars.n += 1
                 chars[chars.n] = {
-                    :text, :text_stripped, :width, :descent, :ext_lead
-                    :center, :left, :right, :start_time, :end_time, :duration
+                    :text, :text_stripped, :width, :height, :descent, :ext_lead
+                    :center, :left, :right, :top, :middle, :bottom
+                    :start_time, :end_time, :duration
                 }
-            left += width
+            left = MATH\round(left + width, @dec)
         return chars
 
     -- gets words information from a text
@@ -117,23 +121,27 @@ class TEXT
             prev_space                               = prev_space\len!
             post_space                               = post_space\len!
             width, height, descent, ext_lead         = aegisub.text_extents(line.styleref, text_stripped)
-            left                                     += prev_space * space_width
+            left                                     = MATH\round(left + prev_space * space_width, @dec)
             center                                   = MATH\round(left + width / 2, @dec)
             right                                    = MATH\round(left + width, @dec)
+            top                                      = MATH\round(line.top, @dec)
+            middle                                   = MATH\round(line.middle, @dec)
+            bottom                                   = MATH\round(line.bottom, @dec)
             start_time                               = line.start_time
             end_time                                 = line.end_time
             duration                                 = end_time - start_time
             -- adds values in table
             words.n += 1
             words[words.n] = {
-                :text, :text_stripped, :width, :descent, :ext_lead
-                :center, :left, :right, :start_time, :end_time, :duration
+                :text, :text_stripped, :width, :height, :descent, :ext_lead
+                :center, :left, :right, :top, :middle, :bottom
+                :start_time, :end_time, :duration
             }
-            left += width + post_space * space_width
+            left = MATH\round(left + width + post_space * space_width, @dec)
         return words
 
     -- gets information from each tag layer
-    tags: =>
+    tags: (getAbs = true) =>
         tags = {}
         with UTIL\split_text @text
             left = @line.left
@@ -144,6 +152,7 @@ class TEXT
                 line.text = line.tags .. .text[k]\match("^%s*(.-)%s*$")
                 line.prevspace, line.postspace = .text[k]\match("^(%s*).-(%s*)$")
                 line.prevspace, line.postspace = line.prevspace\len!, line.postspace\len!
+                line.text_stripped_with_space = .text[k]
                 line.text_stripped = .text[k]\match("^%s*(.-)%s*$")
                 line.styleref = nil
                 --
@@ -159,18 +168,19 @@ class TEXT
                 tags[k].center = left + tags[k].width / 2
                 tags[k].right  = left + tags[k].width
                 left           += tags[k].width + line.postspace * space_width
-            -- fix values with respect to the X-axis
-            offset = (@line.width - (left - @line.left)) / 2
-            for t, tag in ipairs tags
-                tag.left   += offset
-                tag.center += offset
-                tag.right  += offset
-                tag.offset = offset
-                -- adds chars and words infos to the tag values
-                @line      = tag
-                @text      = tag.text_stripped
-                tag.chars  = @chars!
-                tag.words  = @words!
+            if getAbs
+                -- fix values with respect to the X-axis
+                offset = (@line.width - (left - @line.left)) / 2
+                for t, tag in ipairs tags
+                    tag.left   += offset
+                    tag.center += offset
+                    tag.right  += offset
+                    tag.offset = offset
+                    -- adds chars and words infos to the tag values
+                    @line      = tag
+                    @text      = tag.text_stripped
+                    tag.chars  = @chars!
+                    tag.words  = @words!
             return tags
 
 {:TEXT}
