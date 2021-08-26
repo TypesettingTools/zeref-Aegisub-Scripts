@@ -45,13 +45,13 @@ class SHAPE
                                 i += 6
                         else
                             error "unknown shape"
+        else
+            @paths = shape.paths or shape
             if closed
                 for k, v in ipairs @paths
                     xf, yf = v[1][1], v[1][2]
                     xl, yl = v[#v][#v[#v] - 1], v[#v][#v[#v]]
                     TABLE(v)\push({typer: "l", xf, yf}) if is_Equal(xf, yf, xl, yl)
-        else
-            @paths = shape.paths or shape
         return @
 
     -- splits the segments of the shape into small parts
