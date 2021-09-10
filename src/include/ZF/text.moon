@@ -12,6 +12,28 @@ class TEXT
         @text = text or @line.text_stripped
         @dec = dec
 
+    get_style: =>
+        @style = {
+            @line.styleref.fontname
+            @line.styleref.bold
+            @line.styleref.italic
+            @line.styleref.underline
+            @line.styleref.strikeout
+            @line.styleref.fontsize
+            @line.styleref.scale_x / 100
+            @line.styleref.scale_y / 100
+            @line.styleref.spacing
+        }
+
+    -- get metrics and paths from a font according to the text
+    font: (text, get_extents, get_shape) =>
+        @get_style!
+        local text_extents, text_shape
+        font = Yutils.decode.create_font unpack(@style)
+        text_extents = font.text_extents text if get_extents
+        text_shape = font.text_to_shape(text)\gsub " c", "" if get_shape
+        return text_extents, text_shape
+
     -- converts a text to shape
     to_shape: =>
         with {text: {}, shape: {}, w: {}, h: {}}
@@ -19,27 +41,15 @@ class TEXT
                 c, d = UTIL\headtail(@text, "\\N")
                 .text[#.text + 1] = c\match("^%s*(.-)%s*$")
                 @text = d
-            style = {
-                @line.styleref.fontname
-                @line.styleref.bold
-                @line.styleref.italic
-                @line.styleref.underline
-                @line.styleref.strikeout
-                @line.styleref.fontsize
-                @line.styleref.scale_x / 100
-                @line.styleref.scale_y / 100
-                @line.styleref.spacing
-            }
             for k = 1, #.text
-                font = Yutils.decode.create_font unpack(style)
-                extents = font.text_extents .text[k]
-                .shape[k] = font.text_to_shape(.text[k])\gsub(" c", "")
-                .shape[k] = SHAPE(.shape[k])\displace(0, (k - 1) * style[6] * style[8])\build!
-                .w[k], .h[k] = tonumber(extents.width), tonumber(extents.height)
+                text_extents, text_shape = @font(.text[k], true, true)
+                .shape[k] = text_shape
+                .shape[k] = SHAPE(.shape[k])\displace(0, (k - 1) * @style[6] * @style[8])\build!
+                .w[k], .h[k] = tonumber(text_extents.width), tonumber(text_extents.height)
 
     -- converts a text to clip
     to_clip: (an = @line.styleref.align, px = 0, py = 0) =>
-        val = @to_shape!
+        val, new_shape = @to_shape!, nil
         break_line, extra = (@line.styleref.fontsize * @line.styleref.scale_y / 100), 0
         with val
             for k = 1, #.shape
@@ -62,7 +72,7 @@ class TEXT
             new_shape = switch an
                 when 1, 2, 3 then new_shape\displace(0, -extra)\build!
                 when 4, 5, 6 then new_shape\displace(0, -extra / 2)\build!
-            return new_shape
+        return new_shape
 
     -- organize positioning in tags
     org_pos: (coord, tag, line) =>
@@ -181,6 +191,6 @@ class TEXT
                     @text      = tag.text_stripped
                     tag.chars  = @chars!
                     tag.words  = @words!
-            return tags
+        return tags
 
 {:TEXT}
