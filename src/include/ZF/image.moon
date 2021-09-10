@@ -346,7 +346,6 @@ class IMAGE
             for y = 0, img.height - 1
                 for x = 0, img.width - 1
                     i = y * img.width + x
-                    aegisub.progress.set 0 + 100 * i / (img.height * img.width - 1)
                     color = ("\\cH%02X%02X%02X")\format(img.data[i].b, img.data[i].g, img.data[i].r)
                     alpha = ("\\alphaH%02X")\format(255 - img.data[i].a)
                     continue if alpha == "\\alphaHFF"
@@ -358,7 +357,6 @@ class IMAGE
                 ct_s[y], ct_r[y], px[y] = 0, 0, ""
                 for x = 0, img.width - 1
                     i = y * img.width + x
-                    aegisub.progress.set 0 + 100 * i / (img.height * img.width - 1)
                     b, g, r = img.data[i].b, img.data[i].g, img.data[i].r
                     color_p = ("\\cH%02X%02X%02X")\format(b, g, r)
                     color_n = ("\\cH%02X%02X%02X")\format(img.data[i + 1].b or b, img.data[i + 1].g or g, img.data[i + 1].r or r)
@@ -379,9 +377,7 @@ class IMAGE
                     px[y] = alpha[y] != "\\alphaHFF" and ("{\\an7\\pos(0,%d)\\fscx100\\fscy100\\bord0\\shad0%s\\p1}#{shpx}")\format(y, color[y] .. alpha[y], img.width, img.width) or nil
             if once
                 line = ""
-                aegisub.progress.task "Merging Shapes..."
                 for k, v in pairs px
-                    aegisub.progress.set 0 + 100 * (k - 1) / (#px - 1)
                     line ..= v\gsub("%b{}", "", 1) .. "{\\p0}\\N{\\p1}"
                 line = ("{\\an7\\pos(0,0)\\fscx100\\fscy100\\bord0\\shad0\\p1}#{line}")\gsub("{\\p0}\\N{\\p1}$", "")
                 return {line}
@@ -464,7 +460,6 @@ class IMAGE
             }
             -- Loop to trace each color layer
             for colornum = 0, #ii.palette - 1
-                aegisub.progress.set 0 + 100 * colornum / #ii.palette
                 -- layeringstep -> pathscan -> internodes -> batchtracepaths
                 layeringstep = obj.layeringstep(ii, colornum)
                 pathscan     = obj.pathscan(layeringstep, options.pathomit)
@@ -1017,7 +1012,6 @@ class IMAGE
         obj.get_shape = (tracedata, options) ->
             options = obj.checkoptions(options)
             shaper, build = {}, {}
-            aegisub.progress.task "Processing Packages..."
             for lcnt = 1, #tracedata.layers
                 for pcnt = 1, #tracedata.layers[lcnt]
                     unless tracedata.layers[lcnt][pcnt].isholepath
@@ -1043,9 +1037,7 @@ class IMAGE
                     return group
                 end
             ]])!(shaper)
-            aegisub.progress.task "Building Shapes..."
             for i = 1, #group
-                aegisub.progress.set 0 + 100 * (i - 1) / (#group - 1)
                 shape = ""
                 for j = 1, #group[i]
                     shape ..= group[i][j].shape
@@ -1817,7 +1809,6 @@ class IMAGE
                     ocurve.alphacurve = 1
                     path.curve = ocurve
                 for i = 0, #@pathlist
-                    aegisub.progress.set 0 + 100 * i / #@pathlist
                     path = @pathlist[i]
                     calcSums(path)
                     calcLon(path)
@@ -1846,10 +1837,8 @@ class IMAGE
                         elseif curve.tag[i] == "CORNER"
                             build ..= segment(i)
                     return SHAPE(build)\build!
-                aegisub.progress.task "Building Shape..."
                 shape = ""
                 for i = 0, #@pathlist
-                    aegisub.progress.set 0 + 100 * i / (#@pathlist - 1)
                     c = @pathlist[i].curve
                     shape ..= path(c)
                 return shape
