@@ -7,16 +7,16 @@ zf = require "ZF.main"
 
 -- captures of all interpolable tags
 tagsIpol = {
-    fs:   "\\fs%s*(%d[%.%d]*)",      fsp:   "\\fsp%s*(%-?%d[%.%d]*)",   fscx:  "\\fscx%s*(%d[%.%d]*)"
-    fscy: "\\fscy%s*(%d[%.%d]*)",    frz:   "\\frz%s*(%-?%d[%.%d]*)",   frx:   "\\frx%s*(%-?%d[%.%d]*)"
-    fry:  "\\fry%s*(%-?%d[%.%d]*)",  fax:   "\\fax%s*(%-?%d[%.%d]*)",   fay:   "\\fay%s*(%-?%d[%.%d]*)"
-    bord: "\\bord%s*(%d[%.%d]*)",    xbord: "\\xbord%s*(%d[%.%d]*)",    ybord: "\\ybord%s*(%d[%.%d]*)"
-    shad: "\\shad%s*(%-?%d[%.%d]*)", xshad: "\\xshad%s*(%-?%d[%.%d]*)", yshad: "\\yshad%s*(%-?%d[%.%d]*)"
-    "1c": "\\1c%s*(&?[Hh]%x+&?)",    "2c":  "\\2c%s*(&?[Hh]%x+&?)",     "3c":  "\\3c%s*(&?[Hh]%x+&?)"
-    "4c": "\\4c%s*(&?[Hh]%x+&?)",    "1a":  "\\1a%s*(&?[Hh]%x+&?)",     "2a":  "\\2a%s*(&?[Hh]%x+&?)"
-    "3a": "\\3a%s*(&?[Hh]%x+&?)",    "4a":  "\\4a%s*(&?[Hh]%x+&?)",     alpha: "\\alpha%s*(&?[Hh]%x+&?)"
-    pos:  "\\pos%b()",               move:  "\\move%b()",               org:   "\\org%b()"
-    clip: "\\i?clip%b()"
+    fs:     "\\fs%s*(%d[%.%d]*)",      fsp:   "\\fsp%s*(%-?%d[%.%d]*)",   fscx:  "\\fscx%s*(%d[%.%d]*)"
+    fscy:   "\\fscy%s*(%d[%.%d]*)",    frz:   "\\frz%s*(%-?%d[%.%d]*)",   frx:   "\\frx%s*(%-?%d[%.%d]*)"
+    fry:    "\\fry%s*(%-?%d[%.%d]*)",  fax:   "\\fax%s*(%-?%d[%.%d]*)",   fay:   "\\fay%s*(%-?%d[%.%d]*)"
+    bord:   "\\bord%s*(%d[%.%d]*)",    xbord: "\\xbord%s*(%d[%.%d]*)",    ybord: "\\ybord%s*(%d[%.%d]*)"
+    shad:   "\\shad%s*(%-?%d[%.%d]*)", xshad: "\\xshad%s*(%-?%d[%.%d]*)", yshad: "\\yshad%s*(%-?%d[%.%d]*)"
+    blur:   "\\blur%s*(%d[%.%d]*)",    ["1c"]: "\\1c%s*(&?[Hh]%x+&?)",    ["2c"]:  "\\2c%s*(&?[Hh]%x+&?)"
+    ["3c"]: "\\3c%s*(&?[Hh]%x+&?)",    ["4c"]: "\\4c%s*(&?[Hh]%x+&?)",    ["1a"]:  "\\1a%s*(&?[Hh]%x+&?)"
+    ["2a"]: "\\2a%s*(&?[Hh]%x+&?)",    ["3a"]: "\\3a%s*(&?[Hh]%x+&?)",    ["4a"]:  "\\4a%s*(&?[Hh]%x+&?)"
+    alpha:  "\\alpha%s*(&?[Hh]%x+&?)", pos:  "\\pos%b()",                 move:  "\\move%b()"
+    org:    "\\org%b()",               clip: "\\i?clip%b()"
 }
 
 -- interpolates all selected tags
@@ -179,6 +179,7 @@ class CreateIpol
                         "shad":  tag.styleref.shadow
                         "xshad": 0
                         "yshad": 0
+                        "blur":  0
                         "frx":   0
                         "fry":   0
                         "fax":   0
@@ -198,8 +199,6 @@ class CreateIpol
     -- gets the interpolation for all tag layers
     getIpol: =>
         @sptLines! -- gets the split line values
-        -- @param len = length of the line
-        -- @param lenTL = length of the line tag layers
         @interpolatedTags, len, lenTL = {}, #@lines, nil
         if @ignoreText
             lenTL = math.max(#@lines[1], #@lines[len])
