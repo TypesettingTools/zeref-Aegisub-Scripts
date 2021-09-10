@@ -232,19 +232,7 @@ main = (subs, sel) ->
                             r_inf["2c"][#r_inf["2c"] + 1] = color_from_style(line.styleref.color2)
                             r_inf["3c"][#r_inf["3c"] + 1] = color_from_style(line.styleref.color3)
                             r_inf["4c"][#r_inf["4c"] + 1] = color_from_style(line.styleref.color4)
-                            -- shows the shapes values and their respective colors in a table
-                            m_inf = (t) ->
-                                v = ""
-                                for k = 1, #t
-                                    v ..= "\"#{t[k]}\", "
-                                return v\sub(1, -3)
-                            _sh = m_inf r_inf["sh"]
-                            _1c = m_inf r_inf["1c"]
-                            _2c = m_inf r_inf["2c"]
-                            _3c = m_inf r_inf["3c"]
-                            _4c = m_inf r_inf["4c"]
-                            aegisub.log("shapes = {#{_sh}}\nc1 = {#{_1c}}\nc2 = {#{_2c}}\nc3 = {#{_3c}}\nc4 = {#{_4c}}")
-                            --
+
                             line.text = "#{tags}#{shape}"
                             subs.insert(i + j + 1, line)
                             j += 1
@@ -271,5 +259,18 @@ main = (subs, sel) ->
                                 tag.text = "#{zf.tags\clean("{#{org}\\pos(#{px},#{py})#{__tags}#{cp_tag}(#{text_clip})}")}#{tag.text_stripped}"
                                 subs.insert(i + j + 1, tag)
                                 j += 1
+                if elements.modes == m_list["srr"]
+                    -- shows the shapes values and their respective colors in a table
+                    m_inf = (t) ->
+                        v = ""
+                        for k = 1, #t
+                            v ..= "\"#{t[k]}\", "
+                        return v\sub(1, -3)
+                    _sh = m_inf r_inf["sh"]
+                    _1c = m_inf r_inf["1c"]
+                    _2c = m_inf r_inf["2c"]
+                    _3c = m_inf r_inf["3c"]
+                    _4c = m_inf r_inf["4c"]
+                    aegisub.log("shapes = {#{_sh}}\nc1 = {#{_1c}}\nc2 = {#{_2c}}\nc3 = {#{_3c}}\nc4 = {#{_4c}}")
 
 aegisub.register_macro script_name, script_description, main
