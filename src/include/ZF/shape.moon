@@ -4,54 +4,82 @@ import MATH   from require "ZF.math"
 import TABLE  from require "ZF.table"
 import BEZIER from require "ZF.bezier"
 
+isDiff = (x1, y1, x2, y2) -> x1 != x2 or y1 != y2
+
+isEqual = (p1, p2) -> p1.typer == "m" and p2.typer == "l" and p1[1] == p2[1] and p1[2] == p2[2]
+
+isNumber = (v) ->
+    assert type(v) == "number", "unknown shape"
+    return v
+
+isString = (v) -> tonumber(v) == nil
+
+getAngle = (c, l) -> atan2 l[2] - c[2], l[1] - c[1]
+
 class SHAPE
 
     new: (shape, closed = true) =>
-        is_Number = (v) ->
-            assert type(v) == "number", "unknown shape"
-            return v
-        is_String = (v) -> tonumber(v) == nil
-        is_Equal = (x1, y1, x2, y2) -> true if x1 != x2 or y1 != y2
         @paths = {}
         if type(shape) == "string"
             shape = UTIL\clip_to_draw(shape)
-            data = [is_String(v) and v or tonumber(v) for v in shape\gmatch "%S+"]
+            data = [isString(v) and v or tonumber(v) for v in shape\gmatch "%S+"]
             for k = 1, #data
-                if is_String(data[k])
+                if isString(data[k])
                     switch data[k]
                         when "m"
-                            p1 = is_Number(data[k + 1])
-                            p2 = is_Number(data[k + 2])
+                            p1 = isNumber(data[k + 1])
+                            p2 = isNumber(data[k + 2])
                             @paths[#@paths + 1] = {
                                 {typer: "m", p1, p2}
                             }
                         when "l"
                             i = 1
                             while type(data[k + i]) == "number"
-                                p1 = is_Number(data[k + i + 0])
-                                p2 = is_Number(data[k + i + 1])
+                                p1 = isNumber(data[k + i + 0])
+                                p2 = isNumber(data[k + i + 1])
                                 @paths[#@paths][#@paths[#@paths] + 1] = {typer: "l", p1, p2}
                                 i += 2
                         when "b"
                             i = 1
                             while type(data[k + i]) == "number"
-                                p1 = is_Number(data[k + i + 0])
-                                p2 = is_Number(data[k + i + 1])
-                                p3 = is_Number(data[k + i + 2])
-                                p4 = is_Number(data[k + i + 3])
-                                p5 = is_Number(data[k + i + 4])
-                                p6 = is_Number(data[k + i + 5])
+                                p1 = isNumber(data[k + i + 0])
+                                p2 = isNumber(data[k + i + 1])
+                                p3 = isNumber(data[k + i + 2])
+                                p4 = isNumber(data[k + i + 3])
+                                p5 = isNumber(data[k + i + 4])
+                                p6 = isNumber(data[k + i + 5])
                                 @paths[#@paths][#@paths[#@paths] + 1] = {typer: "b", p1, p2, p3, p4, p5, p6}
                                 i += 6
                         else
                             error "unknown shape"
         else
             @paths = shape.paths or shape
-            if closed
-                for k, v in ipairs @paths
-                    xf, yf = v[1][1], v[1][2]
-                    xl, yl = v[#v][#v[#v] - 1], v[#v][#v[#v]]
-                    TABLE(v)\push({typer: "l", xf, yf}) if is_Equal(xf, yf, xl, yl)
+        if closed == true
+            @closed!
+        elseif closed == "unclosed"
+            @removeEqual!
+        return @
+
+    -- closes the shape segment
+    closed: =>
+        for p, path in ipairs @paths
+            xf, yf = path[1][1], path[1][2]
+            xl, yl = path[#path][#path[#path] - 1], path[#path][#path[#path]]
+            if isDiff(xf, yf, xl, yl)
+                TABLE(path)\push({typer: "l", xf, yf})
+
+    -- removes duplicate points
+    removeEqual: =>
+        remove = (t) ->
+            flags, new = {}, {}
+            for k = 1, #t do
+                index = table.concat(t[k], "|")
+                unless flags[index]
+                    new[#new + 1] = t[k]
+                    flags[index] = ""
+            return new
+        for k = 1, #@paths
+            @paths[k] = remove(@paths[k])
         return @
 
     -- splits the segments of the shape into small parts
@@ -78,6 +106,7 @@ class SHAPE
             when "line"   then split(@paths, "l")
             when "bezier" then split(@paths, "b")
             else               split(@paths, "m")
+        @removeEqual!
         return @
 
     -- returns the shape bounding box
@@ -203,18 +232,18 @@ class SHAPE
     -- generates a transformation in perspective
     -- http://jsfiddle.net/xjHUk/278/
     perspective: (destin) =>
-        l, t, r, b = @bounding!
+        @info!
         source = {
-            {x: l, y: t}
-            {x: r, y: t}
-            {x: r, y: b}
-            {x: l, y: b}
+            {x: @minx, y: @miny}
+            {x: @maxx, y: @miny}
+            {x: @maxx, y: @maxy}
+            {x: @minx, y: @maxy}
         }
         destin or= {
-            {x: l + 100, y: t}
-            {x: r - 100, y: t}
-            {x: r, y: b}
-            {x: l, y: b}
+            {x: @minx - 100, y: @miny}
+            {x: @maxx + 100, y: @miny}
+            {x: @maxx, y: @maxy}
+            {x: @minx, y: @maxy}
         }
         @filter (xI, yI) ->
             add = 0.001 -- to avoid dividing by zero
@@ -309,37 +338,32 @@ class SHAPE
             {x: @maxx, y: @maxy}
             {x: @minx, y: @maxy}
         }
-        isNaN = (v) -> type(v) == "number" and v != v -- checks if the number is nan
         assert #ctrl_p1 == #ctrl_p2, "The control points must have the same quantity!"
-        -- to avoid dividing by zero
-        ctrl_b = 0.1
+        buffer = 0.1
         for i = 1, #ctrl_p1
-            ctrl_p1[i].x -= ctrl_b if ctrl_p1[i].x == @minx
-            ctrl_p1[i].y -= ctrl_b if ctrl_p1[i].y == @miny
-            ctrl_p1[i].x += ctrl_b if ctrl_p1[i].x == @maxx
-            ctrl_p1[i].y += ctrl_b if ctrl_p1[i].y == @maxy
+            ctrl_p1[i].x -= buffer if ctrl_p1[i].x == @minx
+            ctrl_p1[i].y -= buffer if ctrl_p1[i].y == @miny
+            ctrl_p1[i].x += buffer if ctrl_p1[i].x == @maxx
+            ctrl_p1[i].y += buffer if ctrl_p1[i].y == @maxy
             --
-            ctrl_p2[i].x -= ctrl_b if ctrl_p2[i].x == @minx
-            ctrl_p2[i].y -= ctrl_b if ctrl_p2[i].y == @miny
-            ctrl_p2[i].x += ctrl_b if ctrl_p2[i].x == @maxx
-            ctrl_p2[i].y += ctrl_b if ctrl_p2[i].y == @maxy
-        A, W, L, V1, V2 = {}, {}, nil, ctrl_p1, ctrl_p2
+            ctrl_p2[i].x -= buffer if ctrl_p2[i].x == @minx
+            ctrl_p2[i].y -= buffer if ctrl_p2[i].y == @miny
+            ctrl_p2[i].x += buffer if ctrl_p2[i].x == @maxx
+            ctrl_p2[i].y += buffer if ctrl_p2[i].y == @maxy
+        A, W, V1, V2 = {}, {}, ctrl_p1, ctrl_p2
         @filter (x, y) ->
             -- Find Angles
             for i = 1, #V1
-                j = i % #V1 + 1
-                vi, vj = V1[i], V1[j]
-                r0i = sqrt((x - vi.x) ^ 2 + (y - vi.y) ^ 2)
-                r0j = sqrt((x - vj.x) ^ 2 + (y - vj.y) ^ 2)
-                rij = sqrt((vi.x - vj.x) ^ 2 + (vi.y - vj.y) ^ 2)
-                dn = 2 * r0i * r0j
-                r = (r0i ^ 2 + r0j ^ 2 - rij ^ 2) / dn
-                A[i] = isNaN(r) and 0 or acos(max(-1, min(r, 1)))
+                vi, vj = V1[i], V1[i % #V1 + 1]
+                r0i = MATH\distance x, y, vi.x, vi.y
+                r0j = MATH\distance x, y, vj.x, vj.y
+                rij = MATH\distance vi.x, vi.y, vj.x, vj.y
+                r = (r0i ^ 2 + r0j ^ 2 - rij ^ 2) / (2 * r0i * r0j)
+                A[i] = r != r and 0 or acos(max(-1, min(r, 1)))
             -- Find Weights
             for j = 1, #V1
                 i = (j > 1 and j or #V1 + 1) - 1
-                vj = V1[j]
-                r = sqrt((vj.x - x) ^ 2 + (vj.y - y) ^ 2)
+                r = MATH\distance V1[j].x, V1[j].y, x, y
                 W[j] = (tan(A[i] / 2) + tan(A[j] / 2)) / r
             -- Normalise Weights
             Ws = TABLE(W)\reduce (a, b) -> a + b
@@ -402,17 +426,13 @@ class SHAPE
         @filter (x, y) ->
             v = [(matrix[m][1] * x * xscale) + (matrix[m][2] * y * yscale) + matrix[m][3] for m = 1, 3]
             w = 1 / max(v[3], 0.1)
-            x = MATH\round(v[1] * w, 3)
-            y = MATH\round(v[2] * w, 3)
-            return x, y
+            return MATH\round(v[1] * w, 3), MATH\round(v[2] * w, 3)
         return @
 
     -- smooths the corners of a shape
     smooth_edges: (radius = 0) =>
         limit, add = {}, {}
-        get_angle = (c, l) -> atan2(l[2] - c[2], l[1] - c[1])
-        is_Equal = (p1, p2) -> p1.typer == "m" and p2.typer == "l" and p1[1] == p2[1] and p1[2] == p2[2]
-        is_Corner = (p, j) ->
+        isCorner = (p, j) ->
             if j
                 p1, p2 = p[j], p[j + 1]
                 p1.is_corner, p2.is_corner = true, true
@@ -430,9 +450,9 @@ class SHAPE
             return p
         for k = 1, #@paths
             limit[k] = {}
-            table.remove(@paths[k]) if is_Equal(@paths[k][1], @paths[k][#@paths[k]])
+            table.remove(@paths[k]) if isEqual(@paths[k][1], @paths[k][#@paths[k]])
             for j = 1, #@paths[k] - 1
-                @paths[k] = is_Corner(@paths[k], j)
+                @paths[k] = isCorner(@paths[k], j)
                 for i = 1, #@paths[k][j], 2
                     if @paths[k][j].typer != "b"
                         p0, p1 = @paths[k][j], @paths[k][j + 1]
@@ -440,10 +460,10 @@ class SHAPE
                         x1, y1 = p1[i], p1[i + 1]
                         limit[k][#limit[k] + 1] = MATH\distance(x0, y0, x1, y1) / 2
             table.sort(limit[k], (a, b) -> a < b)
-            @paths[k] = is_Corner(@paths[k])
+            @paths[k] = isCorner(@paths[k])
         for k = 1, #@paths
             add[k] = {}
-            -- Limits the smoothness to the smallest distance encountered
+            -- limits the smoothness to the smallest distance encountered
             r = limit[k][1] < radius and limit[k][1] or radius
             for j = 1, #@paths[k]
                 if @paths[k][j].is_corner
@@ -451,8 +471,8 @@ class SHAPE
                     p = j == 1 and #@paths[k] or j - 1
                     n = j == #@paths[k] and 1 or j + 1
                     -- angles first and last
-                    af = get_angle(@paths[k][j], @paths[k][p])
-                    al = get_angle(@paths[k][j], @paths[k][n])
+                    af = getAngle(@paths[k][j], @paths[k][p])
+                    al = getAngle(@paths[k][j], @paths[k][n])
                     -- px, py values
                     px = @paths[k][j][1]
                     py = @paths[k][j][2]
