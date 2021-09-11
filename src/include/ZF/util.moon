@@ -198,6 +198,6 @@ class UTIL
                 .text[#.text + 1] = c
                 text = d
             table.remove(.text, 1) if .text[1] == ""
-            return v
+        return v
 
 {:UTIL}
