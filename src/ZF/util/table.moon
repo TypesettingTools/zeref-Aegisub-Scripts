@@ -3,6 +3,8 @@ class TABLE
     new: (@t = t) =>
 
     -- makes arithmetic operations on a table
+    -- @param fn function
+    -- @return table
     arithmeticOp: (fn = ((v) -> v), operation = "+") =>
         result = 0
         for k, v in ipairs @t
@@ -16,6 +18,7 @@ class TABLE
         return result
 
     -- removes duplicate elements in a table
+    -- @return table
     clean: =>
         f, n = {}, {}
         for k, v in pairs @t
@@ -28,20 +31,46 @@ class TABLE
         return n
 
     -- makes a shallow copy of an table
-    copy: =>
-        copy = (t, seen = {}) ->
-            return seen[t] if seen[t]
-            new = t
+    -- http://lua-users.org/wiki/CopyTable
+    -- @return table
+    shallowcopy: =>
+        shallowcopy = (t) ->
+            copy = {}
             if type(t) == "table"
-                new = {}
-                seen[t] = new
-                for k, v in next, t, nil
-                    new[copy(k, seen)] = copy v, seen
-                setmetatable new, copy(getmetatable(t), seen)
-            return new
-        return copy @t
+                for key, value in pairs t
+                    copy[key] = value
+            else
+                copy = t
+            return copy
+        return shallowcopy @t
+
+    -- makes a deep copy of an table
+    -- http://lua-users.org/wiki/CopyTable
+    -- @return table
+    deepcopy: =>
+        deepcopy = (t, copies = {}) ->
+            copy = {}
+            if type(t) == "table"
+                if copies[t]
+                    copy = copies[t]
+                else
+                    copies[t] = copy
+                    for key, value in next, t, nil
+                        copy[deepcopy key, copies] = deepcopy value, copies
+                    setmetatable copy, deepcopy getmetatable(t), copies
+            else
+                copy = t
+            return copy
+        return deepcopy @t
+
+    -- makes a deep or shallow copy of a table
+    -- @param deepcopy boolean
+    -- @return table
+    copy: (deepcopy = true) => deepcopy and @deepcopy! or @shallowcopy!
 
     -- concatenates values to the end of the table
+    -- @param ... any
+    -- @return table
     concat: (...) =>
         t = @copy!
         for val in *{...}
@@ -53,42 +82,56 @@ class TABLE
         return t
 
     -- creates a new table populated with the results of calling a provided function on every element in the calling table
+    -- @param fn function
+    -- @return table
     map: (fn) => {k, fn(v, k, @t) for k, v in pairs @t}
 
     -- removes the last element from the table
+    -- @return integer
     pop: => table.remove @t
 
     -- adds one or more elements to the end of the table
+    -- @param ... any
+    -- @return integer
     push: (...) =>
-        list, insert = {...}, table.insert
-        for i = 1, #list
-            insert @t, list[i]
-        return #list
+        arguments, insert = {...}, table.insert
+        for i = 1, #arguments
+            insert @t, arguments[i]
+        return #arguments
 
     -- executes a reducer function on each element of the table
+    -- @param fn function
+    -- @param ... any
+    -- @return table
     reduce: (fn, ...) =>
-        args, init, len, acc = {...}, 1, #@t, nil
-
-        if #args != 0
-            acc = args[1]
+        arguments, init, len, acc = {...}, 1, #@t, nil
+        if #arguments != 0
+            acc = arguments[1]
         elseif len > 0
             init, acc = 2, @t[1]
-
         for i = init, len
             acc = fn acc, @t[i], i, @t
-
         return acc
 
     -- Reverses all table values
+    -- @return table
     reverse: => [@t[#@t + 1 - i] for i = 1, #@t]
 
     -- returns a copy of part of an table from a subarray created between the start and end positions
+    -- @param f integer
+    -- @param l integer
+    -- @param s integer
+    -- @return table
     slice: (f, l, s) => [@t[i] for i = f or 1, l or #@t, s or 1]
 
     -- changes the contents of an table by removing or replacing existing elements and/or adding new elements
+    -- @param start integer
+    -- @param delete integer
+    -- @param ... any
+    -- @return table
     splice: (start, delete, ...) =>
-        args, removes, t_len = {...}, {}, #@t
-        n_args, i_args = #args, 1
+        arguments, removes, t_len = {...}, {}, #@t
+        n_args, i_args = #arguments, 1
         start = start < 1 and 1 or start
         delete = delete < 0 and 0 or delete
         if start > t_len
@@ -97,31 +140,40 @@ class TABLE
         delete = start + delete - 1 > t_len and t_len - start + 1 or delete
         for pos = start, start + math.min(delete, n_args) - 1
             TABLE(removes)\push @t[pos]
-            @t[pos] = args[i_args]
+            @t[pos] = arguments[i_args]
             i_args += 1
         i_args -= 1
         for i = 1, delete - n_args
             TABLE(removes)\push table.remove(@t, start + i_args)
         for i = n_args - delete, 1, -1
-            @push start + delete, args[i_args + i]
+            @push start + delete, arguments[i_args + i]
         return removes
 
     -- removes the first element from the table
+    -- @return integer
     shift: => table.remove @t, 1
 
     -- inserts new elements at the start of an table, and returns the new length of the table
+    -- @param ... any
+    -- @return integer
     unshift: (...) =>
-        args = {...}
-        for k = #args, 1, -1
-            table.insert @t, 1, args[k]
+        arguments = {...}
+        for k = #arguments, 1, -1
+            table.insert @t, 1, arguments[k]
         return #@t
 
+    -- checks if the table is empty
+    -- @return boolean
+    isEmpty: => next(@t) == nil
+
     -- returns a string with the contents of the table
+    -- @param table_name string
+    -- @param indent string
+    -- @return string
     view: (table_name = "table_unnamed", indent = "") =>
         cart, autoref = "", ""
-        isemptytable = (t) -> next(t) == nil
         basicSerialize = (o) ->
-            so = tostring(o)
+            so = tostring o
             if type(o) == "function"
                 info = debug.getinfo o, "S"
                 return format "%q", so .. ", C function" if info.what == "C"
@@ -139,17 +191,17 @@ class TABLE
                     autoref ..= "#{table_name} = #{saved[value]};\n"
                 else
                     saved[value] = table_name
-                    if isemptytable(value)
+                    if TABLE(value)\isEmpty!
                         cart ..= " = {};\n"
                     else
                         cart ..= " = {\n"
                         for k, v in pairs value
-                            k = basicSerialize(k)
+                            k = basicSerialize k
                             fname = "#{table_name}[ #{k} ]"
                             field = "[ #{k} ]"
                             addtocart v, fname, indent .. "	", saved, field
                         cart = "#{cart}#{indent}};\n"
-        return "#{table_name} = #{basicSerialize(@t)}" if type(@t) != "table"
+        return "#{table_name} = #{basicSerialize @t}" if type(@t) != "table"
         addtocart @t, table_name, indent
         return cart .. autoref
 

@@ -5,6 +5,10 @@ import TAGS  from require "ZF.text.tags"
 class UTIL
 
     -- interpolate n values
+    -- @param pct number
+    -- @param tp string
+    -- @param ... string || number
+    -- @return number || string
     interpolation: (pct = 0.5, tp = "number", ...) =>
         values = type(...) == "table" and ... or {...}
         -- interpolates two shape values if they have the same number of points
@@ -30,13 +34,19 @@ class UTIL
         return ipolF pct - floor(pct), valor_i, valor_f
 
     -- gets frame duration
+    -- @param dec integer
+    -- @return number
     getFrameDur: (dec = 3) =>
-        msa, msb, j = aegisub.ms_from_frame(1), aegisub.ms_from_frame(101), 0
+        msa, msb = aegisub.ms_from_frame(1), aegisub.ms_from_frame(101)
         return MATH\round msb and (msb - msa) / 100 or 41.708, dec
 
     -- readjusts the style values using values set on the line
+    -- @param subs userdata
+    -- @param line table
+    -- @return table, table, table
     tags2Styles: (subs, line) =>
-        tag = line.text\match TAGS\caps(true)["tag"]
+        fixh = (value) -> value\gsub "&&H", ""
+        tag = TAGS\hideT line.text\match TAGS\caps(true)["tag"]
         meta, style = karaskel.collect_head subs
         oldStyle = TABLE(style)\copy!
         for k = 1, style.n
@@ -55,10 +65,22 @@ class UTIL
                     .outline   = TAGS\findTag(tag, "bord", "dec") or .outline
                     .shadow    = TAGS\findTag(tag, "shad", "dec") or .shadow
                     .angle     = TAGS\findTag(tag, "frz", "float") or .angle
-                    .color1    = TAGS\findTag(tag, "1c", "hex") or .color1
-                    .color2    = TAGS\findTag(tag, "2c", "hex") or .color2
-                    .color3    = TAGS\findTag(tag, "3c", "hex") or .color3
-                    .color4    = TAGS\findTag(tag, "4c", "hex") or .color4
+                    alpha1     = alpha_from_style .color1
+                    alpha2     = alpha_from_style .color2
+                    alpha3     = alpha_from_style .color3
+                    alpha4     = alpha_from_style .color4
+                    alpha      = TAGS\findTag(tag, "alpha", "hex")
+                    unless alpha
+                        alpha1 = TAGS\findTag(tag, "1a", "hex") or alpha1
+                        alpha2 = TAGS\findTag(tag, "2a", "hex") or alpha2
+                        alpha3 = TAGS\findTag(tag, "3a", "hex") or alpha3
+                        alpha4 = TAGS\findTag(tag, "4a", "hex") or alpha4
+                    else
+                        alpha1, alpha2, alpha3, alpha4 = alpha, alpha, alpha, alpha
+                    .color1    = fixh alpha1 .. color_from_style(TAGS\findTag(tag, "1c", "hex") or .color1)
+                    .color2    = fixh alpha2 .. color_from_style(TAGS\findTag(tag, "2c", "hex") or .color2)
+                    .color3    = fixh alpha3 .. color_from_style(TAGS\findTag(tag, "3c", "hex") or .color3)
+                    .color4    = fixh alpha4 .. color_from_style(TAGS\findTag(tag, "4c", "hex") or .color4)
                     .bold      = TAGS\findTag(tag, "b", "bool") or .bold
                     .italic    = TAGS\findTag(tag, "i", "bool") or .italic
                     .underline = TAGS\findTag(tag, "u", "bool") or .underline
@@ -66,6 +88,9 @@ class UTIL
         return meta, style, oldStyle
 
     -- gets preprocessed values from the style, saving the old one and setting a new one
+    -- @param subs userdata
+    -- @param line table
+    -- @return table, table, table, table
     setPreprocLine: (subs, line) =>
         meta, style, oldStyle = @tags2Styles subs, line
         karaskel.preproc_line subs, meta, oldStyle, line
@@ -77,7 +102,46 @@ class UTIL
         coords = @findCoords line, meta
         return coords, meta, style, oldStyle
 
+    -- inserts a line in the subtitles
+    -- @param line table
+    -- @param subs userdata
+    -- @param sel integer
+    -- @param i integer
+    -- @return integer
+    insertLine: (line, subs, sel, i) =>
+        subs.insert sel + i + 1, line
+        return i + 1
+
+    -- delets a line in the subtitles
+    -- @param subs userdata
+    -- @param sel integer
+    -- @param i integer
+    -- @return integer
+    deleteLine: (subs, sel, i) =>
+        subs.delete sel + i
+        return i - 1
+
+    -- @param subs userdata
+    -- @return integer, table
+    getFirstLine: (subs) =>
+        for i = 1, #subs
+            if subs[i].class == "dialogue"
+                return i, subs[i]
+
+    -- @param subs userdata
+    -- @return integer, table
+    getLastLine: (subs) => #subs, subs[#subs]
+
+    -- checks if the macro can be started
+    -- @param l table
+    -- @return boolean
+    runMacro: (l) => l.comment == false and not @isBlank l
+
     -- find coordinates
+    -- @param line table
+    -- @param meta table
+    -- @param ogp boolean
+    -- @return table
     findCoords: (line, meta, ogp = true) =>
         tag = line.text\match TAGS\caps(true)["tag"]
         with {pos: {}, move: {}, org: {}, fax: 0, fay: 0, frx: 0, fry: 0, p: "text"}
@@ -118,6 +182,9 @@ class UTIL
                 .org.x, .org.y = if not mOrg and ogp then .pos.x, .pos.y else @coNumber mOrg, "org"
 
     -- transforms html colors to rgb or the other way around
+    -- @param color string
+    -- @param mode string
+    -- @return string
     htmlC: (color, mode = "to_rgb") =>
         local c
         switch mode
@@ -126,6 +193,8 @@ class UTIL
         return c
 
     -- gets the clip content
+    -- @param clip string
+    -- @return string
     clip2Draw: (clip) =>
         caps, shape = {
             v: "\\i?clip%((m%s+%-?%d[%.%-%d mlb]*)%)"
@@ -141,18 +210,34 @@ class UTIL
             return shape
 
     -- returns numeric values between commas
+    -- @param value string
+    -- @param tag string
+    -- @return number
     coNumber: (value, tag) =>
         args = {}
         value = value\gsub("%s+", "")\gsub("\\#{tag}%((.-)%)", "%1")\gsub "[^,]*", (i) ->
             TABLE(args)\push tonumber i
         return unpack args
 
+    -- gets the class name provided by moonscript
+    -- @param cls metatable
+    -- @return string
+    getClassName: (cls) =>
+        if cls = getmetatable cls
+            return cls.__class.__name
+
     -- gets the prev and next value of the text division
+    -- @param s string
+    -- @param div string || number
+    -- @return string, string
     headTail: (s, div) =>
         a, b, head, tail = s\find "(.-)#{div}(.*)"
         if a then head, tail else s, ""
 
     -- gets the prev and next value of the text division
+    -- @param s string
+    -- @param div string || number
+    -- @return table
     getHeadTail: (s, div) =>
         add = {}
         while s != ""
@@ -162,6 +247,8 @@ class UTIL
         return add
 
     -- checks that the text is not just a hole
+    -- @param t table || string
+    -- @return boolean
     isBlank: (t) =>
         if type(t) == "table"
             if t.duration <= 0 or t.text_stripped\len! <= 0
@@ -173,15 +260,18 @@ class UTIL
         return t\len! <= 0
 
     -- checks if the text is a shape
+    -- @param coords table
+    -- @param text string
+    -- @return boolean, string
     isShape: (coords, text) =>
         shape = text\match "m%s+%-?%d[%.%-%d mlb]*"
         isShape = shape and coords.p != "text"
         return isShape, isShape and shape or nil
 
-    -- checks if the macro can be started
-    runMacro: (l) => l.comment == false and not @isBlank l
-
     -- removes the spaces at the beginning or end of the text
+    -- @param text string
+    -- @param where string
+    -- @return string
     fixText: (text, where = "both") =>
         switch where
             when "both"   then text\match "^%s*(.-)%s*$"
@@ -192,6 +282,8 @@ class UTIL
             when "spaces" then text\match "^(%s*).-(%s*)$"
 
     -- adds an empty tag to the beginning of the text if needed
+    -- @param text string
+    -- @return string
     addEmpty: (text) =>
         text = @fixText text\gsub("{}", ""), "both"
         hast = text\gsub("%s+", "")\find TAGS\caps!["tag"]
@@ -199,91 +291,83 @@ class UTIL
         return text
 
     -- splits text from line breaks
+    -- @param text string
+    -- @return table
     splitBreaks: (text) =>
         removeEquals = (value) ->
             fix = (prev, curr) ->
-                tags, valt = TAGS\capTags!, ""
+                tags = TAGS\capTags!
                 for t, tag in pairs tags
                     preVal = prev\match tag
                     curVal = curr\match tag
                     if preVal and curVal
                         curr = curr\gsub tag, ""
                 return "{#{curr}}"
-
-            j, value = 0, value\gsub "\\t%(.-%)?", (v) -> v\gsub "\\", "\\x"
+            j, value = 0, TAGS\hideT value
             splited = TAGS\getTags value
             for j = 2, #splited
                 prev = splited[j - 1]\sub 2, -2
                 curr = splited[j - 0]\sub 2, -2
                 splited[j] = fix prev, curr
-                splited[j] = splited[j]\gsub "\\x", "\\"
-
+                splited[j] = TAGS\unhideT splited[j]
             value = value\gsub "%b{}", (t) ->
                 j += 1
                 splited[j]
-
-            return value\gsub "\\x", "\\"
-
+            return TAGS\unhideT value
         fixTags = (value) ->
-            for k = 1, #value - 1
-                tags = TAGS\getTags value[k]
-                value[k + 1] = (tags[#tags] or "") .. value[k + 1]
-            for k = 1, #value
-                value[k] = @splitText value[k]
-                if #value[k].text > 1 and #value[k].tags > 1
+            for i = 1, #value - 1
+                tags = TAGS\getTags value[i]
+                value[i + 1] = (tags[#tags] or "") .. value[i + 1]
+            for i = 1, #value
+                value[i] = @splitText value[i]
+                if #value[i].text > 1 and #value[i].tags > 1
                     val = ""
-                    for j = 1, #value[k].text
-                        continue if value[k].text[j] == ""
-                        val ..= (value[k].tags[j] or "") .. value[k].text[j]
-                    value[k] = val
+                    for j = 1, #value[i].text
+                        continue if value[i].text[j] == ""
+                        val ..= (value[i].tags[j] or "") .. value[i].text[j]
+                    value[i] = val
                 else
-                    value[k] = (value[k].tags[#value[k].tags] or "") .. (value[k].text[#value[k].text] or "")
-                value[k] = value[k]\gsub "{}", ""
-                value[k] = @splitText value[k]
+                    value[i] = (value[i].tags[#value[i].tags] or "") .. (value[i].text[#value[i].text] or "")
+                value[i] = value[i]\gsub "{}", ""
+                value[i] = @splitText value[i]
             return value
-
         concat, resul, values = "", {}, @splitText text
-        for k = 1, #values.text
-            concat ..= values.tags[k] .. values.text[k]
-
+        for i = 1, #values.text
+            concat ..= values.tags[i] .. values.text[i]
         index = fixTags @getHeadTail(concat, "\\N")
-        for k = 1, #index
-            resul[k] = ""
-            for j = 1, #index[k].text
-                resul[k] ..= index[k].tags[j] .. index[k].text[j]
-            resul[k] = removeEquals resul[k]
-
+        for i = 1, #index
+            resul[i] = ""
+            for j = 1, #index[i].text
+                resul[i] ..= index[i].tags[j] .. index[i].text[j]
+            resul[i] = removeEquals resul[i]
         return resul
 
     -- splits text from tag layers
+    -- @param text string
+    -- @return table
     splitText: (text) =>
         capt = TAGS\caps!["tag"]
         -- fixes problems regarding tags indexed on a line
         fixTags = (prev, curr) ->
-            prev = prev\gsub "\\t%(.-%)?", (v) -> v\gsub "\\", "\\x"
-            curr = curr\gsub "\\t%(.-%)?", (v) -> v\gsub "\\", "\\x"
-
+            prev = TAGS\hideT prev
+            curr = TAGS\hideT curr
             for t, tag in pairs TAGS\capTags!
                 preVal = prev\match tag
                 curVal = curr\match tag
                 if preVal and not curVal
                     curr = preVal .. curr
-            return "{#{curr\gsub("{}", "")\gsub "\\x", "\\"}}"
+            return "{#{TAGS\unhideT curr\gsub("{}", "")}}"
         -- adds an empty tag if needed
         text = @addEmpty text
         with {tags: {}, text: {}}
             .tags = TAGS\getTags text
-
-            for k = 2, #.tags
-                prev = .tags[k - 1]\sub 2, -2
-                curr = .tags[k - 0]\sub 2, -2
-                .tags[k] = fixTags prev, curr
-
+            for i = 2, #.tags
+                prev = .tags[i - 1]\sub 2, -2
+                curr = .tags[i - 0]\sub 2, -2
+                .tags[i] = fixTags prev, curr
             .text = @getHeadTail text, capt
-
-            if #.text > 1
-                table.remove(.text, 1) if .text[1] == ""
-
+            if #.text > 1 and .text[1] == ""
+                TABLE(.text)\shift! 
             .text[1] = @fixText .text[1], "start" if .text[1]
             .text[#.text] = @fixText .text[#.text], "end" if #.text > 1
 
