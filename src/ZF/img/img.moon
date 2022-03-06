@@ -22,7 +22,7 @@ class IMAGE
             when "bmp", "dib"                        then LIBBMP(filename)\decode!
             when "gif"                               then LIBGIF(filename)\decode!
 
-    getInfos: (frame = 1) =>
+    setInfos: (frame = 1) =>
         infos = @extension == "gif" and @infos.frames[frame] or @infos
         if @extension == "gif"
             {delayMs: @delayMs, x: @x, y: @y} = infos
@@ -31,7 +31,7 @@ class IMAGE
         @data = infos\getData!
 
     raster: (reduce, frame) =>
-        @getInfos frame
+        @setInfos frame
 
         shpx = "m 0 0 l %d 0 %d 1 0 1"
         preset = "{\\an7\\pos(%d,%d)\\fscx100\\fscy100\\bord0\\shad0\\frz0%s\\p1}%s"
@@ -44,8 +44,8 @@ class IMAGE
                     with @data[i]
                         color = ("\\cH%02X%02X%02X")\format .b, .g, .r
                         alpha = ("\\alphaH%02X")\format 255 - .a
-                        continue if alpha == "\\alphaHFF"
-                        TABLE(pixels)\push (preset)\format x, y, color .. alpha, "m 0 0 l 1 0 1 1 0 1"
+                        if alpha != "\\alphaHFF"
+                            TABLE(pixels)\push (preset)\format x, y, color .. alpha, "m 0 0 l 1 0 1 1 0 1"
             return pixels
 
         reducePixels = (oneLine) -> -- reduce pixels
@@ -57,8 +57,8 @@ class IMAGE
 
                     currData = @data[i + 0]
                     nextData = @data[i + 1]
+                    {:b, :g, :r, :a} = currData
 
-                    b, g, r, a = currData.b, currData.g, currData.r, currData.a
                     currColor = ("\\cH%02X%02X%02X")\format b, g, r
                     nextColor = ("\\cH%02X%02X%02X")\format nextData.b or b, nextData.g or g, nextData.r or r
 
