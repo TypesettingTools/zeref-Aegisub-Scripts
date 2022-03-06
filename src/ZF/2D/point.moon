@@ -20,7 +20,7 @@ class POINT
     __gt: (p) => @x > p.x and @y > p.y
     __ge: (p) => @x >= p.x and @y >= p.y
 
-    __tostring: => "m #{@x} #{@y} "
+    __tostring: => "#{@x} #{@y} "
 
     get: => @
     set: (p) => @x, @y = p.x, p.y
@@ -35,6 +35,7 @@ class POINT
     maxx: (p) => POINT max(@x, p.x), @y
     maxy: (p) => POINT @x, max(@y, p.y)
 
+    copy: => POINT @x, @y
     angle: (p) => deg atan2(p.y - @y, p.x - @x)
     cross: (p, o) => (@x - o.x) * (p.y - o.y) - (@y - o.y) * (p.x - o.x)
     distance: (p) => sqrt (p.x - @x) ^ 2 + (p.y - @y) ^ 2
@@ -85,11 +86,11 @@ class POINT
         p = POINT p1
         d = p2 - p
         if d.x != 0 or d.y != 0
-            t = ((@x - p.x) * d.x + (@y - p.y) * d.y) / (d.x * d.x + d.y * d.y)
+            t = ((@x - p.x) * d.x + (@y - p.y) * d.y) / d\vecDistance!
             if t > 1
                 p = POINT p2
             elseif t > 0
                 p += d * t
-        return @sqDistance p 
+        return @sqDistance p
 
 {:POINT}
