@@ -6,6 +6,10 @@ import TAGS  from require "ZF.text.tags"
 
 class TEXT
 
+    -- @param subs userdata
+    -- @param line table
+    -- @param text string
+    -- @param decs number
     new: (subs, line, text, decs = 2) =>
         @subs = subs
         @line = line
@@ -13,27 +17,26 @@ class TEXT
         @decs = decs
         @style = @setStyle!
 
-    -- sets some elements of the class
-    setSubs: (@subs = subs) => @subs = subs
-    setLine: (line = @line) => @line = line
-    setText: (text = @text) => @text = text
-    setDecs: (decs = @decs) => @decs = decs
+    -- @param line table
+    -- @return table
     setStyle: (line = @line) =>
-        with line
+        with line.styleref
             @style = {
-                .styleref.fontname
-                .styleref.bold
-                .styleref.italic
-                .styleref.underline
-                .styleref.strikeout
-                .styleref.fontsize
-                .styleref.scale_x / 100
-                .styleref.scale_y / 100
-                .styleref.spacing
+                .fontname
+                .bold
+                .italic
+                .underline
+                .strikeout
+                .fontsize
+                .scale_x / 100
+                .scale_y / 100
+                .spacing
             }
         return @style
 
     -- builds extensions, metrics and shape relative to the font and the text
+    -- @param text string
+    -- @return table, table, string
     buildFont: (text) =>
         font    = Yutils.decode.create_font unpack(@style)
         extents = font.text_extents text
@@ -42,6 +45,8 @@ class TEXT
         return extents, metrics, shape\gsub " c", ""
 
     -- gets extensions, metrics and shape relative to the font and the text in a table
+    -- @param text string
+    -- @return table
     getFont: (text) =>
         extents, metrics, shape = @buildFont text
         return {
@@ -55,6 +60,8 @@ class TEXT
         }
 
     -- gets values for all characters contained in the text
+    -- @param an integer
+    -- @return table
     chars: (an = @line.styleref.align) =>
         line = TABLE(@line)\copy!
         isTG = line.tags != nil
@@ -100,6 +107,8 @@ class TEXT
         return chars
 
     -- gets values for all words contained in the text
+    -- @param an integer
+    -- @return table
     words: (an = @line.styleref.align) =>
         line = TABLE(@line)\copy!
         isTG = line.tags != nil
@@ -147,6 +156,8 @@ class TEXT
         return words
 
     -- gets values against all line breaks contained in the text
+    -- @param an integer
+    -- @return table
     breaks: (an = @line.styleref.align) =>
         line = TABLE(@line)\copy!
         temp = UTIL\splitBreaks @text
@@ -208,6 +219,8 @@ class TEXT
         return fixed
 
     -- gets values against all tags contained in the text
+    -- @param an integer
+    -- @return table
     tags: (an = @line.styleref.align) =>
         index = {n: 0}
         with UTIL\splitText @text
@@ -268,6 +281,10 @@ class TEXT
         return index
 
     -- organize positioning in tags
+    -- @param coords table
+    -- @param tag table
+    -- @param line table
+    -- @return table, table
     orgPos: (coords, tag, line) =>
         local vx, vy, isMove, x1, y1, x2, y2
         with coords
@@ -293,6 +310,10 @@ class TEXT
         return pos, org
 
     -- converts a text to shape
+    -- @param an integer
+    -- @param px number
+    -- @param py number
+    -- @return table
     toShape: (an = @line.styleref.align, px = 0, py = 0) =>
         breaks = @breaks!
 
@@ -315,7 +336,7 @@ class TEXT
             brk.clip = temp\build!
             breaks.clip ..= brk.clip
 
-        breaks.shape = SHAPE(breaks.clip)\displace(an, "ucp", px, py)\build!
+        breaks.shape = SHAPE(breaks.clip)\setPosition(an, "ucp", px, py)\build!
         return breaks
 
 {:TEXT}
