@@ -1,68 +1,112 @@
 export script_name        = "Make Image"
 export script_description = "Converts images of various formats to pixels written in shape."
 export script_author      = "Zeref"
-export script_version     = "1.0.0"
+export script_version     = "1.0.1"
 -- LIB
 zf = require "ZF.main"
 
-import IMAGE from require "ZF.img.img"
+import POTRACE from require "ZF.img.potrace"
 
-interface = ->
+interfacePixels = ->
     items = {"All in one line", "On several lines - \"Rec\"", "Pixel by Pixel"}
     {
         {class: "label", label: "Output Type:", x: 0, y: 0}
         {class: "dropdown", name: "otp", :items , x: 0, y: 1, value: items[2]}
     }
 
-main = (subs, selected) ->
+interfacePotrace = ->
+    x, items = 0, {"right", "black", "white", "majority", "minority"}
+    {
+        {class: "label", label: "Turnpolicy:", :x, y: 0}
+        {class: "dropdown", name: "tpy", :items, :x, y: 1, value: "minority"}
+        {class: "label", label: "Corner threshold:", :x, y: 2}
+        {class: "intedit", name: "apm", :x, y: 3, min: 0, value: 1}
+        {class: "label", label: "Delete until:", :x, y: 4}
+        {class: "floatedit", name: "tdz", :x, y: 5, value: 2}
+        {class: "label", label: "Tolerance:", :x, y: 6}
+        {class: "floatedit", name: "opt", :x, y: 7, min: 0, value: 0.2}
+        {class: "checkbox", label: "Curve optimization?", name: "opc", :x, y: 8, value: true}
+    }
+
+getVals = (inter) ->
     extensions, frameDur = "*.png;*.jpeg;*.jpe;*.jpg;*.jfif;*.jfi;*.bmp;*.dib;*.gif", zf.util\getFrameDur 0
 
     filename = aegisub.dialog.open "Open Image File", "", "", "Image extents (#{extensions})|#{extensions};", false, true
     aegisub.cancel! unless filename
 
-    buttons, elements = aegisub.dialog.display interface!, {"Ok", "Cancel"}, close: "Cancel"
+    buttons, elements = aegisub.dialog.display inter, {"Ok", "Cancel"}, close: "Cancel"
 
-    if buttons == "Ok"
-        aegisub.progress.task "Processing..."
+    return buttons, elements, filename, frameDur
 
-        line, i = zf.table(subs[selected[#selected]])\copy!, 1
+main = (macro) ->
+    return (subs, selected) ->
+        buttons, elements, filename, frameDur = getVals macro == "Pixels" and interfacePixels! or interfacePotrace!
 
-        typer = switch elements.otp
-            when "All in one line" then "oneLine"
-            when "On several lines - \"Rec\"" then true
-            when "Pixel by Pixel" then nil
-
-        img = IMAGE filename
+        img = POTRACE filename
         ext = img.extension
 
         aegisub.progress.task "Processing #{ext\upper!}..."
+        if buttons == "Ok"
+            aegisub.progress.task "Processing..."
 
-        make = (pixels, isGif) ->
-            for p, pixel in pairs pixels
-                line.text = pixel\gsub "}{", ""
+            line, i = zf.table(subs[selected[#selected]])\copy!, 1
+            if macro == "Pixels"
+                makePixels = (pixels, isGif) ->
+                    for p, pixel in pairs pixels
+                        line.text = pixel\gsub "}{", ""
+                        if isGif
+                            -- repositions the coordinates
+                            line.text = line.text\gsub "\\pos%((%d+),(%d+)%)", (x, y) ->
+                                px = tonumber(x) + img.x
+                                py = tonumber(y) + img.y
+                                return "\\pos(#{px},#{py})"
+                        i = zf.util\insertLine line, subs, selected[#selected] - 1, i
 
-                if isGif
-                    -- repositions the coordinates
-                    line.text = line.text\gsub "\\pos%((%d+),(%d+)%)", (x, y) ->
-                        px = tonumber(x) + img.x
-                        py = tonumber(y) + img.y
-                        return "\\pos(#{px},#{py})"
+                typer = switch elements.otp
+                    when "All in one line" then "oneLine"
+                    when "On several lines - \"Rec\"" then true
+                    when "Pixel by Pixel" then nil
 
-                subs.insert selected[#selected] + i, line
-                i += 1
+                if ext != "gif"
+                    makePixels img\raster typer
+                else
+                    length = #img.infos.frames
+                    for j = 1, length
+                        aegisub.progress.task "Processing GIF... Frame [ #{j} ]"
+                        last = subs[selected[#selected]]
 
-        if ext != "gif"
-            make img\raster typer
-        else
-            length = #img.infos.frames
-            for j = 1, length
-                aegisub.progress.task "Processing GIF... Frame [ #{j} ]"
-                last = subs[selected[#selected]]
+                        line.start_time = last.start_time + length * frameDur * (j - 1) / length
+                        line.end_time = last.start_time + length * frameDur * j / length
+                        makePixels img\raster(typer, j), true
+            else -- if potrace
+                makePotrace = (shp, isGif) ->
+                    line.text = "{\\an7\\pos(0,0)\\bord0\\shad0\\fscx100\\fscy100\\fr0\\p1}#{shp}"
+                    if isGif
+                        -- repositions the coordinates
+                        line.text = line.text\gsub "\\pos%((%d+),(%d+)%)", (x, y) ->
+                            px = tonumber(x) + img.x
+                            py = tonumber(y) + img.y
+                            return "\\pos(#{px},#{py})"
+                    i = zf.util\insertLine line, subs, selected[#selected] - 1, i
 
-                line.start_time = last.start_time + length * frameDur * (j - 1) / length
-                line.end_time = last.start_time + length * frameDur * j / length
-                make img\raster(typer, j), true
+                img\start nil, elements.tpy, elements.tdz, elements.opc, elements.apm, elements.opt
+                if img.extension != "gif"
+                    img\process!
+                    makePotrace img\getShape!
+                else
+                    length = #img.infos.frames
+                    for j = 1, length
+                        aegisub.progress.task "Processing GIF... Frame [ #{j} ]"
+                        last = subs[selected[#selected]]
 
-    aegisub.set_undo_point script_name
+                        line.start_time = last.start_time + length * frameDur * (j - 1) / length
+                        line.end_time = last.start_time + length * frameDur * j / length
 
-aegisub.register_macro script_name, script_description, main
+                        img\start j
+                        if pcall -> img\process!
+                            makePotrace img\getShape!, true
+
+        aegisub.set_undo_point macro
+
+aegisub.register_macro "#{script_name}/Pixels", script_description, main "Pixels"
+aegisub.register_macro "#{script_name}/Potrace", script_description, main "Potrace"
