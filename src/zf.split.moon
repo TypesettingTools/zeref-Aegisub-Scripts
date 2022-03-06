@@ -1,7 +1,7 @@
 export script_name        = "Splits Text By"
 export script_description = "Splits the text in several ways"
 export script_author      = "Zeref"
-export script_version     = "1.0.0"
+export script_version     = "1.0.1"
 -- LIB
 zf = require "ZF.main"
 
@@ -12,18 +12,19 @@ main = (__type) ->
             l = subs[sel + i]
 
             coords = zf.util\setPreprocLine subs, l
+            isShape = zf.util\isShape coords, l.text\gsub "%b{}", ""
+            assert not isShape, "expected text, received a shape"
 
-            continue if not zf.util\runMacro(l) or zf.util\isShape coords, l.text\gsub "%b{}", ""
+            unless zf.util\runMacro l
+                continue 
 
             l.comment = true
-
             subs[sel + i] = l
-
-            subs.delete sel + i
-            i -= 1
 
             line = zf.table(l)\copy!
             line.comment = false
+
+            i = zf.util\deleteLine subs, sel, i
 
             call = zf.text subs, line, line.text
             for t, tag in ipairs __type != "Break" and call\tags! or call\breaks!
@@ -32,27 +33,14 @@ main = (__type) ->
                         value = switch __type
                             when "Chars" then zf.text(subs, tag)\chars!
                             when "Words" then zf.text(subs, tag)\words!
-
                         for _, index in ipairs value
-                            pos, org = zf.text\orgPos coords, index, line
-
-                            tag.tags = zf.tags\replaceT tag.tags, "pos", pos
-                            tag.tags = zf.tags\replaceT tag.tags, "org", org
-
-                            line.text = "{#{tag.tags}}#{index.text_stripped}"
-
-                            subs.insert sel + i + 1, line
-                            i += 1
+                            conc = zf.tags\replaceCoords tag.tags, call\orgPos coords, index, line
+                            line.text = "#{conc}#{index.text_stripped}"
+                            i = zf.util\insertLine line, subs, sel, i
                     else
-                        pos, org = zf.text\orgPos coords, tag, line
-
-                        tag.tags = zf.tags\replaceT tag.tags, "pos", pos
-                        tag.tags = zf.tags\replaceT tag.tags, "org", org
-
-                        line.text = "{#{tag.tags}}#{tag.text_stripped_non_tags}"
-
-                        subs.insert sel + i + 1, line
-                        i += 1
+                        conc = zf.tags\replaceCoords tag.tags, call\orgPos coords, tag, line
+                        line.text = "#{conc}#{tag.text_stripped_non_tags}"
+                        i = zf.util\insertLine line, subs, sel, i
 
         aegisub.set_undo_point script_name
 
