@@ -51,16 +51,17 @@ class LIBGIF
                 k = si.RasterBits[j]
                 assert k < colorMap.ColorCount
 
-                if k == tColorK and transparent
-                    data[j].b = 0
-                    data[j].g = 0
-                    data[j].r = 0
-                    data[j].a = 0
-                else
-                    data[j].b = colorMap.Colors[k].Blue
-                    data[j].g = colorMap.Colors[k].Green
-                    data[j].r = colorMap.Colors[k].Red
-                    data[j].a = 0xff
+                with data[j]
+                    if k == tColorK and transparent
+                        .b = 0
+                        .g = 0
+                        .r = 0
+                        .a = 0
+                    else
+                        .b = colorMap.Colors[k].Blue
+                        .g = colorMap.Colors[k].Green
+                        .r = colorMap.Colors[k].Red
+                        .a = 0xff
 
             TABLE(@frames)\push {:data, :width, :height, :delayMs, x: si.ImageDesc.Left, y: si.ImageDesc.Top, getData: => data}
 
