@@ -1,200 +1,285 @@
-import MATH, POLYNOMIAL from require "ZF.util.math"
-import POINT from require "ZF.2D.point"
+import MATH  from require "ZF.util.math"
 import TABLE from require "ZF.util.table"
+import POINT from require "ZF.2D.point"
+
+bit = require "bit"
 
 class BEZIER
 
+    -- @param ... POINT || BEZIER
     new: (...) =>
-        args, @paths = {...}, {POINT!, POINT!, t: "l"}
+        args, @bz = {...}, {POINT!, POINT!, t: "l"}
         switch #args
             when 1
-                val = args[1].paths and args[1].paths or args[1]
+                val = args[1].bz and args[1].bz or args[1]
                 for k = 1, #val
-                    @paths[k] = POINT val[k]
-            when 2, 3, 4, 6, 8
+                    @bz[k] = POINT val[k]
+            when 2, 4, 8
                 condition = #args >= 4 and type(args[1]) == "number"
                 for k = 1, condition and #args / 2 or #args
-                    @paths[k] = condition and POINT(args[k + (k - 1)], args[k + k]) or POINT args[k]
-        @paths.t = #@paths == 2 and "l" or "b"
+                    @bz[k] = condition and POINT(args[k * 2 - 1], args[k * 2]) or POINT args[k]
+        @bz.t = #@bz == 2 and "l" or "b"
 
-    pLen: => #@paths
-    unpack: => @paths[1], @paths[2], @paths[3], @paths[4]
+    unpack: => @bz[1], @bz[2], @bz[3], @bz[4]
 
+    -- @param t string
+    -- @return BEZIER
     assert: (t) =>
-        len, msg = @pLen!, "The paths do not correspond with a"
-        switch t
-            when "linear"
-                assert len == 2, "#{msg} Linear Bezier"
-            when "quadratic"
-                assert len == 3, "#{msg} Quadratic Bezier"
-            when "cubic"
-                assert len == 4, "#{msg} Cubic Bezier"
+        len, msg = #@bz, "The paths do not correspond with a"
+        if t == "linear"
+            assert len == 2, "#{msg} Linear Bezier"
+        elseif t == "cubic"
+            assert len == 4, "#{msg} Cubic Bezier"
         return @
 
+    -- @param p number || POINT
+    -- @return BEZIER
     __add: (p = 0) =>
-        p1, p2, p3, p4 = @unpack!
-        BEZIER p1 + p, p2 + p, p3 and p3 + p or nil, p4 and p4 + p or nil
+        a, b, c, d = @unpack!
+        BEZIER a + p, b + p, c and c + p or nil, d and d + p or nil
 
+    -- @param p number || POINT
+    -- @return BEZIER
     __sub: (p = 0) =>
-        p1, p2, p3, p4 = @unpack!
-        BEZIER p1 - p, p2 - p, p3 and p3 - p or nil, p4 and p4 - p or nil
+        a, b, c, d = @unpack!
+        BEZIER a - p, b - p, c and c - p or nil, d and d - p or nil
 
+    -- @param p number || POINT
+    -- @return BEZIER
     __mul: (p = 1) =>
-        p1, p2, p3, p4 = @unpack!
-        BEZIER p1 * p, p2 * p, p3 and p3 * p or nil, p4 and p4 * p or nil
+        a, b, c, d = @unpack!
+        BEZIER a * p, b * p, c and c * p or nil, d and d * p or nil
 
+    -- @param p number || POINT
+    -- @return BEZIER
     __div: (p = 1) =>
-        p1, p2, p3, p4 = @unpack!
-        BEZIER p1 / p, p2 / p, p3 and p3 / p or nil, p4 and p4 / p or nil
+        a, b, c, d = @unpack!
+        BEZIER a / p, b / p, c and c / p or nil, d and d / p or nil
 
+    -- @param p number || POINT
+    -- @return BEZIER
     __mod: (p = 1) =>
-        p1, p2, p3, p4 = @unpack!
-        BEZIER p1 % p, p2 % p, p3 and p3 % p or nil, p4 and p4 % p or nil
+        a, b, c, d = @unpack!
+        BEZIER a % p, b % p, c and c % p or nil, d and d % p or nil
 
+    -- @param p number || POINT
+    -- @return BEZIER
     __pow: (p = 1) =>
-        p1, p2, p3, p4 = @unpack!
-        BEZIER p1 ^ p, p2 ^ p, p3 and p3 ^ p or nil, p4 and p4 ^ p or nil
+        a, b, c, d = @unpack!
+        BEZIER a ^ p, b ^ p, c and c ^ p or nil, d and d ^ p or nil
 
-    __tostring: =>
-        pt = @paths
-        switch #pt
-            when 2 then "m #{pt[1].x} #{pt[1].y} l #{pt[2].x} #{pt[2].y} "
-            when 3 then "m #{pt[1].x} #{pt[1].y} b #{pt[2].x} #{pt[2].y} #{pt[2].x} #{pt[2].y} #{pt[3].x} #{pt[3].y} "
-            when 4 then "m #{pt[1].x} #{pt[1].y} b #{pt[2].x} #{pt[2].y} #{pt[3].x} #{pt[3].y} #{pt[4].x} #{pt[4].y} "
+    -- @param len number
+    -- @return string
+    __tostring: (len = #@bz) =>
+        a, b, c, d = @unpack!
+        switch len
+            when 1 then "#{a.x} #{a.y} "
+            when 2 then "#{b.x} #{b.y} "
+            when 4 then "#{b.x} #{b.y} #{c.x} #{c.y} #{d.x} #{d.y} "
 
+    -- rounds the points
+    -- @param dec number
+    -- @return BEZIER
     round: (dec = 0) =>
-        for p, path in ipairs @paths
+        for p, path in ipairs @bz
             path\round dec
         return @
 
-    reverse: =>
+    -- inverts the order of the segment
+    -- @return BEZIER
+    inverse: =>
         p = {@unpack!}
         for k = 1, #p
-            @paths[k] = p[#p + 1 - k]
+            @bz[k] = p[#p + 1 - k]
         return @
 
-    linear: (t, b0, b1) => (1 - t) * b0 + t * b1
-    quadratic: (t, b0, b1, b2) => (1 - t) ^ 2 * b0 + 2 * t * (1 - t) * b1 + t ^ 2 * b2
-    cubic: (t, b0, b1, b2, b3) => (1 - t) ^ 3 * b0 + 3 * t * (1 - t) ^ 2 * b1 + 3 * t ^ 2 * (1 - t) * b2 + t ^ 3 * b3
+    -- gets the point on the linear segment through time
+    -- @param t number
+    -- @return POINT
+    linear: (t) =>
+        @assert "linear"
+        a, b = @unpack!
 
-    getPoint: (t) =>
-        p1, p2, p3, p4, x, y = @unpack!
-
-        switch @pLen!
-            when 2
-                x = @linear t, p1.x, p2.x
-                y = @linear t, p1.x, p2.x
-            when 3
-                x = @quadratic t, p1.x, p2.x, p3.x
-                y = @quadratic t, p1.y, p2.y, p3.y
-            when 4
-                x = @cubic t, p1.x, p2.x, p3.x, p4.x
-                y = @cubic t, p1.y, p2.y, p3.y, p4.y
-
+        x = (1 - t) * a.x + t * b.x
+        y = (1 - t) * a.y + t * b.y
         return POINT x, y
 
-    midPoint: => @getPoint 0.5
+    -- gets the point on the bezier segment through time
+    -- @param t number
+    -- @return POINT
+    cubic: (t) =>
+        @assert "cubic"
+        a, b, c, d = @unpack!
 
-    linearAngle: =>
-        @assert "linear"
+        x = (1 - t) ^ 3 * a.x + 3 * t * (1 - t) ^ 2 * b.x + 3 * t ^ 2 * (1 - t) * c.x + t ^ 3 * d.x
+        y = (1 - t) ^ 3 * a.y + 3 * t * (1 - t) ^ 2 * b.y + 3 * t ^ 2 * (1 - t) * c.y + t ^ 3 * d.y
+        return POINT x, y
 
-        p1, p2 = @unpack!
-
-        p = p2 - p1
-        return atan2 p.y, p.x
-
-    casteljau: (init = 0, len = @length!, reduce = 1) =>
-        add, path, len = {}, @paths, MATH\round len / reduce, 0
-        for k = init, len
-            newPoint, t = POINT!, k / len
-            switch #path
-                when 2
-                    newPoint.x = @linear t, path[1].x, path[2].x
-                    newPoint.y = @linear t, path[1].y, path[2].y
-                when 3
-                    newPoint.x = @quadratic t, path[1].x, path[2].x, path[3].x
-                    newPoint.y = @quadratic t, path[1].y, path[2].y, path[3].y
-                when 4
-                    newPoint.x = @cubic t, path[1].x, path[2].x, path[3].x, path[4].x
-                    newPoint.y = @cubic t, path[1].y, path[2].y, path[3].y, path[4].y
-            TABLE(add)\push newPoint
-        return add
-
-    rotate: (c = @midPoint!, angle) =>
-        for i = 1, @pLen!
-            @paths[i]\rotate c, angle
+    -- rotates the segment
+    -- @param c POINT
+    -- @param angle number
+    -- @return BEZIER
+    rotate: (c = @getMidPoint!, angle) =>
+        for i = 1, #@bz
+            @bz[i]\rotate c, angle
         return @
 
-    linear2quadratic: =>
+    -- rotates the segment
+    -- @param t number
+    -- @param fix boolean
+    -- @return POINT
+    getPoint: (t, fix) =>
+        switch #@bz
+            when 2 then @linear t
+            when 4 then fix and @fixCasteljauPoint(t) or @cubic t
+            else error "expected a linear bezier or a cubic bezier"
+
+    -- gets the midpoint of the segment
+    -- @return POINT
+    getMidPoint: => @getPoint 0.5, true
+
+    -- gets the normalized tangent through time
+    -- @param t number
+    -- @param inverse boolean
+    -- @return POINT, POINT, number
+    getNormal: (t, inverse) =>
+        @allCubic!
+        t = @fixCasteljauMap t
+        pnt = @getPoint t
+        tan = @cubicDerivative t
+        with tan
+            if inverse
+                .x, .y = -.y, .x
+            else
+                .x, .y = .y, -.x
+            tan /= tan\vecDistanceSqrt!
+        return tan, pnt, t
+
+    -- gets the angle of the linear segment
+    -- @return number
+    linearAngle: =>
         @assert "linear"
+        a, b = @unpack!
 
-        p1, p2 = @unpack!
-        q1 = POINT p1
-        q2 = POINT (p1.x + p2.x) / 2, (p1.y + p2.y) / 2
-        q3 = POINT p2
-        return BEZIER q1, q2, q3
+        p = b - a
+        return atan2 p.y, p.x
 
+    -- https://gamedev.stackexchange.com/a/5427
+    -- @param len integer
+    -- @return table, number
+    fixCasteljau: (len = 100) =>
+        arcLens, o, sum = {0}, @getPoint(0), 0
+        for i = 1, len
+            p = @getPoint i * (1 / len)
+            d = o - p
+            sum += d\vecDistanceSqrt!
+            arcLens[i + 1] = sum
+            o = p
+        return arcLens, len
+
+    -- gets a new uniformed time
+    -- @param u number
+    -- @param len integer
+    -- @return number
+    fixCasteljauMap: (u, len) =>
+        arcLens, len = @fixCasteljau len
+
+        tLen = u * arcLens[len]
+        low, i, high = 0, 0, len
+
+        while low < high
+            i = low + bit.bor (high - low) / 2, 0
+            if arcLens[i + 1] < tLen
+                low = i + 1
+            else
+                high = i
+
+        if arcLens[i + 1] > tLen
+            i -= 1
+
+        lenB, last = arcLens[i + 1], len - 1
+        return lenB == tLen and i / last or (i + (tLen - lenB) / (arcLens[i + 2] - lenB)) / last
+
+    -- gets the bezier point with uniform time
+    -- @param u number
+    -- @return POINT
+    fixCasteljauPoint: (u) => @getPoint @fixCasteljauMap u
+
+    -- flattens the segment
+    -- @param srt integer
+    -- @param len integer
+    -- @param red integer
+    -- @param fix boolean
+    -- @return table
+    casteljau: (srt = 0, len = @length!, red = 1, fix = true) =>
+        points, len = {}, MATH\round len / red, 0
+        for i = srt, len
+            TABLE(points)\push @getPoint i / len, fix
+        return points
+
+    -- transforms a linear segment into a bezier segment
+    -- @return BEZIER
     linear2cubic: =>
         @assert "linear"
+        a, d = @unpack!
 
-        p1, p2 = @unpack!
-        c1 = POINT p1
-        c2 = POINT (2 * p1.x + p2.x) / 3, (2 * p1.y + p2.y) / 3
-        c3 = POINT (p1.x + 2 * p2.x) / 3, (p1.y + 2 * p2.y) / 3
-        c4 = POINT p2
-        return BEZIER c1, c2, c3, c4
+        b = POINT (2 * a.x + d.x) / 3, (2 * a.y + d.y) / 3
+        c = POINT (a.x + 2 * d.x) / 3, (a.y + 2 * d.y) / 3
+        return BEZIER a, b, c, d
 
-    quadratic2cubic: =>
-        @assert "quadratic"
+    -- transforms a linear segment into a bezier segment
+    -- @return BEZIER
+    allCubic: =>
+        @ = #@bz == 2 and @linear2cubic! or @
+        return @
 
-        p1, p2, p3 = @unpack!
-        c1 = POINT p1
-        c2 = POINT (p1.x + 2 * p2.x) / 3, (p1.y + 2 * p2.y) / 3
-        c3 = POINT (p3.x + 2 * p2.x) / 3, (p3.y + 2 * p2.y) / 3
-        c4 = POINT p3
-        return BEZIER c1, c2, c3, c4
-
-    split: (t) =>
-        local p1, p2, p3, p4, p5, p6
-        switch @pLen!
+    -- splits the segment into two parts
+    -- @param t number
+    -- @return table
+    split: (t = 0.5) =>
+        t = MATH\clamp t, 0, 1
+        a, b, c, d = @unpack!
+        switch #@bz
             when 2
-                p1 = @paths[1]\lerp @paths[2], t
+                v1 = a\lerp b, t
                 {
-                    BEZIER @paths[1], p1
-                    BEZIER p1, @paths[2]
-                }
-            when 3
-                p1 = @paths[1]\lerp @paths[2], t
-                p2 = @paths[2]\lerp @paths[3], t
-                p3 = p1\lerp p2, t
-                {
-                    BEZIER @paths[1], p1, p3
-                    BEZIER p3, p2, @paths[3]
+                    BEZIER a, v1
+                    BEZIER v1, b
                 }
             when 4
-                p1 = @paths[1]\lerp @paths[2], t
-                p2 = @paths[2]\lerp @paths[3], t
-                p3 = @paths[3]\lerp @paths[4], t
-                p4 = p1\lerp p2, t
-                p5 = p2\lerp p3, t
-                p6 = p4\lerp p5, t
+                v1 = a\lerp b, t
+                v2 = b\lerp c, t
+                v3 = c\lerp d, t
+                v4 = v1\lerp v2, t
+                v5 = v2\lerp v3, t
+                v6 = v4\lerp v5, t
                 {
-                    BEZIER @paths[1], p1, p4, p6
-                    BEZIER p6, p5, p3, @paths[4]
+                    BEZIER a, v1, v4, v6
+                    BEZIER v6, v5, v3, d
                 }
 
+    -- splits the segment in a time interval
+    -- @param s number
+    -- @param e number
+    -- @return BEZIER
     splitInInterval: (s = 0, e = 1) =>
+        s = MATH\clamp s, 0, 1
+        e = MATH\clamp e, 0, 1
+        s, e = e, s if s > e
+
         u = (e - s) / (1 - s)
+        u = u != u and e or u
 
-        s1 = @split s
-        s2 = @split e
-        s3 = s1[2]\split u
+        a = @split s
+        b = a[2]\split u
+        return b[1]
 
-        return s3[1]
-
+    -- transforms points into bezier segments
+    -- @param points table
+    -- @param tension number 
+    -- @return table
     spline: (points, tension = 1) =>
         splines = {}
-
         for i = 1, #points - 1
             p1 = i > 1 and points[i - 1] or points[1]
             p2 = points[i]
@@ -209,35 +294,35 @@ class BEZIER
             cp2y = p3.y - (p4.y - p2.y) / 6 * tension
             cp2 = POINT cp2x, cp2y
 
-            TABLE(splines)\push BEZIER i > 1 and splines[i - 1].paths[4] or points[1], cp1, cp2, p2
-
+            TABLE(splines)\push BEZIER i > 1 and splines[i - 1].bz[4] or points[1], cp1, cp2, p2
         return splines
 
-    coefficient: =>
-        local p1, p2, p3, p4
-        switch @pLen!
-            when 3
-                p1, p2, p3 = @unpack!
-                {
-                    POINT p1.x - 2 * p2.x + p3.x, p1.y - 2 * p2.y + p3.y
-                    POINT 2 * (p2.x - p1.x), 2 * (p2.y - p1.y)
-                    POINT p1.x, p1.y
-                }
-            when 4
-                p1, p2, p3, p4 = @unpack!
-                {
-                    POINT p4.x - p1.x + 3 * (p2.x - p3.x), p4.y - p1.y + 3 * (p2.y - p3.y)
-                    POINT 3 * p1.x - 6 * p2.x + 3 * p3.x, 3 * p1.y - 6 * p2.y + 3 * p3.y
-                    POINT 3 * (p2.x - p1.x), 3 * (p2.y - p1.y)
-                    POINT p1.x, p1.y
-                }
+    -- gets the cubic coefficient of the bezier segment
+    -- @return table
+    cubicCoefficient: =>
+        @assert "cubic"
+        a, b, c, d = @unpack!
+        {
+            POINT d.x - a.x + 3 * (b.x - c.x), d.y - a.y + 3 * (b.y - c.y)
+            POINT 3 * a.x - 6 * b.x + 3 * c.x, 3 * a.y - 6 * b.y + 3 * c.y
+            POINT 3 * (b.x - a.x), 3 * (b.y - a.y)
+            POINT a.x, a.y
+        }
 
-    derivative: (t, coef) =>
+    -- gets the cubic derivative of the bezier segment
+    -- @param t number
+    -- @param coef table
+    -- @return POINT
+    cubicDerivative: (t, coef = @cubicCoefficient!) =>
+        @assert "cubic"
         a, b, c = unpack coef
-        switch @pLen!
-            when 3 then POINT 2 * a.x * t + b.x, 2 * a.y * t + b.y
-            when 4 then POINT c.x + t * (2 * b.x + 3 * a.x * t), c.y + t * (2 * b.y + 3 * a.y * t)
+        x = c.x + t * (2 * b.x + 3 * a.x * t)
+        y = c.y + t * (2 * b.y + 3 * a.y * t)
+        return POINT x, y
 
+    -- gets the real length of the segment through time
+    -- @param t number
+    -- @return number
     length: (t = 1) =>
 
         abscissas = {
@@ -271,65 +356,78 @@ class BEZIER
         }
 
         len = 0
-        switch @pLen!
+        switch #@bz
             when 2
-                len = @paths[1]\distance @paths[2]
-            when 3, 4
-                coef = @coefficient!
-
-                Z = t / 2
+                len += @bz[1]\distance @bz[2]
+            when 4
+                coef, Z = @cubicCoefficient!, t / 2
                 for i = 1, #abscissas
                     fixT = Z * abscissas[i] + Z
-                    derv = @derivative fixT, coef
+                    derv = @cubicDerivative fixT, coef
                     len += weights[i] * derv\hypot!
-
                 len *= Z
 
         return len
 
+    -- checks if the point is on the line segment
+    -- @param c POINT
+    -- @param ep number
+    -- @return boolean
+    pointIsOnLine: (c, ep = 1e-6) =>
+        @assert "linear"
+        a, b = @unpack!
+        dab = a\distance b
+        dac = a\distance c
+        dbc = b\distance c
+        dff = dab - dac + dbc
+        return -ep < dff and dff < ep
+
+    -- offsets the linear segment
+    -- @param size number
+    -- @return BEZIER
     linearOffset: (size = 0) =>
-        @assert "cubic"
+        @assert "linear"
+        a, b = @unpack!
 
-        p1, p2 = @unpack!
-
-        d = POINT -(p2.y - p1.y), p2.x - p1.x
+        d = POINT -(b.y - a.y), b.x - a.x
         k = size / @length!
 
-        p1 -= d * k
-        p2 -= d * k
+        a -= d * k
+        b -= d * k
+        return BEZIER a, b
 
-        return BEZIER p1, p2
-
+    -- gets the linear bounding box
+    -- @return number, number, number, number
     linearBoudingBox: =>
+        @assert "linear"
         p1, p2 = @unpack!
 
-        left   = p2.x < p1.x and p2.x or p1.x
-        top    = p2.y < p1.y and p2.y or p1.y
-        right  = p2.x > p1.x and p2.x or p1.x
-        bottom = p2.y > p1.y and p2.y or p1.y
+        {x: x1, y: y1} = p1
+        {x: x2, y: y2} = p2
 
-        return left, top, right, bottom
+        l = x2 < x1 and x2 or x1
+        t = y2 < y1 and y2 or y1
+        r = x2 > x1 and x2 or x1
+        b = y2 > y1 and y2 or y1
 
-    quadraticBoudingBox: =>
-        cubic = @quadratic2cubic!
-        return cubic\cubicBoudingBox!
+        return l, t, r, b
 
+    -- gets the bezier bounding box
     -- https://stackoverflow.com/a/34882840
-    cubicBoudingBox: =>
+    -- @param ep number
+    -- @return number, number, number, number
+    cubicBoudingBox: (ep = 1e-12) =>
         @assert "cubic"
-
         p1, p2, p3, p4 = @unpack!
 
         vt = {}
-        for i = 1, 2
-            axi = i == 1 and "x" or "y"
-
+        for axi in *{"x", "y"}
             a = -3 * p1[axi] + 9 * p2[axi] - 9 * p3[axi] + 3 * p4[axi]
             b = 6 * p1[axi] - 12 * p2[axi] + 6 * p3[axi]
             c = 3 * p2[axi] - 3 * p1[axi]
 
-            if abs(a) < 1e-12
-                if abs(b) < 1e-12
+            if abs(a) < ep
+                if abs(b) < ep
                     continue
                 t = -c / b
                 if 0 < t and t < 1
@@ -339,7 +437,7 @@ class BEZIER
             delta = b ^ 2 - 4 * c * a
 
             if delta < 0
-                if abs(delta) < 1e-12
+                if abs(delta) < ep
                     t = -b / (2 * a)
                     if 0 < t and t < 1
                         TABLE(vt)\push t
@@ -354,46 +452,38 @@ class BEZIER
                 if 0 < t and t < 1
                     TABLE(vt)\push t
 
-        left   = p4.x < p1.x and p4.x or p1.x
-        top    = p4.y < p1.y and p4.y or p1.y
-        right  = p4.x > p1.x and p4.x or p1.x
-        bottom = p4.y > p1.y and p4.y or p1.y
+        l, t, r, b = BEZIER(p1, p4)\linearBoudingBox!
+        for v in *vt
+            with @cubic v
+                l = min l, .x
+                t = min t, .y
+                r = max r, .x
+                b = max b, .y
 
-        for v, t in ipairs vt
-            x = @cubic t, p1.x, p2.x, p3.x, p4.x
-            y = @cubic t, p1.y, p2.y, p3.y, p4.y
+        return l, t, r, b
 
-            left   = min left, x
-            top    = min top, y
-            right  = max right, x
-            bottom = max bottom, y
+    -- gets the bounding box
+    -- @param typer string
+    -- @return number, number, number, number
+    boudingBox: (typer) =>
+        if typer == "real"
+            switch #@bz
+                when 2 then @linearBoudingBox!
+                when 4 then @cubicBoudingBox!
+        else
+            l, t, r, b = math.huge, math.huge, -math.huge, -math.huge
+            for {:x, :y} in *@bz
+                l, t = min(l, x), min(t, y)
+                r, b = max(r, x), max(b, y)
+            return l, t, r, b
 
-        return left, top, right, bottom
-
-    -- https://stackoverflow.com/a/49402756
-    cubicGetYbyX: (x = 0) =>
-        @assert "cubic"
-
-        p1, p2, p3, p4 = @unpack!
-
-        a = -p1.x + 3 * p2.x - 3 * p3.x + p4.x
-        b = 3 * p1.x - 6 * p2.x + 3 * p3.x
-        c = -3 * p1.x + 3 * p2.x
-        d = p1.x - x
-
-        t, points = POLYNOMIAL(a, b, c, d)\cubicRoots!, {}
-
-        for i = 1, #t
-            px, py = x, @cubic t[i], p1.y, p2.y, p3.y, p4.y
-            points[i] = POINT px, py
-
-        return points
-
+    -- finds intersections between linear segments
+    -- @param linear BEZIER
+    -- @return string, POINT
     l2lIntersection: (linear) =>
-        x1, y1 = @paths[1].x, @paths[1].y
-        x2, y2 = @paths[2].x, @paths[2].y
-        x3, y3 = linear.paths[1].x, linear.paths[1].y
-        x4, y4 = linear.paths[2].x, linear.paths[2].y
+        @assert "linear"
+        {x: x1, y: y1}, {x: x2, y: y2} = @bz[1], @bz[2]
+        {x: x3, y: y3}, {x: x4, y: y4} = linear.bz[1], linear.bz[2]
 
         d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
         t = (x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)
@@ -405,7 +495,7 @@ class BEZIER
             u /= d
             if 0 <= t and t <= 1 and 0 <= u and u <= 1
                 status = "intersected"
-                return status, @paths[1]\lerp @paths[2], t
+                return status, @bz[1]\lerp @bz[2], t
             else
                 status = "not intersected"
         elseif t == 0 or u == 0
@@ -413,18 +503,20 @@ class BEZIER
 
         return status
 
+    -- finds intersections between bezier segments and linear segments
+    -- @param linear BEZIER
+    -- @return string, table
     c2lIntersection: (linear) =>
-        result, status = {}, "not intersected"
-
+        @assert "cubic"
         p1, p2, p3, p4 = @unpack!
 
-        a1 = linear.paths[1]
-        a2 = linear.paths[2]
+        result, status = {}, "not intersected"
+        {a1, a2} = linear.bz
 
         pmin = a1\min a2
         pmax = a1\max a2
 
-        coef = @coefficient!
+        coef = @cubicCoefficient!
 
         N = POINT a1.y - a2.y, a2.x - a1.x
         C = a1.x * a2.y - a2.x * a1.y
@@ -436,7 +528,7 @@ class BEZIER
             N\dot(coef[4]) + C
         }
 
-        roots = POLYNOMIAL(P)\getRoots!
+        roots = MATH\cubicRoots unpack P
         for _, t in ipairs roots
             p5  = p1\lerp p2, t
             p6  = p2\lerp p3, t
