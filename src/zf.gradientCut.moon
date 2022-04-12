@@ -5,9 +5,6 @@ export script_version     = "1.0.1"
 -- LIB
 zf = require "ZF.main"
 
-import POINT   from require "ZF.2D.point"
-import CLIPPER from require "ZF.2D.clipper"
-
 -- makes linear cuts in the shape from its bounding box values
 gradientCut = (shape, pixel = 4, mode = "Horizontal", angle = 0, offset = 0) ->
     angle = switch mode
@@ -17,34 +14,35 @@ gradientCut = (shape, pixel = 4, mode = "Horizontal", angle = 0, offset = 0) ->
     -- moves points to origin
     shape = zf.shape(shape)\toOrigin!
     oLeft, oTop = shape.l, shape.t
+    shape = zf.shape shape\build!
 
     -- gets the bounding box values before rotation
-    shape, left, top, right, bottom = zf.shape(shape)\getBoudingBox!
+    left, top, right, bottom = shape\unpackBoudingBox!
 
     -- difference between the original point and the origin point
-    diff = POINT oLeft - left, oTop - top
+    diff = zf.point oLeft - left, oTop - top
 
     -- width and height values
     width = right - left
     height = bottom - top
 
     -- gets the center point of the bounding box
-    pMid = POINT width / 2, height / 2
+    pMid = zf.point width / 2, height / 2
 
     -- gets the bounding box shape and rotates through the defined angle
-    shapeBox = zf.shape(shape)\getBoudingBoxShape!
+    shapeBox = shape\getBoudingBoxAssDraw!
     rotateBox = zf.shape(shapeBox)\rotate angle
 
     -- gets the bounding box values after rotation
-    rotateBox, rLeft, rTop, rRight, rBottom = zf.shape(rotateBox)\getBoudingBox!
+    rLeft, rTop, rRight, rBottom = zf.shape(rotateBox)\unpackBoudingBox!
 
     -- gets the values of the relative points to the left of the bounding box with rotation
-    pLeft1 = POINT rLeft - offset, rTop - offset
-    pLeft2 = POINT rLeft - offset, rBottom + offset
+    pLeft1 = zf.point rLeft - offset, rTop - offset
+    pLeft2 = zf.point rLeft - offset, rBottom + offset
 
     -- gets the values of the relative points to the right of the bounding box with rotation
-    pRight1 = POINT rRight + offset, rTop - offset
-    pRight2 = POINT rRight + offset, rBottom + offset
+    pRight1 = zf.point rRight + offset, rTop - offset
+    pRight2 = zf.point rRight + offset, rBottom + offset
 
     -- converts left and right lines to shape
     lLeft = "m #{pLeft1.x} #{pLeft1.y} l #{pLeft2.x} #{pLeft2.y} "
@@ -55,15 +53,14 @@ gradientCut = (shape, pixel = 4, mode = "Horizontal", angle = 0, offset = 0) ->
     lRight = zf.shape(lRight, false)\rotate(angle, pMid.x, pMid.y)\move(diff.x, diff.y)\build!
 
     -- moves the shape to its original position
-    shape = shape\move diff.x, diff.y
-    sclip = CLIPPER shape
+    sclip = zf.clipper shape\move diff.x, diff.y
 
     clipped, len = {}, zf.math\round (rRight - rLeft + offset) / pixel, 0
     for i = 1, len
         t = (i - 1) / (len - 1)
         -- interpolates the points from the left-hand line to the right-hand line
         ipol = zf.util\interpolation t, "shape", lLeft, lRight
-        ipol = CLIPPER(ipol)\offset pixel, "miter", "closed_line"
+        ipol = zf.clipper(ipol)\offset pixel, "miter", "closed_line"
         -- adds the shape as a clip
         ipol.clp = sclip.sbj
         -- clip and build the new shape
