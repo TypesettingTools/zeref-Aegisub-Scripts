@@ -1,14 +1,18 @@
 ffi = require "ffi"
+
+import JPG, has_loaded, version from require "ZJPG.turbojpeg"
 import BUFFER from require "ZF.img.buffer"
 
 -- https://github.com/koreader/koreader-base/tree/master/ffi
 class LIBJPG
 
-    new: (@filename = filename) => assert hasJPG, "libjpeg-turbo was not found"
+    :version
+
+    new: (@filename = filename) => assert has_loaded, "libjpeg-turbo was not found"
 
     read: =>
         file = io.open @filename, "rb"
-        assert file, "Couldn't open JPG file"
+        assert file, "Couldn't open JPEG file"
 
         @rawData = file\read "*a"
         file\close!

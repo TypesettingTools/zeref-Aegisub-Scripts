@@ -1,6 +1,4 @@
-require "ZF.defs.headers"
-
-import CONFIG from require "ZF.defs.config"
+import CONFIG from require "ZF.util.config"
 import TABLE  from require "ZF.util.table"
 
 import LIBBMP from require "ZF.img.bmp"
@@ -9,6 +7,8 @@ import LIBGIF from require "ZF.img.gif"
 import LIBPNG from require "ZF.img.png"
 
 class IMAGE
+
+    version: "1.0.0"
 
     new: (filename) =>
         fileExist, __error = CONFIG\fileExist filename

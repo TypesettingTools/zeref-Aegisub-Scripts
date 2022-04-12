@@ -1,10 +1,16 @@
 ffi = require "ffi"
+
+import GIF, has_loaded, version from require "ZGIF.giflib"
 import TABLE from require "ZF.util.table"
+
+require "ZF.img.buffer"
 
 -- https://luapower.com/giflib
 class LIBGIF
 
-    new: (@filename = filename) => assert hasGIF, "giflib was not found"
+    :version
+
+    new: (@filename = filename) => assert has_loaded, "giflib was not found"
 
     read: =>
         open = (err) -> GIF.DGifOpenFileName @filename, err

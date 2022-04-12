@@ -1,10 +1,14 @@
 ffi = require "ffi"
+
+import PNG, has_loaded, version from require "ZPNG.lodepng"
 import BUFFER from require "ZF.img.buffer"
 
 -- https://github.com/koreader/koreader-base/tree/master/ffi
 class LIBPNG
 
-    new: (@filename = filename) => assert hasPNG, "lodepng was not found"
+    :version
+
+    new: (@filename = filename) => assert has_loaded, "lodepng was not found"
 
     setArguments: =>
         @rawData = ffi.new "unsigned char*[1]"
@@ -15,7 +19,7 @@ class LIBPNG
         @setArguments!
 
         err = PNG.lodepng_decode32_file @rawData, @width, @height, @filename
-        assert err == 0, ffi.string(PNG.lodepng_error_text(err))
+        assert err == 0, ffi.string PNG.lodepng_error_text err
 
         buffer = BUFFER @width[0], @height[0], 5, @rawData[0]
         buffer\set_allocated 1

@@ -1,6 +1,6 @@
 -- Lua port of https://github.com/kilobtye/potrace
 
-import MATH from require "ZF.util.math"
+import MATH  from require "ZF.util.math"
 import SHAPE from require "ZF.2D.shape"
 import IMAGE from require "ZF.img.img"
 
