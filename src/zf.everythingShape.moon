@@ -5,8 +5,6 @@ export script_version     = "1.0.1"
 -- LIB
 zf = require "ZF.main"
 
-import CLIPPER from require "ZF.2D.clipper"
-
 shapeMerge = (subs, selected, n, firstIndex) ->
     values, result = {}, ""
     for s, sel in ipairs selected
@@ -210,10 +208,10 @@ main = (subs, selected) ->
                             clip = zf.shape(clip)\move(-px, -py)\build!
 
                             shape = zf.shape(shape, .opn)\setPosition(line.styleref.align, "ply")\build!
-                            shape = CLIPPER(shape, clip, .opn)\clip(rawTag\match "\\iclip%b()")\build simplifyType
+                            shape = zf.clipper(shape, clip, .opn)\clip(rawTag\match "\\iclip%b()")\build simplifyType
                         when "Shape Simplify"
                             shape = zf.shape(shape, .opn)\setPosition(line.styleref.align, "ply")\build!
-                            shape = CLIPPER(shape, nil, .opn)\simplify!
+                            shape = zf.clipper(shape, nil, .opn)\simplify!
                             shape = shape\build simplifyType
                         when "Shape Expand"
                             shape = zf.shape(shape, .opn)\setPosition(line.styleref.align, "ply")\expand(line, coords)\build!
@@ -234,12 +232,12 @@ main = (subs, selected) ->
                             when "Inside" then -.strokeSize
                             when "Center" then .strokeSize / 2
 
-                        shape = CLIPPER(shape)\offset(.strokeSize, .list4, nil, .miterl, .arct)\build simplifyType
+                        shape = zf.clipper(shape)\offset(.strokeSize, .list4, nil, .miterl, .arct)\build simplifyType
                         line.text = tag .. shape
                         i = zf.util\insertLine line, subs, sel, i
                     else
                         colors = {line.styleref.color3, line.styleref.color1}
-                        shapes = {CLIPPER(shape)\toStroke .strokeSize, .list4, .list5, .miterl, .arct}
+                        shapes = {zf.clipper(shape)\toStroke .strokeSize, .list4, .list5, .miterl, .arct}
                         for j = 1, 2
                             add = {
                                 {capTag["1c"], "\\c#{color_from_style(colors[j])}"}
@@ -248,13 +246,14 @@ main = (subs, selected) ->
                             tag = zf.tags\merge zf.tags\deleteTags(tag, "3c", "3a"), unpack add
                             line.text = tag .. shapes[j]\build simplifyType
                             i = zf.util\insertLine line, subs, sel, i
+
                 when "Envelope"
                     tag = zf.tags\clear line, tag, "Shape Clipper"
                     shape = zf.shape(shape)\setPosition(line.styleref.align, "ply")\build!
                     mesh, real = {}, {}
                     switch .list7
                         when "Mesh"
-                            bbox = zf.shape(shape)\getBoudingBoxShape!
+                            bbox = zf.shape(shape)\getBoudingBoxAssDraw!
                             bbox = zf.shape(bbox)\setPosition 7, "tcp", px, py
                             if .list6 == "Bezier"
                                 bbox\allCubic!
@@ -272,19 +271,17 @@ main = (subs, selected) ->
                             clip = clip.paths[1].path
                             assert #clip == 4, "expected 4 points, received #{#clip}"
 
-                            for i = 1, #clip - 1
-                                if i == 1
-                                    {a, b} = clip[i].bz
-                                    zf.table(mesh)\push a, b
-                                else
-                                    zf.table(mesh)\push clip[i].bz[2]
+                            {a, b} = clip[1].segment
+                            zf.table(mesh)\push a, b
+                            for i = 2, #clip - 1
+                                zf.table(mesh)\push clip[i].segment[2]
 
                             shape = zf.shape(shape, .opn)\perspective(mesh)\build!
                         when "Warp"
                             zf.tags\dependency rawTag, "clips"
 
                             clip = zf.util\clip2Draw rawTag
-                            bbox = zf.shape(shape)\getBoudingBoxShape!
+                            bbox = zf.shape(shape)\getBoudingBoxAssDraw!
                             if .list6 != "Bezier"
                                 assert not clip\match("b"), "expected linear segments, received bezier segments"
 
@@ -302,22 +299,22 @@ main = (subs, selected) ->
                                 clip = clip\flatten nil, size, nil, "b"
                                 clip = clip.paths[1].path
 
-                                bbox = bbox\flatten nil, size
+                                bbox = zf.shape(bbox)\flatten nil, size
                                 bbox = bbox.paths[1].path
 
-                            for i = 1, #bbox - 1
-                                if i == 1
-                                    {a, b} = clip[i].bz
-                                    zf.table(mesh)\push a, b
-                                    {a, b} = bbox[i].bz
-                                    zf.table(real)\push a, b
-                                else
-                                    zf.table(mesh)\push clip[i].bz[2]
-                                    zf.table(real)\push bbox[i].bz[2]
+                            {a, b} = clip[1].segment
+                            zf.table(mesh)\push a, b
+                            {a, b} = bbox[1].segment
+                            zf.table(real)\push a, b
+                            for i = 2, #bbox - 1
+                                zf.table(mesh)\push clip[i].segment[2]
+                                zf.table(real)\push bbox[i].segment[2]
 
                             shape = zf.shape(shape, .opn)\envelopeDistort(mesh, real)\build!
 
                     line.text = tag .. shape
                     i = zf.util\insertLine line, subs, sel, i
+
+    aegisub.set_undo_point script_name
 
 aegisub.register_macro script_name, script_description, main
