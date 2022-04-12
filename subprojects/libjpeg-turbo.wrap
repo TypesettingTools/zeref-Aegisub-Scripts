@@ -1,0 +1,4 @@
+[wrap-git]
+directory = libjpeg-turbo
+url = https://github.com/libjpeg-turbo/libjpeg-turbo.git
+revision = head
