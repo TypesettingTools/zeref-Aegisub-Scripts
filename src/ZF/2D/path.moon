@@ -1,25 +1,35 @@
 local *
-import BEZIER from require "ZF.2D.bezier"
-import POINT  from require "ZF.2D.point"
-import MATH   from require "ZF.util.math"
-import TABLE  from require "ZF.util.table"
-import UTIL   from require "ZF.util.util"
+import POINT   from require "ZF.2D.point"
+import SEGMENT from require "ZF.2D.segment"
+import MATH    from require "ZF.util.math"
+import TABLE   from require "ZF.util.table"
+import UTIL    from require "ZF.util.util"
 
 class PATH
 
-    -- @param ... BEZIER || PATH
+    version: "1.0.0"
+
+    -- @param ... PATH || SEGMENT
     new: (...) =>
-        args, @path = {...}, {}
-        if #args == 1 and args[1].path
-            args = args[1].path
-        elseif #args == 1 and not args[1].path
-            args = args[1]
-        for i = 1, #args
-            TABLE(@path)\push BEZIER args[i]
+        @path = {}
+        @push ...
+
+    push: (...) =>
+        args = {...}
+        if #args == 1 and rawget args[1], "path"
+            for segment in args[i].path
+                TABLE(@path)\push SEGMENT!
+                for point in *segment
+                    @path[#@path]\push point
+        elseif #args == 1 and rawget args[1], "segment"
+            TABLE(@path)\push SEGMENT!
+            for point in *args[1].segment
+                @path[#@path]\push point
+        return @
 
     -- checks if the path is closed
     -- @return boolean
-    isClosed: => @path[1]["bz"][1] == @path[#@path]["bz"][#@path[#@path]["bz"]]
+    isClosed: => @path[1]["segment"][1] == @path[#@path]["segment"][#@path[#@path]["segment"]]
 
     -- checks if the path is open
     -- @return boolean
@@ -28,10 +38,10 @@ class PATH
     -- closes the path
     -- @return PATH
     close: =>
-        {x: fx, y: fy} = @path[1]["bz"][1]
-        {x: lx, y: ly} = @path[#@path]["bz"][#@path[#@path]["bz"]]
+        {x: fx, y: fy} = @path[1]["segment"][1]
+        {x: lx, y: ly} = @path[#@path]["segment"][#@path[#@path]["segment"]]
         unless @isClosed!
-            TABLE(@path)\push BEZIER lx, ly, fx, fy
+            TABLE(@path)\push SEGMENT POINT(lx, ly), POINT(fx, fy)
         return @
 
     -- opens the path
@@ -41,28 +51,13 @@ class PATH
             TABLE(@path)\pop!
         return @
 
-    -- push POINT, BEZIER values onto the path
-    -- @param ... POINT, BEZIER
-    -- @return PATH
-    push: (...) =>
-        args = {...}
-        fcls = UTIL\getClassName args[1]
-        if #args >= 1 and fcls == "BEZIER"
-            for a, arg in ipairs args
-                TABLE(@path)\push BEZIER arg
-        elseif (#args == 2 or #args == 4) and fcls == "POINT"
-            TABLE(@path)\push BEZIER unpack args
-        elseif #args == 1 and (#args[1] == 2 or #args[1] == 4)
-            TABLE(@path)\push BEZIER unpack args[1]
-        return @
-
     -- gets the path bounding box
     -- @param typer string
     -- @return number, number, number, number
     boudingBox: (typer) =>
         l, t, r, b = math.huge, math.huge, -math.huge, -math.huge
-        for bezier in *@path
-            minx, miny, maxx, maxy = bezier\boudingBox typer
+        for segment in *@path
+            minx, miny, maxx, maxy = segment\boudingBox typer
             l, t = min(l, minx), min(t, miny)
             r, b = max(r, maxx), max(b, maxy)
         return l, t, r, b
@@ -93,7 +88,7 @@ class PATH
     -- @return PATH
     filter: (fn = (x, y, p) -> x, y) =>
         for p, path in ipairs @path
-            for b, pt in ipairs path.bz
+            for b, pt in ipairs path.segment
                 with pt
                     {:x, :y} = pt
                     px, py = fn x, y, pt
@@ -112,16 +107,16 @@ class PATH
     -- @return PATH
     flatten: (srt, len, red, seg = "m", fix) =>
         new = PATH!
-        for bezier in *@path
-            tp = bezier.bz.t
+        for segment in *@path
+            tp = segment.segment.t
             if tp == (seg == "m" and tp or seg)
-                flatten = bezier\casteljau srt, len, red, fix
+                flatten = segment\casteljau srt, len, red, fix
                 for i = 2, #flatten
                     prev = flatten[i - 1]
                     curr = flatten[i - 0]
-                    new\push prev, curr
+                    new\push SEGMENT prev, curr
             else
-                new\push bezier\unpack!
+                new\push SEGMENT segment\unpack!
         return new
 
     -- rounds the corners of the path
@@ -144,13 +139,13 @@ class PATH
             currPath = @path[i]
             nextPath = @path[i == #@path and 1 or i + 1]
 
-            if isCorner currPath.bz.t, nextPath.bz.t, @path[#@path].bz.t
-                prevPoint = currPath.bz[1]
-                currPoint = currPath.bz[2]
-                nextPoint = nextPath.bz[2]
+            if isCorner currPath.segment.t, nextPath.segment.t, @path[#@path].segment.t
+                prevPoint = currPath.segment[1]
+                currPoint = currPath.segment[2]
+                nextPoint = nextPath.segment[2]
 
-                F = BEZIER currPoint, prevPoint
-                L = BEZIER currPoint, nextPoint
+                F = SEGMENT currPoint, prevPoint
+                L = SEGMENT currPoint, nextPoint
 
                 angleF = F\linearAngle!
                 angleL = L\linearAngle!
@@ -162,8 +157,8 @@ class PATH
                 c1 = POINT (p1.x + 2 * px) / 3, (p1.y + 2 * py) / 3
                 c2 = POINT (p4.x + 2 * px) / 3, (p4.y + 2 * py) / 3
 
-                new\push currPoint, p1 if i > 1
-                new\push p1, c1, c2, p4
+                new\push SEGMENT currPoint, p1 if i > 1
+                new\push SEGMENT p1, c1, c2, p4
             else
                 new\push currPath
 
@@ -249,21 +244,17 @@ class PATH
         if simplifyType == "line" or simplifyType == "linear"
             points = {}
             -- adds the path structure in a single table
-            for i = 1, #@path
-                if i == 1
-                    {a, b} = @path[i].bz
-                    TABLE(points)\push POINT a.x, a.y
-                    TABLE(points)\push POINT b.x, b.y
-                else
-                    {:x, :y} = @path[i].bz[2]
-                    TABLE(points)\push POINT x, y
+            {a, b} = @path[1].segment
+            TABLE(points)\push a, b
+            for i = 2, #@path
+                TABLE(points)\push @path[i].segment[2]
             -- simplifies all segments
             points = SIMPLIFY(points, precision)\spLines!
             -- re-adds it back to the path structure
             for i = 2, #points
                 pointPrev = points[i - 1]
                 pointCurr = points[i - 0]
-                newPath\push pointPrev, pointCurr
+                newPath\push SEGMENT pointPrev, pointCurr
         else
             i, lens, groups = 1, @getLength!, {}
             while i <= #lens
@@ -276,12 +267,10 @@ class PATH
                         i += 1
                         break if not lens[i] or lens[i] > limit
                     -- path to points
-                    for j = 1, #temp
-                        {a, b} = temp[j].bz
-                        if j == 1
-                            TABLE(groups[#groups])\push a, b
-                        else
-                            TABLE(groups[#groups])\push b
+                    {a, b} = temp[1].segment
+                    TABLE(groups[#groups])\push a, b
+                    for j = 2, #temp
+                        TABLE(groups[#groups])\push temp[j].segment[2]
                     TABLE(groups)\push {@path[i]} if @path[i]
                 else
                     TABLE(groups)\push {} if #groups == 0
@@ -299,7 +288,7 @@ class PATH
     __tostring: (dec = 3) =>
         conc, last = "", ""
         for p, path in ipairs @path
-            tp = path.bz.t
+            tp = path.segment.t
             path\round dec
             if p == 1
                 conc ..= "m " .. path\__tostring 1
@@ -317,7 +306,7 @@ class SIMPLIFY
         @hqy = highestQuality
         @bld = {}
 
-    push: (curve) => TABLE(@bld)\push curve
+    push: (curve) => TABLE(@bld)\push SEGMENT curve[1], curve[2], curve[3], curve[4]
 
     computeLeftTangent: (d, _end) =>
         tHat1 = d[_end + 1] - d[_end]

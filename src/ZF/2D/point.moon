@@ -2,6 +2,8 @@ import MATH from require "ZF.util.math"
 
 class POINT
 
+    version: "1.0.0"
+
     new: (x = 0, y = 0) =>
         @x = type(x) == "table" and (rawget(x, "x") and x.x or x[1]) or x
         @y = type(x) == "table" and (rawget(x, "y") and x.y or x[2]) or y
