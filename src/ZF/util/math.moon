@@ -7,6 +7,8 @@ with math
 
 class MATH
 
+    version: "1.0.0"
+
     -- rounds numerical values
     -- @param a number
     -- @param dec integer

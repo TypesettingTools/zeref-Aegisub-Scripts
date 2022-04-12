@@ -1,5 +1,7 @@
 class TABLE
 
+    version: "1.0.0"
+
     new: (@t = t) =>
 
     -- makes arithmetic operations on a table

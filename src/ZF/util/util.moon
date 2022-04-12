@@ -4,6 +4,8 @@ import TAGS  from require "ZF.text.tags"
 
 class UTIL
 
+    version: "1.0.0"
+
     -- interpolate n values
     -- @param pct number
     -- @param tp string
@@ -323,8 +325,8 @@ class UTIL
                 if #value[i].text > 1 and #value[i].tags > 1
                     val = ""
                     for j = 1, #value[i].text
-                        continue if value[i].text[j] == ""
-                        val ..= (value[i].tags[j] or "") .. value[i].text[j]
+                        if value[i].text[j] != ""
+                            val ..= (value[i].tags[j] or "") .. value[i].text[j]
                     value[i] = val
                 else
                     value[i] = (value[i].tags[#value[i].tags] or "") .. (value[i].text[#value[i].text] or "")
@@ -334,7 +336,7 @@ class UTIL
         concat, resul, values = "", {}, @splitText text
         for i = 1, #values.text
             concat ..= values.tags[i] .. values.text[i]
-        index = fixTags @getHeadTail(concat, "\\N")
+        index = fixTags @getHeadTail concat, "\\N"
         for i = 1, #index
             resul[i] = ""
             for j = 1, #index[i].text
