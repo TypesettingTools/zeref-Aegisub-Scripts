@@ -6,6 +6,8 @@ import TAGS  from require "ZF.text.tags"
 
 class TEXT
 
+    version: "1.0.0"
+
     -- @param subs userdata
     -- @param line table
     -- @param text string
@@ -38,7 +40,7 @@ class TEXT
     -- @param text string
     -- @return table, table, string
     buildFont: (text) =>
-        font    = Yutils.decode.create_font unpack(@style)
+        font    = Yutils.decode.create_font unpack @style
         extents = font.text_extents text
         metrics = font.metrics!
         shape   = font.text_to_shape text
@@ -65,6 +67,7 @@ class TEXT
     chars: (an = @line.styleref.align) =>
         line = TABLE(@line)\copy!
         isTG = line.tags != nil
+        decs = @decs
 
         chars, left = {n: 0}, line.left
         for c, char in Yutils.utf8.chars @text
@@ -73,12 +76,12 @@ class TEXT
             text_stripped                            = text
 
             width, height, descent, ext_lead         = aegisub.text_extents line.styleref, text_stripped
-            left                                     = MATH\round(left, @decs)
-            center                                   = MATH\round(left + width / 2, @decs)
-            right                                    = MATH\round(left + width, @decs)
-            top                                      = MATH\round(line.top, @decs)
-            middle                                   = MATH\round(line.middle, @decs)
-            bottom                                   = MATH\round(line.bottom, @decs)
+            left                                     = MATH\round left, decs
+            center                                   = MATH\round left + width / 2, decs
+            right                                    = MATH\round left + width, decs
+            top                                      = MATH\round line.top, decs
+            middle                                   = MATH\round line.middle, decs
+            bottom                                   = MATH\round line.bottom, decs
 
             start_time                               = line.start_time
             end_time                                 = line.end_time
@@ -94,16 +97,17 @@ class TEXT
                 when 4, 5, 6 then isTG and line.y or middle
                 when 1, 2, 3 then isTG and line.y or bottom
 
-            x, y = MATH\round(x, @decs), MATH\round(y, @decs)
+            x = MATH\round x, decs
+            y = MATH\round y, decs
 
             unless UTIL\isBlank text_stripped
                 chars.n += 1
                 chars[chars.n] = {
                     :text, :tags, :text_stripped, :width, :height, :descent, :ext_lead
                     :center, :left, :right, :top, :middle, :bottom, :x, :y
-                    :start_time, :end_time, :duration
+                    :start_time, :end_time, :duration, i: chars.n
                 }
-            left = MATH\round(left + width, @decs)
+            left = MATH\round left + width, decs
         return chars
 
     -- gets values for all words contained in the text
@@ -112,8 +116,9 @@ class TEXT
     words: (an = @line.styleref.align) =>
         line = TABLE(@line)\copy!
         isTG = line.tags != nil
+        decs = @decs
 
-        words, left, spaceW = {n: 0}, line.left, aegisub.text_extents(line.styleref, " ")
+        words, left, spaceW = {n: 0}, line.left, aegisub.text_extents line.styleref, " "
         for prevspace, word, postspace in @text\gmatch "(%s*)(%S+)(%s*)"
             text                                     = word
             tags                                     = isTG and line.tags or ""
@@ -122,13 +127,13 @@ class TEXT
             prevspace                                = prevspace\len!
             postspace                                = postspace\len!
 
-            width, height, descent, ext_lead         = aegisub.text_extents(line.styleref, text_stripped)
-            left                                     = MATH\round(left + prevspace * spaceW, @decs)
-            center                                   = MATH\round(left + width / 2, @decs)
-            right                                    = MATH\round(left + width, @decs)
-            top                                      = MATH\round(line.top, @decs)
-            middle                                   = MATH\round(line.middle, @decs)
-            bottom                                   = MATH\round(line.bottom, @decs)
+            width, height, descent, ext_lead         = aegisub.text_extents line.styleref, text_stripped
+            left                                     = MATH\round left + prevspace * spaceW, decs
+            center                                   = MATH\round left + width / 2, decs
+            right                                    = MATH\round left + width, decs
+            top                                      = MATH\round line.top, decs
+            middle                                   = MATH\round line.middle, decs
+            bottom                                   = MATH\round line.bottom, decs
 
             x = switch an
                 when 1, 4, 7 then left
@@ -136,11 +141,12 @@ class TEXT
                 when 3, 6, 9 then isTG and right + line.offsetx * 2 or right
 
             y = switch an
-                when 7, 8, 9 then isTG and top - line.offsety + line.offsetyF or top
-                when 4, 5, 6 then isTG and middle - line.offsety + line.offsetyF or middle
-                when 1, 2, 3 then isTG and bottom - line.offsety + line.offsetyF or bottom
+                when 7, 8, 9 then isTG and line.y or top
+                when 4, 5, 6 then isTG and line.y or middle
+                when 1, 2, 3 then isTG and line.y or bottom
 
-            x, y = MATH\round(x, @decs), MATH\round(y, @decs)
+            x = MATH\round x, decs
+            y = MATH\round y, decs
 
             start_time                               = line.start_time
             end_time                                 = line.end_time
@@ -150,9 +156,9 @@ class TEXT
             words[words.n] = {
                 :text, :tags, :text_stripped, :width, :height, :descent, :ext_lead
                 :center, :left, :right, :top, :middle, :bottom, :x, :y
-                :start_time, :end_time, :duration
+                :start_time, :end_time, :duration, i: words.n
             }
-            left = MATH\round(left + width + postspace * spaceW, @decs)
+            left = MATH\round left + width + postspace * spaceW, decs
         return words
 
     -- gets values against all line breaks contained in the text
@@ -161,6 +167,7 @@ class TEXT
     breaks: (an = @line.styleref.align) =>
         line = TABLE(@line)\copy!
         temp = UTIL\splitBreaks @text
+        decs = @decs
 
         breaks, left = {n: 0}, line.left
         breakv, extra = line.styleref.fontsize * line.styleref.scale_y / 100, 0
@@ -170,12 +177,12 @@ class TEXT
             text_stripped                            = text\gsub "%b{}", ""
 
             width, height, descent, ext_lead         = aegisub.text_extents line.styleref, text_stripped
-            left                                     = MATH\round(left, @decs)
-            center                                   = MATH\round(left + width / 2, @decs)
-            right                                    = MATH\round(left + width, @decs)
-            top                                      = MATH\round(line.top, @decs)
-            middle                                   = MATH\round(line.middle, @decs)
-            bottom                                   = MATH\round(line.bottom, @decs)
+            left                                     = MATH\round left, decs
+            center                                   = MATH\round left + width / 2, decs
+            right                                    = MATH\round left + width, decs
+            top                                      = MATH\round line.top, decs
+            middle                                   = MATH\round line.middle, decs
+            bottom                                   = MATH\round line.bottom, decs
 
             text_stripped                            = text\gsub "%b{}", "", 1
             text_stripped_non_tags                   = text_stripped\gsub "%b{}", ""
@@ -192,7 +199,8 @@ class TEXT
                 when 4, 5, 6 then (middle - (#temp - 1) * breakv / 2) + (b - 1) * breakv + extra
                 when 1, 2, 3 then bottom - ((#temp + 1 - b) - 1) * breakv + extra
 
-            x, y = MATH\round(x, @decs), MATH\round(y, @decs)
+            x = MATH\round x, decs
+            y = MATH\round y, decs
 
             start_time                               = line.start_time
             end_time                                 = line.end_time
@@ -204,37 +212,36 @@ class TEXT
                 :center, :left, :right, :top, :middle, :bottom, :x, :y
                 :start_time, :end_time, :duration
             }
-            left = MATH\round(left + width, @decs)
+            left = MATH\round left + width, decs
         -- fix empty line breaks
         fixed = {n: 0}
         for b, brk in ipairs breaks
-            continue if UTIL\isBlank brk
-
-            brk.y = switch an
-                when 4, 5, 6 then brk.y - extra / 2
-                when 1, 2, 3 then brk.y - extra
-
-            fixed.n += 1
-            fixed[fixed.n] = brk
+            unless UTIL\isBlank brk
+                brk.y = switch an
+                    when 4, 5, 6 then brk.y - extra / 2
+                    when 1, 2, 3 then brk.y - extra
+                fixed.n += 1
+                brk.i = fixed.n
+                fixed[brk.i] = brk
         return fixed
 
     -- gets values against all tags contained in the text
     -- @param an integer
     -- @return table
     tags: (an = @line.styleref.align) =>
-        index = {n: 0}
+        index, decs = {n: 0}, @decs
         with UTIL\splitText @text
             left, offsetx, offsety = @line.left, 0, 0
-            for k = 1, #.tags
+            for i = 1, #.tags
                 line = TABLE(@line)\copy!
-                line.text = .tags[k] .. .text[k]
+                line.text = .tags[i] .. .text[i]
 
-                line.prevspace = UTIL\fixText .text[k], "spaceL"
-                line.postspace = UTIL\fixText .text[k], "spaceR"
+                line.prevspace = UTIL\fixText .text[i], "spaceL"
+                line.postspace = UTIL\fixText .text[i], "spaceR"
                 line.prevspace = line.prevspace\len!
                 line.postspace = line.postspace\len!
 
-                temp = UTIL\fixText .text[k], "both"
+                temp = UTIL\fixText .text[i], "both"
                 line.text_stripped = temp\gsub("\\[nN]", "")\gsub "\\h", " "
                 line.styleref = nil
 
@@ -247,12 +254,14 @@ class TEXT
                 left                     += line.prevspace * spaceW
                 index.n                  += 1
                 index[index.n]           = line
-                index[index.n].tags      = TAGS\remBarces .tags[k]
+                index[index.n].tags      = TAGS\remBarces .tags[i]
                 index[index.n].left      = left
                 index[index.n].center    = left + index[index.n].width / 2
                 index[index.n].right     = left + index[index.n].width
                 left                     += index[index.n].width + line.postspace * spaceW
 
+                -- https://www.cairographics.org/tutorial/
+                -- cairo_move_to (cr, i + 0.5 - te.x_bearing - te.width / 2, 0.5 - fe.descent + fe.height / 2);
                 index[index.n].offsety = switch an
                     when 7, 8, 9 then 0.5 - line.descent + line.height
                     when 4, 5, 6 then 0.5 - line.descent + line.height / 2
@@ -275,7 +284,8 @@ class TEXT
                     when 4, 5, 6 then tag.middle - tag.offsety + offsety
                     when 1, 2, 3 then tag.bottom - tag.offsety + offsety
 
-                tag.x, tag.y = MATH\round(tag.x, @decs), MATH\round(tag.y, @decs)
+                tag.x = MATH\round tag.x, decs
+                tag.y = MATH\round tag.y, decs
 
                 tag.offsetyF = offsety
         return index

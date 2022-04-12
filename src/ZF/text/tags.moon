@@ -2,6 +2,8 @@ import TABLE from require "ZF.util.table"
 
 class TAGS
 
+    version: "1.0.0"
+
     -- gets captures for all types of tag values
     -- @param getValues boolean
     -- @return table
