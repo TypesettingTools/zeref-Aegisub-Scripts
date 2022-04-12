@@ -1,31 +1,40 @@
+import bor   from require "bit"
 import MATH  from require "ZF.util.math"
 import TABLE from require "ZF.util.table"
 import POINT from require "ZF.2D.point"
 
-bit = require "bit"
+argsArePoints = (args) ->
+    for point in *args
+        unless rawget(point, "x") and rawget(point, "y")
+            return false
+    return true
 
-class BEZIER
+class SEGMENT
 
-    -- @param ... POINT || BEZIER
+    version: "1.0.0"
+
+    -- @param ... SEGMENT || POINT
     new: (...) =>
-        args, @bz = {...}, {POINT!, POINT!, t: "l"}
-        switch #args
-            when 1
-                val = args[1].bz and args[1].bz or args[1]
-                for k = 1, #val
-                    @bz[k] = POINT val[k]
-            when 2, 4, 8
-                condition = #args >= 4 and type(args[1]) == "number"
-                for k = 1, condition and #args / 2 or #args
-                    @bz[k] = condition and POINT(args[k * 2 - 1], args[k * 2]) or POINT args[k]
-        @bz.t = #@bz == 2 and "l" or "b"
+        @segment = {}
+        @push ...
 
-    unpack: => @bz[1], @bz[2], @bz[3], @bz[4]
+    push: (...) =>
+        args = {...}
+        if #args == 1 and rawget args[1], "segment"
+            for point in *args[1].segment
+                TABLE(@segment)\push point\copy!
+        elseif #args <= 4 and argsArePoints args
+            for point in *args
+                TABLE(@segment)\push point\copy!
+        @segment.t = #@segment == 2 and "l" or "b"
+        return @
+
+    unpack: => @segment[1], @segment[2], @segment[3], @segment[4]
 
     -- @param t string
-    -- @return BEZIER
+    -- @return SEGMENT
     assert: (t) =>
-        len, msg = #@bz, "The paths do not correspond with a"
+        len, msg = #@segment, "The paths do not correspond with a"
         if t == "linear"
             assert len == 2, "#{msg} Linear Bezier"
         elseif t == "cubic"
@@ -33,44 +42,44 @@ class BEZIER
         return @
 
     -- @param p number || POINT
-    -- @return BEZIER
+    -- @return SEGMENT
     __add: (p = 0) =>
         a, b, c, d = @unpack!
-        BEZIER a + p, b + p, c and c + p or nil, d and d + p or nil
+        SEGMENT a + p, b + p, c and c + p or nil, d and d + p or nil
 
     -- @param p number || POINT
-    -- @return BEZIER
+    -- @return SEGMENT
     __sub: (p = 0) =>
         a, b, c, d = @unpack!
-        BEZIER a - p, b - p, c and c - p or nil, d and d - p or nil
+        SEGMENT a - p, b - p, c and c - p or nil, d and d - p or nil
 
     -- @param p number || POINT
-    -- @return BEZIER
+    -- @return SEGMENT
     __mul: (p = 1) =>
         a, b, c, d = @unpack!
-        BEZIER a * p, b * p, c and c * p or nil, d and d * p or nil
+        SEGMENT a * p, b * p, c and c * p or nil, d and d * p or nil
 
     -- @param p number || POINT
-    -- @return BEZIER
+    -- @return SEGMENT
     __div: (p = 1) =>
         a, b, c, d = @unpack!
-        BEZIER a / p, b / p, c and c / p or nil, d and d / p or nil
+        SEGMENT a / p, b / p, c and c / p or nil, d and d / p or nil
 
     -- @param p number || POINT
-    -- @return BEZIER
+    -- @return SEGMENT
     __mod: (p = 1) =>
         a, b, c, d = @unpack!
-        BEZIER a % p, b % p, c and c % p or nil, d and d % p or nil
+        SEGMENT a % p, b % p, c and c % p or nil, d and d % p or nil
 
     -- @param p number || POINT
-    -- @return BEZIER
+    -- @return SEGMENT
     __pow: (p = 1) =>
         a, b, c, d = @unpack!
-        BEZIER a ^ p, b ^ p, c and c ^ p or nil, d and d ^ p or nil
+        SEGMENT a ^ p, b ^ p, c and c ^ p or nil, d and d ^ p or nil
 
     -- @param len number
     -- @return string
-    __tostring: (len = #@bz) =>
+    __tostring: (len = #@segment) =>
         a, b, c, d = @unpack!
         switch len
             when 1 then "#{a.x} #{a.y} "
@@ -79,18 +88,18 @@ class BEZIER
 
     -- rounds the points
     -- @param dec number
-    -- @return BEZIER
+    -- @return SEGMENT
     round: (dec = 0) =>
-        for p, path in ipairs @bz
+        for p, path in ipairs @segment
             path\round dec
         return @
 
     -- inverts the order of the segment
-    -- @return BEZIER
+    -- @return SEGMENT
     inverse: =>
         p = {@unpack!}
-        for k = 1, #p
-            @bz[k] = p[#p + 1 - k]
+        for i = 1, #p
+            @segment[i] = p[#p + 1 - i]
         return @
 
     -- gets the point on the linear segment through time
@@ -118,10 +127,13 @@ class BEZIER
     -- rotates the segment
     -- @param c POINT
     -- @param angle number
-    -- @return BEZIER
-    rotate: (c = @getMidPoint!, angle) =>
-        for i = 1, #@bz
-            @bz[i]\rotate c, angle
+    -- @return SEGMENT
+    rotate: (c, angle) =>
+        unless c
+            l, t, r, b = @boudingBox!
+            c = POINT l + (r - l) / 2, t + (b - t) / 2
+        for i = 1, #@segment
+            @segment[i]\rotate c, angle
         return @
 
     -- rotates the segment
@@ -129,7 +141,7 @@ class BEZIER
     -- @param fix boolean
     -- @return POINT
     getPoint: (t, fix) =>
-        switch #@bz
+        switch #@segment
             when 2 then @linear t
             when 4 then fix and @fixCasteljauPoint(t) or @cubic t
             else error "expected a linear bezier or a cubic bezier"
@@ -143,7 +155,7 @@ class BEZIER
     -- @param inverse boolean
     -- @return POINT, POINT, number
     getNormal: (t, inverse) =>
-        @allCubic!
+        @ = @allCubic!
         t = @fixCasteljauMap t
         pnt = @getPoint t
         tan = @cubicDerivative t
@@ -188,7 +200,7 @@ class BEZIER
         low, i, high = 0, 0, len
 
         while low < high
-            i = low + bit.bor (high - low) / 2, 0
+            i = low + bor (high - low) / 2, 0
             if arcLens[i + 1] < tLen
                 low = i + 1
             else
@@ -218,20 +230,18 @@ class BEZIER
         return points
 
     -- transforms a linear segment into a bezier segment
-    -- @return BEZIER
+    -- @return SEGMENT
     linear2cubic: =>
         @assert "linear"
         a, d = @unpack!
 
         b = POINT (2 * a.x + d.x) / 3, (2 * a.y + d.y) / 3
         c = POINT (a.x + 2 * d.x) / 3, (a.y + 2 * d.y) / 3
-        return BEZIER a, b, c, d
+        return SEGMENT a, b, c, d
 
     -- transforms a linear segment into a bezier segment
-    -- @return BEZIER
-    allCubic: =>
-        @ = #@bz == 2 and @linear2cubic! or @
-        return @
+    -- @return SEGMENT
+    allCubic: => #@segment == 2 and @linear2cubic! or @
 
     -- splits the segment into two parts
     -- @param t number
@@ -239,12 +249,12 @@ class BEZIER
     split: (t = 0.5) =>
         t = MATH\clamp t, 0, 1
         a, b, c, d = @unpack!
-        switch #@bz
+        switch #@segment
             when 2
                 v1 = a\lerp b, t
                 {
-                    BEZIER a, v1
-                    BEZIER v1, b
+                    SEGMENT a, v1
+                    SEGMENT v1, b
                 }
             when 4
                 v1 = a\lerp b, t
@@ -254,14 +264,14 @@ class BEZIER
                 v5 = v2\lerp v3, t
                 v6 = v4\lerp v5, t
                 {
-                    BEZIER a, v1, v4, v6
-                    BEZIER v6, v5, v3, d
+                    SEGMENT a, v1, v4, v6
+                    SEGMENT v6, v5, v3, d
                 }
 
     -- splits the segment in a time interval
     -- @param s number
     -- @param e number
-    -- @return BEZIER
+    -- @return SEGMENT
     splitInInterval: (s = 0, e = 1) =>
         s = MATH\clamp s, 0, 1
         e = MATH\clamp e, 0, 1
@@ -294,7 +304,7 @@ class BEZIER
             cp2y = p3.y - (p4.y - p2.y) / 6 * tension
             cp2 = POINT cp2x, cp2y
 
-            TABLE(splines)\push BEZIER i > 1 and splines[i - 1].bz[4] or points[1], cp1, cp2, p2
+            TABLE(splines)\push SEGMENT i > 1 and splines[i - 1].segment[4] or points[1], cp1, cp2, p2
         return splines
 
     -- gets the cubic coefficient of the bezier segment
@@ -356,9 +366,9 @@ class BEZIER
         }
 
         len = 0
-        switch #@bz
+        switch #@segment
             when 2
-                len += @bz[1]\distance @bz[2]
+                len += @segment[1]\distance @segment[2]
             when 4
                 coef, Z = @cubicCoefficient!, t / 2
                 for i = 1, #abscissas
@@ -384,7 +394,7 @@ class BEZIER
 
     -- offsets the linear segment
     -- @param size number
-    -- @return BEZIER
+    -- @return SEGMENT
     linearOffset: (size = 0) =>
         @assert "linear"
         a, b = @unpack!
@@ -394,7 +404,7 @@ class BEZIER
 
         a -= d * k
         b -= d * k
-        return BEZIER a, b
+        return SEGMENT a, b
 
     -- gets the linear bounding box
     -- @return number, number, number, number
@@ -452,7 +462,7 @@ class BEZIER
                 if 0 < t and t < 1
                     TABLE(vt)\push t
 
-        l, t, r, b = BEZIER(p1, p4)\linearBoudingBox!
+        l, t, r, b = SEGMENT(p1, p4)\linearBoudingBox!
         for v in *vt
             with @cubic v
                 l = min l, .x
@@ -467,23 +477,23 @@ class BEZIER
     -- @return number, number, number, number
     boudingBox: (typer) =>
         if typer == "real"
-            switch #@bz
+            switch #@segment
                 when 2 then @linearBoudingBox!
                 when 4 then @cubicBoudingBox!
         else
             l, t, r, b = math.huge, math.huge, -math.huge, -math.huge
-            for {:x, :y} in *@bz
+            for {:x, :y} in *@segment
                 l, t = min(l, x), min(t, y)
                 r, b = max(r, x), max(b, y)
             return l, t, r, b
 
     -- finds intersections between linear segments
-    -- @param linear BEZIER
+    -- @param linear SEGMENT
     -- @return string, POINT
     l2lIntersection: (linear) =>
         @assert "linear"
-        {x: x1, y: y1}, {x: x2, y: y2} = @bz[1], @bz[2]
-        {x: x3, y: y3}, {x: x4, y: y4} = linear.bz[1], linear.bz[2]
+        {x: x1, y: y1}, {x: x2, y: y2} = @segment[1], @segment[2]
+        {x: x3, y: y3}, {x: x4, y: y4} = linear.segment[1], linear.segment[2]
 
         d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
         t = (x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)
@@ -495,7 +505,7 @@ class BEZIER
             u /= d
             if 0 <= t and t <= 1 and 0 <= u and u <= 1
                 status = "intersected"
-                return status, @bz[1]\lerp @bz[2], t
+                return status, @segment[1]\lerp @segment[2], t
             else
                 status = "not intersected"
         elseif t == 0 or u == 0
@@ -504,14 +514,14 @@ class BEZIER
         return status
 
     -- finds intersections between bezier segments and linear segments
-    -- @param linear BEZIER
+    -- @param linear SEGMENT
     -- @return string, table
     c2lIntersection: (linear) =>
         @assert "cubic"
         p1, p2, p3, p4 = @unpack!
 
         result, status = {}, "not intersected"
-        {a1, a2} = linear.bz
+        {a1, a2} = linear.segment
 
         pmin = a1\min a2
         pmax = a1\max a2
@@ -550,4 +560,4 @@ class BEZIER
 
         return status, result
 
-{:BEZIER}
+{:SEGMENT}
