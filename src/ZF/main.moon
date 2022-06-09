@@ -43,7 +43,7 @@ files = {
     config:  {export_name: "CONFIG",  module_name: "ZF.util.config", version: "1.0.1"}
     math:    {export_name: "MATH",    module_name: "ZF.util.math",   version: "1.0.0"}
     util:    {export_name: "UTIL",    module_name: "ZF.util.util",   version: "1.2.6"}
-    fbf:     {export_name: "FBF",     module_name: "ZF.util.fbf",    version: "1.0.0"}
+    fbf:     {export_name: "FBF",     module_name: "ZF.util.fbf",    version: "1.0.1"}
     table:   {export_name: "TABLE",   module_name: "ZF.util.table",  version: "1.0.0"}
 }
 
