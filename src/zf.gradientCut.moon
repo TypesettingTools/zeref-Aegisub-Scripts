@@ -1,7 +1,7 @@
 export script_name        = "Gradient Cut"
 export script_description = "Generates a gradient from cuts in sequence."
 export script_author      = "Zeref"
-export script_version     = "1.0.1"
+export script_version     = "1.2.2"
 -- LIB
 zf = require "ZF.main"
 
@@ -70,10 +70,10 @@ gradientCut = (shape, pixel = 4, mode = "Horizontal", angle = 0, offset = 0) ->
     return clipped
 
 addColor = (gui, colorLimit = 16) ->
-    {:x, :y, :name, value: cValue} = gui[#gui]
+    {:x, :y, :name, :value} = gui[#gui]
     i = tonumber name\match "%d+"
     if i <= colorLimit
-        zf.table(gui)\push {class: "color", name: "color#{i + 1}", :x, y: y + 2, height: 2, value: cValue}
+        zf.table(gui)\push {class: "color", name: "color#{i + 1}", :x, y: y + 2, height: 2, :value}
     else
         aegisub.debug.out 2, "color limit reached" .. "\n"
     return gui
@@ -81,8 +81,8 @@ addColor = (gui, colorLimit = 16) ->
 addDropColors = (gui, read) ->
     colors = {}
     for name, value in pairs read
-        if name\match "color"
-            colors[tonumber name\match "%d+"] = value
+        if i = name\match "color(%d+)"
+            colors[tonumber i] = value
     for i = 3, #colors
         {:x, :y} = gui[#gui]
         zf.table(gui)\push {class: "color", name: "color#{i}", :x, y: y + 2, height: 2, value: colors[i]}
@@ -105,67 +105,61 @@ interface = ->
         {class: "color", name: "color2", :x, y: 13, height: 2, value: "#FF0000"}
     }
 
-main = (subs, selected) ->
+main = (subs, selected, active, button, elements) ->
+    new_selection, i = {}, {0, 0, selected[#selected], zf.util\getFirstLine subs}
     gui, read = zf.config\loadGui interface!, script_name
     gui = addDropColors gui, read if read
-    firstIndex = zf.util\getFirstLine subs
-
-    local buttons, elements
     while true
-        buttons, elements = aegisub.dialog.display gui, {"Ok", "Add+", "Reset", "Cancel"}, close: "Cancel"
-        gui = switch buttons
+        button, elements = aegisub.dialog.display gui, {"Ok", "Add+", "Reset", "Cancel"}, close: "Cancel"
+        gui = switch button
             when "Add+"   then addColor gui
             when "Reset"  then interface!
             when "Cancel" then return
             else               break
-
     zf.config\saveGui elements, script_name
-
-    colors = {}
-    for i = 11, #gui
-        zf.table(colors)\push zf.util\htmlC elements["color#{i - 10}"]
-
-    n, i, capTag = selected[#selected], 0, zf.tags\capTags true
-    for s, sel in ipairs selected
-        aegisub.progress.set 100 * sel / n
-        aegisub.progress.task "Processing line: #{sel + i - firstIndex + 1}"
-
-        l = subs[sel + i]
-
-        rawTag = zf.tags\getTag l.text
-        coords = zf.util\setPreprocLine subs, l
-        px, py = coords.pos.x, coords.pos.y
-
-        isShape, shape = zf.util\isShape coords, l.text\gsub "%b{}", ""
-        unless isShape
-            unless zf.util\runMacro l
-                continue
-            shape = zf.text(subs, l, l.text)\toShape(nil, px, py).shape
-            rawTag = zf.tags\clear l, rawTag, "text"
-            rawTag = zf.tags\merge rawTag, "\\p1"
-
-        l.comment = true
-        subs[sel + i] = l
-
+    colors = [zf.util\convertColor elements["color#{j - 10}"] for j = 11, #gui]
+    for sel in *selected
+        dialogue_index = sel + i[1] - i[2] - i[4] + 1
+        aegisub.progress.set 100 * sel / i[3]
+        aegisub.progress.task "Processing line: #{dialogue_index}"
+        -- gets the current line
+        l, remove = subs[sel + i[1]], elements.remove
+        -- skips execution if execution is not possible
+        unless zf.util\runMacro l
+            zf.util\warning "The line is commented out or it is an empty line with possible blanks.", dialogue_index
+            remove = false
+            continue
+        -- copies the current line
         line = zf.table(l)\copy!
         line.comment = false
-
-        shape = zf.shape(shape)\setPosition(line.styleref.align, "ply")\build!
+        -- calls the TEXT class to get the necessary values
+        callText = zf.text subs, line
+        {:coords} = callText
+        {px, py} = coords.pos
+        -- gets the first tag and the text stripped
+        rawTag, rawTxt = zf.tags\getRawText line.text
+        shape, clip = zf.util\isShape rawTxt
+        unless shape
+            shape, clip = callText\toShape nil, px, py
+            rawTag = zf.tags\clearByPreset rawTag, "To Text"
+            rawTag = zf.tags\insertTag rawTag, "\\p1"
+        shape = zf.shape(shape)\setPosition(line.styleref.align)\build!
         with elements
-            i = zf.util\deleteLine subs, sel, i if .remove
-
-            tag = zf.tags\replaceCoords rawTag, {px, py}
-            tag = zf.tags\clear line, tag, "Gradient Cut"
-            cuts = gradientCut shape, .gapSize, .mode, .angle
-            for c, cut in ipairs cuts
-                t = (c - 1) ^ .accel / (#cuts - 1) ^ .accel
-
+            final = zf.tags\replaceCoords rawTag, coords.pos
+            final = zf.tags\removeTags final, "1c", "xbord", "ybord", "xshad", "yshad"
+            final = zf.tags\insertTags final, "\\an7\\bord0\\shad0"
+            final = zf.tags\clearStyleValues line, final
+            gcuts = gradientCut shape, .gapSize, .mode, .angle
+            i[1], i[2] = zf.util\deleteLine l, subs, sel, remove, i[1], i[2]
+            for c, gcut in ipairs gcuts
+                t = (c - 1) ^ .accel / (#gcuts - 1) ^ .accel
                 color = zf.util\interpolation t, "color", colors
-                conct = zf.tags\merge tag, {capTag["1c"], "\\c#{color}"}
-
-                line.text = conct .. cut
-                i = zf.util\insertLine line, subs, sel, i
-
+                ntext = zf.tags\insertTag final, "\\c#{color}"
+                line.text = ntext .. gcut
+                i[1], i[2] = zf.util\insertLine line, subs, sel, new_selection, i[1], i[2]
+        remove = elements.remove
     aegisub.set_undo_point script_name
+    if #new_selection > 0
+        return new_selection, new_selection[1]
 
 aegisub.register_macro script_name, script_description, main
