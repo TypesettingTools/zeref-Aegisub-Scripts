@@ -1,7 +1,7 @@
 export script_name        = "Line To FBF"
 export script_description = "Splits the line frame by frame interpolating all transformations present in it"
 export script_author      = "Zeref"
-export script_version     = "1.0.0"
+export script_version     = "1.0.1"
 -- LIB
 zf = require "ZF.main"
 
@@ -50,7 +50,7 @@ main = (subs, selected) ->
                 break if aegisub.progress.is_cancelled!
                 line.start_time = s
                 line.end_time = e
-                line.text = fbf\perform subs, text, false
+                line.text = fbf\perform text, false
                 line.text ..= shape
                 i[1], i[2] = zf.util\insertLine line, subs, sel, new_selection, i[1], i[2]
             remove = true
