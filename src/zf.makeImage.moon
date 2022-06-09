@@ -1,11 +1,9 @@
 export script_name        = "Make Image"
 export script_description = "Converts images of various formats to pixels written in shape."
 export script_author      = "Zeref"
-export script_version     = "1.0.1"
+export script_version     = "1.1.3"
 -- LIB
 zf = require "ZF.main"
-
-import POTRACE from require "ZF.img.potrace"
 
 interfacePixels = ->
     items = {"All in one line", "On several lines - \"Rec\"", "Pixel by Pixel"}
@@ -35,80 +33,82 @@ getVals = (inter) ->
     unless filename
         aegisub.cancel! 
 
-    buttons, elements = aegisub.dialog.display inter, {"Ok", "Cancel"}, close: "Cancel"
+    button, elements = aegisub.dialog.display inter, {"Ok", "Cancel"}, close: "Cancel"
 
-    return buttons, elements, filename, frameDur
+    return button, elements, filename, frameDur
 
 main = (macro) ->
-    return (subs, selected) ->
-        line, i = zf.table(subs[selected[#selected]])\copy!, 1
-        buttons, elements, filename, frameDur = getVals macro == "Pixels" and interfacePixels! or interfacePotrace!
-
-        img = POTRACE filename
-        ext = img.extension
-        dur = line.end_time - line.start_time
-        {:tpy, :tdz, :opc, :apm, :opt, :otp} = elements
-
-        aegisub.progress.task "Processing #{ext\upper!}..."
-        if buttons == "Ok"
+   (subs, selected) ->
+        new_selection, i = {}, {0, 0, selected[#selected]}
+        button, elements, filename, frameDur = getVals macro == "Pixels" and interfacePixels! or interfacePotrace!
+        if button == "Ok"
+            img = zf.potrace filename
+            ext = img.extension
+            aegisub.progress.task "Processing #{ext\upper!}..."
+            -- copies the current line
+            line = zf.table(subs[i[3]])\copy!
+            dur = line.end_time - line.start_time
+            {:tpy, :tdz, :opc, :apm, :opt, :otp} = elements
+            -- start processing
             aegisub.progress.task "Processing..."
             if macro == "Pixels"
                 makePixels = (pixels, isGif) ->
                     for p, pixel in pairs pixels
+                        break if aegisub.progress.is_cancelled!
+                        aegisub.progress.set 100 * p / #pixels
                         line.text = pixel\gsub "}{", ""
                         if isGif
                             -- repositions the coordinates
                             line.text = line.text\gsub "\\pos%((%d+),(%d+)%)", (x, y) ->
-                                px = tonumber(x) + img.x
-                                py = tonumber(y) + img.y
+                                {x: vx, y: vy} = img
+                                px = tonumber(x) + vx
+                                py = tonumber(y) + vy
                                 return "\\pos(#{px},#{py})"
-                        i = zf.util\insertLine line, subs, selected[#selected] - 1, i
+                        i[1], i[2] = zf.util\insertLine line, subs, i[3] - 1, new_selection, i[1], i[2]
 
                 typer = switch otp
                     when "All in one line" then "oneLine"
                     when "On several lines - \"Rec\"" then true
-                    when "Pixel by Pixel" then nil
 
                 if ext != "gif"
                     makePixels img\raster typer
                 else
-                    len = #img.infos.frames
-                    for j = 1, len
-                        aegisub.progress.task "Processing GIF... Frame [ #{j} ]"
-                        last = subs[selected[#selected]]
-
-                        line.start_time = last.start_time + dur * (j - 1) / len
-                        line.end_time = last.start_time + dur * j / len
+                    line.end_time = line.start_time + #img.infos.frames * frameDur
+                    for s, e, d, j in zf.fbf(line)\iter!
+                        break if aegisub.progress.is_cancelled!
+                        line.start_time = s
+                        line.end_time = e
                         makePixels img\raster(typer, j), true
+
             else -- if potrace
                 makePotrace = (shp, isGif) ->
                     line.text = "{\\an7\\pos(0,0)\\bord0\\shad0\\fscx100\\fscy100\\fr0\\p1}#{shp}"
                     if isGif
                         -- repositions the coordinates
                         line.text = line.text\gsub "\\pos%((%d+),(%d+)%)", (x, y) ->
-                            px = tonumber(x) + img.x
-                            py = tonumber(y) + img.y
+                            {x: vx, y: vy} = img
+                            px = tonumber(x) + vx
+                            py = tonumber(y) + vy
                             return "\\pos(#{px},#{py})"
-                    i = zf.util\insertLine line, subs, selected[#selected] - 1, i
+                    i[1], i[2] = zf.util\insertLine line, subs, i[3] - 1, new_selection, i[1], i[2]
 
                 img\start nil, tpy, tdz, opc, apm, opt
                 if ext != "gif"
                     img\process!
                     makePotrace img\getShape!
                 else
-                    len = #img.infos.frames
-                    for j = 1, len
-                        aegisub.progress.task "Processing GIF... Frame [ #{j} ]"
-                        last = subs[selected[#selected]]
-
-                        line.start_time = last.start_time + dur * (j - 1) / len
-                        line.end_time = last.start_time + dur * j / len
-
+                    line.end_time = line.start_time + #img.infos.frames * frameDur
+                    for s, e, d, j in zf.fbf(line)\iter!
+                        break if aegisub.progress.is_cancelled!
+                        line.start_time = s
+                        line.end_time = e
                         img\start j
                         if pcall -> img\process!
                             makePotrace img\getShape!, true
 
         aegisub.set_undo_point macro
+        if #new_selection > 0
+            return new_selection, new_selection[1]
 
-aegisub.register_macro "#{script_name}/Pixels", script_description, main "Pixels"
-aegisub.register_macro "#{script_name}/Potrace", script_description, main "Potrace"
+aegisub.register_macro "#{script_name} / Pixels", script_description, main "Pixels"
+aegisub.register_macro "#{script_name} / Potrace", script_description, main "Potrace"
