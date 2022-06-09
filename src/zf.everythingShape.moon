@@ -1,35 +1,36 @@
 export script_name        = "Everything Shape"
 export script_description = "Do \"everything\" you need for a shape!"
 export script_author      = "Zeref"
-export script_version     = "1.0.1"
+export script_version     = "1.4.7"
 -- LIB
 zf = require "ZF.main"
 
-shapeMerge = (subs, selected, n, firstIndex) ->
-    values, result = {}, ""
-    for s, sel in ipairs selected
-        aegisub.progress.set 100 * sel / n
-        aegisub.progress.task "Processing line: #{sel - firstIndex + 1}"
+shapeMerge = (subs, selected) ->
+    add, result = {}, ""
+    for sel in *selected
+        -- gets the current line
         l = subs[sel]
-
-        coords = zf.util\setPreprocLine subs, l
-        px, py = coords.pos.x, coords.pos.y
-
-        isShape, shape = zf.util\isShape coords, l.text\gsub "%b{}", ""
-        unless isShape
-            unless zf.util\runMacro l
-                continue
-            shape = zf.text(subs, l, l.text)\toShape(nil, px, py).shape
-
-        zf.table(values)\push l.styleref.align, coords.pos, shape
-
-    if #values != 0
-        for i = 1, #values, 3
-            an = values[i + 0]
-            ps = values[i + 1]
-            sh = values[i + 2]
-            result ..= zf.shape(sh)\setPosition(an, "tcp", ps.x, ps.y)\build!
-        return zf.shape(result)\setPosition(values[1], "ucp", values[2].x, values[2].y)\build!
+        -- gets the first tag and the text stripped
+        rawTag, rawTxt = zf.tags\getRawText l.text
+        -- skips execution if execution is not possible
+        unless zf.util\runMacro l
+            continue
+        -- calls the TEXT class to get the necessary values
+        callText = zf.text subs, l
+        {:coords} = callText
+        shape = zf.util\isShape rawTxt
+        unless shape
+            shape = callText\toShape nil, px, py
+        zf.table(add)\push l, coords, shape
+    -- if any shape were added
+    if #add != 0
+        for i = 1, #add, 3
+            ln = add[i + 0]
+            cd = add[i + 1]
+            sh = add[i + 2]
+            result ..= zf.shape(sh)\setPosition(ln.styleref.align)\expand(ln, cd)\move(cd.pos[1], cd.pos[2])\build!
+        {ln, cd} = add
+        return zf.shape(result)\setPosition(ln.styleref.align, "ucp", cd.pos[1], cd.pos[2])\build!
 
 interface = ->
     hints = {
@@ -41,7 +42,6 @@ interface = ->
         "The default ArcTolerance is 0.25 units. \nThis means that the maximum distance \nthe flattened path will deviate from the \n\"true\" arc will be no more than 0.25 units \n(before rounding)."
         "Function to filter all the points of the shape,\nI recommend that you first split the shape so\nyou can have more variety of manipulation."
     }
-
     lists = {
         {
             "Shape To Clip", "Clip To Shape"
@@ -49,9 +49,9 @@ interface = ->
             "Shape Simplify", "Shape Flatten"
             "Shape Merge", "Shape Round"
             "Shape Clipper", "Shape Move"
-            "Shape Round Corners"
+            "Shape Round Corners", "Shape Bounding Box"
         }
-        {"Full", "Line"}
+        {"Line", "Full"}
         {"Full", "Bezier", "Line"}
         {"Miter", "Round", "Square"}
         {"Center", "Inside", "Outside"}
@@ -59,7 +59,6 @@ interface = ->
         {"Mesh", "Warp", "Perspective"}
     }
     table.sort lists[1]
-
     {
         -- Section for shape or text
         {class: "label", label: "Mode List:", x: 0, y: 0}
@@ -73,7 +72,6 @@ interface = ->
         {class: "label", label: "Y - Axis:", x: 0, y: 9}
         {class: "floatedit", name: "py", x: 0, y: 10, value: 0}
         {class: "checkbox", label: "Remove selected layers?", name: "remove", x: 0, y: 11, value: true}
-
         -- Section for shape strokes
         {class: "label", label: "Stroke Corner:", x: 2, y: 0}
         {class: "dropdown", name: "list4", items: lists[4], x: 2, y: 1, value: lists[4][2]}
@@ -86,7 +84,6 @@ interface = ->
         {class: "label", label: "Arc Tolerance:", x: 2, y: 9}
         {class: "floatedit", name: "arct", hint: hints[6], x: 2, y: 10, min: 0, value: 0.25}
         {class: "checkbox", label: "Generate only offset?", name: "genroo", x: 2, y: 11, value: false}
-
         -- Section for Envelope Distort
         {class: "label", label: "Control Points: ", x: 4, y: 0}
         {class: "intedit", name: "cpsize", hint: hints[2], x: 4, y: 1, width: 2, min: 1, value: 1}
@@ -99,222 +96,251 @@ interface = ->
         {class: "checkbox", label: "Close paths? ", name: "opn", x: 4, y: 9, value: true}
     }
 
-main = (subs, selected) ->
+main = (subs, selected, active, button, elements) ->
+    new_selection, i = {}, {0, 0, selected[#selected], zf.util\getFirstLine subs}
     gui = zf.config\loadGui interface!, script_name
-    firstIndex = zf.util\getFirstLine subs
-
-    local buttons, elements
     while true
-        buttons, elements = aegisub.dialog.display gui, {"Shape", "Stroke", "Envelope", "Reset", "Cancel"}, close: "Cancel"
-        gui = switch buttons
+        button, elements = aegisub.dialog.display gui, {"Shape", "Stroke", "Envelope", "Reset", "Cancel"}, close: "Cancel"
+        gui = switch button
             when "Reset"  then interface!
             when "Cancel" then return
             else               break
-
     zf.config\saveGui elements, script_name
-    n, i, capTag = selected[#selected], 0, zf.tags\capTags true
-    if buttons == "Shape" and elements.list1 == "Shape Merge"
-        if shape = shapeMerge subs, selected, n, firstIndex
-            line = zf.table(subs[selected[1]])\copy!
-
-            for s, sel in ipairs selected
-                l = subs[sel + i]
-                l.comment = true
-                subs[sel + i] = l
-
-                if elements.remove
-                    i = zf.util\deleteLine subs, sel, i
-                    n -= 1
-
-            rawTag = zf.tags\getTag line.text
-            coords = zf.util\setPreprocLine subs, line
-            px, py = coords.pos.x, coords.pos.y
-
-            unless zf.util\isShape coords, line.text\gsub "%b{}", ""
-                rawTag = zf.tags\clear line, rawTag, "text"
-                rawTag = zf.tags\merge rawTag, "\\p1"
-
-            line.text = zf.tags\replaceCoords(rawTag, {px, py}) .. shape
-            zf.util\insertLine line, subs, n, 0
-        return
-
-    for s, sel in ipairs selected
-        aegisub.progress.set 100 * sel / n
-        aegisub.progress.task "Processing line: #{sel + i - firstIndex + 1}"
-        l = subs[sel + i]
-
-        rawTag = zf.tags\getTag l.text
-        coords = zf.util\setPreprocLine subs, l
-        px, py = coords.pos.x, coords.pos.y
-
-        isShape, shape = zf.util\isShape coords, l.text\gsub "%b{}", ""
-        unless isShape
-            -- if there is no text and the mode is clip to shape, do not continue
-            unless elements.list1 == "Clip To Shape" and l.text\match "%b{}"
-                unless zf.util\runMacro l
-                    continue
-            shape = zf.text(subs, l, l.text)\toShape(nil, px, py).shape
-            rawTag = zf.tags\clear l, rawTag, "Text"
-            rawTag = zf.tags\merge rawTag, "\\p1"
-
-        l.comment = true
-        subs[sel + i] = l
-
+    if elements.list1 == "Shape Merge"
+        merged_shape = shapeMerge subs, selected
+        -- gets the line
+        line = zf.table(subs[selected[1]])\copy!
+        -- gets the text stripped and the first tag
+        rawTag, rawTxt = zf.tags\getRawText line.text
+        unless zf.util\isShape rawTxt
+            rawTag = zf.tags\clearByPreset rawTag, "To Text"
+            rawTag = zf.tags\insertTag rawTag, "\\p1"
+        rawTag = zf.tags\clearByPreset rawTag, {"fscx", "fscy", "fax", "fay", "frx", "fry", "frz", "org"}
+        line.text = rawTag .. merged_shape
+        -- comments and removes the original lines
+        for sel in *selected
+            dialogue_index = sel + i[1] - i[2] - i[4] + 1
+            -- gets the current line
+            l, remove = subs[sel + i[1]], elements.remove
+            -- skips execution if execution is not possible
+            unless zf.util\runMacro l
+                zf.util\warning "The line is commented out or it is an empty line with possible blanks.", dialogue_index
+                remove = false
+                continue
+            i[1], i[2] = zf.util\deleteLine l, subs, sel, remove, i[1], i[2]
+            remove = elements.remove
+        i[1], i[2] = zf.util\insertLine line, subs, selected[#selected], new_selection, i[1], i[2]
+        aegisub.set_undo_point script_name
+        if #new_selection > 0
+            return new_selection, new_selection[1]
+        return selected, active
+    -- else
+    for sel in *selected
+        dialogue_index = sel + i[1] - i[2] - i[4] + 1
+        aegisub.progress.set 100 * sel / i[3]
+        aegisub.progress.task "Processing line: #{dialogue_index}"
+        -- gets the current line
+        l, remove = subs[sel + i[1]], elements.remove
+        -- skips execution if execution is not possible
+        unless zf.util\runMacro l
+            if elements.list1 != "Clip To Shape"
+                zf.util\warning "The line is commented out or it is an empty line with possible blanks.", dialogue_index
+                remove = false
+                continue
+        -- copies the current line
         line = zf.table(l)\copy!
         line.comment = false
+        -- calls the TEXT class to get the necessary values
+        callText = zf.text subs, line
+        {:coords} = callText
+        {px, py} = coords.pos
+        -- gets the first tag and the text stripped
+        rawTag, rawTxt = zf.tags\getRawText line.text
+        shape, clip = zf.util\isShape rawTxt
+        unless shape
+            shape, clip = callText\toShape nil, px, py
+            rawTag = zf.tags\clearByPreset rawTag, "To Text"
+            rawTag = zf.tags\insertTag rawTag, "\\p1"
+            -- fixes the scale interference in the function expand
+            line.styleref.scale_x = 100
+            line.styleref.scale_y = 100
         with elements
-            i = zf.util\deleteLine subs, sel, i if .remove
-
-            tag = zf.tags\replaceCoords rawTag, {px, py}
-            simplifyType = .list2 == "Full" and "bezier" or "line"
-            switch buttons
-                when "Shape"
-                    tag = zf.tags\clear line, tag, .list1
-                    switch .list1
-                        when "Shape To Clip"
-                            cpt = tag\match "\\iclip%b()"
-
-                            clip = zf.shape(shape, .opn)\setPosition(line.styleref.align, "tcp", px, py)\build!
-                            clip = clip\sub 1, -2
-
-                            tag = zf.tags\merge tag, cpt and {capTag.iclip, {"\\iclip(", clip, ")"}} or {capTag.clip, {"\\clip(", clip, ")"}}
-                        when "Clip To Shape"
-                            zf.tags\dependency rawTag, "clips"
-                            clip = zf.util\clip2Draw rawTag
-
-                            shape = zf.shape(clip, .opn)\setPosition(line.styleref.align, "ucp", px, py)\build!
-                        when "Shape Origin"
-                            shape = zf.shape(shape, .opn)\toOrigin!
-                            -- left, top
-                            {l: lf, t: tp} = shape
-                            shape = shape\build!
-
-                            local value
-                            with coords
-                                value = {zf.math\round(.pos.x + lf), zf.math\round(.pos.y + tp)}
-                                if .move.x2 != nil
-                                    value = {.move.x1 + lf, .move.y1 + tp, .move.x2 + lf, .move.y2 + tp, .move.ts or nil, .move.te or nil}
-
-                            tag = zf.tags\replaceCoords tag, value
-                        when "Shape Flatten"
-                            segment = switch .list3
-                                when "Full"   then "m"
-                                when "Line"   then "l"
-                                when "Bezier" then "b"
-                            shape = zf.shape(shape, .opn)\flatten(nil, nil, .tol <= 0 and 1e-1 or .tol, segment)\build!
-                        when "Shape Clipper"
-                            zf.tags\dependency rawTag, "clips"
-                            clip = zf.util\clip2Draw rawTag
-                            clip = zf.shape(clip)\move(-px, -py)\build!
-
-                            shape = zf.shape(shape, .opn)\setPosition(line.styleref.align, "ply")\build!
-                            shape = zf.clipper(shape, clip, .opn)\clip(rawTag\match "\\iclip%b()")\build simplifyType
-                        when "Shape Simplify"
-                            shape = zf.shape(shape, .opn)\setPosition(line.styleref.align, "ply")\build!
-                            shape = zf.clipper(shape, nil, .opn)\simplify!
-                            shape = shape\build simplifyType
-                        when "Shape Expand"
-                            shape = zf.shape(shape, .opn)\setPosition(line.styleref.align, "ply")\expand(line, coords)\build!
-                        when "Shape Round"
-                            shape = zf.shape(shape, .opn)\build zf.math\round .tol, 0
-                        when "Shape Round Corners"
-                            shape = zf.shape(shape, .opn)\setPosition(line.styleref.align, "ply")\roundCorners(.tol)\build!
-                        when "Shape Move"
-                            shape = zf.shape(shape, .opn)\move(.px, .py)\build!
-
-                    line.text = tag .. shape
-                    i = zf.util\insertLine line, subs, sel, i
-                when "Stroke"
-                    tag = zf.tags\clear line, tag, "Stroke Panel"
-                    shape = zf.shape(shape)\setPosition(line.styleref.align, "ply")\build!
-                    if .genroo
-                        .strokeSize = switch .list5
-                            when "Inside" then -.strokeSize
-                            when "Center" then .strokeSize / 2
-
-                        shape = zf.clipper(shape)\offset(.strokeSize, .list4, nil, .miterl, .arct)\build simplifyType
-                        line.text = tag .. shape
-                        i = zf.util\insertLine line, subs, sel, i
+            -- sets the final tag value and the type of shape simplification
+            stype = .list2 == "Full" and "bezier" or "line"
+            final = zf.tags\replaceCoords rawTag, coords.pos
+            {:align} = line.styleref
+            if button == "Shape"
+                -- Shape Mode List
+                switch .list1
+                    when "Shape To Clip"
+                        clip = zf.shape(shape, .opn)\setPosition(align)\expand(line, coords)\move(px, py)\build!
+                        tclip = rawTag\match("\\iclip%b()") and "iclip" or "clip"
+                        final = zf.tags\insertTag final, "\\#{tclip}(#{clip\sub 1, -2})"
+                    when "Clip To Shape"
+                        if clip = rawTag\match "\\i?clip%b()"
+                            -- transforms clip into shape
+                            shape = zf.shape zf.util\clip2Draw(clip), .opn
+                            shape = shape\setPosition(align, "ucp", px, py)\build!
+                            final = zf.tags\clearByPreset final, .list1
+                        else
+                            zf.util\warning "Tag \"\\clip\" not found", dialogue_index
+                            remove = false
+                            continue
+                    when "Shape Origin"
+                        shape = zf.shape(shape, .opn)\toOrigin!
+                        {l: lf, t: tp} = shape
+                        shape = shape\build!
+                        with coords
+                            x1 = zf.math\round px + lf
+                            y1 = zf.math\round py + tp
+                            value = {x1, y1}
+                            if .move[3] != nil
+                                {x1, y1, x2, y2, ts, te} = .move
+                                x1 = zf.math\round x1 + lf
+                                y1 = zf.math\round y1 + tp
+                                x2 = zf.math\round x2 + lf
+                                y2 = zf.math\round y2 + tp
+                                value = {x1, y1, x2, y2, ts, te}
+                            final = zf.tags\replaceCoords final, value
+                    when "Shape Flatten"
+                        segment = switch .list3
+                            when "Full"   then "m"
+                            when "Line"   then "l"
+                            when "Bezier" then "b"
+                        shape = zf.shape(shape, .opn)\flatten(nil, nil, .tol <= 0 and 1e-1 or .tol, segment)\build!
+                    when "Shape Clipper"
+                        if clip = rawTag\match "\\i?clip%b()"
+                            clip = zf.shape zf.util\clip2Draw(clip), .opn
+                            clip = clip\move(-px, -py)\build!
+                            shape = zf.shape(shape, .opn)\setPosition(align)\build!
+                            shape = zf.clipper(shape, clip, .opn)\clip(rawTag\match("\\iclip%b()"))\build stype
+                            final = zf.tags\removeTags final, "clip", "iclip"
+                            final = zf.tags\insertTags final, "\\an7"
+                        else
+                            zf.util\warning "Tag \"\\clip\" not found", dialogue_index
+                            remove = false
+                            continue
+                    when "Shape Simplify"
+                        shape = zf.shape(shape, .opn)\setPosition(align)\build!
+                        shape = zf.clipper(shape, nil, .opn)\simplify!
+                        shape = shape\build stype, .tol <= 1 and 1 or .tol
+                        final = zf.tags\insertTags final, "\\an7"
+                    when "Shape Bounding Box"
+                        bbox = zf.shape(shape)\getBoudingBoxAssDraw!
+                        shape = zf.shape(bbox, .opn)\setPosition(align)\build!
+                        final = zf.tags\insertTags final, "\\an7"
+                    when "Shape Expand"
+                        shape = zf.shape(shape, .opn)\setPosition(align)\expand(line, coords)\build!
+                        final = zf.tags\clearByPreset final, "Shape Expand"
+                        final = zf.tags\insertTags final, "\\an7"
+                    when "Shape Round Corners"
+                        shape = zf.shape(shape, .opn)\setPosition(align)\roundCorners(.tol)\build!
+                        final = zf.tags\insertTags final, "\\an7"
+                    when "Shape Round"
+                        shape = zf.shape(shape, .opn)\build .tol
+                    when "Shape Move"
+                        shape = zf.shape(shape, .opn)\move(.px, .py)\build!
+                line.text = zf.tags\clearStyleValues(line, final) .. shape
+                i[1], i[2] = zf.util\deleteLine l, subs, sel, remove, i[1], i[2]
+                i[1], i[2] = zf.util\insertLine line, subs, sel, new_selection, i[1], i[2]
+            elseif button == "Stroke"
+                i[1], i[2] = zf.util\deleteLine l, subs, sel, remove, i[1], i[2]
+                final = zf.tags\insertTags final, "\\an7", "\\bord0"
+                shape = zf.clipper zf.shape(shape)\setPosition(align)\build!
+                if .genroo
+                    .strokeSize = switch .list5
+                        when "Inside" then -.strokeSize
+                        when "Center" then .strokeSize / 2
+                    line.text = zf.tags\clearStyleValues(line, final) .. shape\offset(.strokeSize, .list4, nil, .miterl, .arct)\build stype
+                    i[1], i[2] = zf.util\insertLine line, subs, sel, new_selection, i[1], i[2]
+                else
+                    colors = {"\\c" .. line.styleref.color3, "\\c" .. line.styleref.color1}
+                    alphas = {"\\1a" .. line.styleref.alpha3, "\\1a" .. line.styleref.alpha1}
+                    if line.styleref.alpha != "&H00&"
+                        if final\match "\\1a%s*&?[Hh]%x+&?"
+                            alphas[1] = "\\1a" .. line.styleref.alpha
+                        else
+                            alphas = nil
+                    shapes = {shape\toStroke .strokeSize, .list4, .list5, .miterl, .arct}
+                    for j = 1, 2
+                        final = zf.tags\insertTags final, colors[j], alphas and alphas[j] or nil
+                        line.text = zf.tags\clearStyleValues(line, final) .. shapes[j]\build stype
+                        i[1], i[2] = zf.util\insertLine line, subs, sel, new_selection, i[1], i[2]
+            elseif button == "Envelope"
+                mesh, real = {}, {}
+                final = zf.tags\insertTags final, "\\an7"
+                shape = zf.shape(shape)\setPosition(align)\build!
+                if .list7 == "Mesh"
+                    bbox = zf.shape(shape)\getBoudingBoxAssDraw!
+                    bbox = zf.shape(bbox)\setPosition 7, nil, px, py
+                    bbox = (.list6 == "Bezier" and bbox\allCubic! or bbox\flatten nil, .cpsize)\build!
+                    final = zf.tags\insertTags final, "\\clip(#{bbox\sub(1, -2)})"
+                elseif .list7 == "Perspective"
+                    if clip = rawTag\match "\\i?clip%b()"
+                        clip = zf.util\clip2Draw clip 
+                        if clip\match "b"
+                            zf.util\warning "The perspective transformation only works with line segments", dialogue_index
+                            remove = false
+                            continue
+                        clip = zf.shape(clip)\move -px, -py
+                        clip = clip["paths"][1]["path"]
+                        unless #clip == 4
+                            zf.util\warning "The perspective transformation needs 4 segments.", dialogue_index
+                            remove = false
+                            continue
+                        zf.table(mesh)\push unpack clip[1].segment
+                        for i = 2, #clip - 1
+                            zf.table(mesh)\push clip[i].segment[2]
+                        shape = zf.shape(shape, .opn)\perspective(mesh)\build!
+                        final = zf.tags\removeTags final, "clip", "iclip"
                     else
-                        colors = {line.styleref.color3, line.styleref.color1}
-                        shapes = {zf.clipper(shape)\toStroke .strokeSize, .list4, .list5, .miterl, .arct}
-                        for j = 1, 2
-                            add = {
-                                {capTag["1c"], "\\c#{color_from_style(colors[j])}"}
-                                {capTag["1a"], "\\1a#{alpha_from_style(colors[j])}"}
-                            }
-                            tag = zf.tags\merge zf.tags\deleteTags(tag, "3c", "3a"), unpack add
-                            line.text = tag .. shapes[j]\build simplifyType
-                            i = zf.util\insertLine line, subs, sel, i
-
-                when "Envelope"
-                    tag = zf.tags\clear line, tag, "Shape Clipper"
-                    shape = zf.shape(shape)\setPosition(line.styleref.align, "ply")\build!
-                    mesh, real = {}, {}
-                    switch .list7
-                        when "Mesh"
-                            bbox = zf.shape(shape)\getBoudingBoxAssDraw!
-                            bbox = zf.shape(bbox)\setPosition 7, "tcp", px, py
-                            if .list6 == "Bezier"
-                                bbox\allCubic!
-                            else
-                                bbox = bbox\flatten nil, .cpsize
-                            bbox = bbox\build 0
-                            tag = zf.tags\merge tag, {capTag.clip, {"\\clip(", bbox\sub(1, -2), ")"}}
-                        when "Perspective"
-                            zf.tags\dependency rawTag, "clips"
-
-                            clip = zf.util\clip2Draw rawTag
-                            assert not clip\match("b"), "expected line segments, received bezier segments"
-
+                        zf.util\warning "Tag \"\\clip\" not found", dialogue_index
+                        remove = false
+                        continue
+                elseif .list7 == "Warp"
+                    if clip = rawTag\match "\\i?clip%b()"
+                        clip = zf.util\clip2Draw clip 
+                        bbox = zf.shape(shape)\getBoudingBoxAssDraw!
+                        if .list6 != "Bezier"
+                            if clip\match "b"
+                                zf.util\warning "The perspective transformation only works with line segments.", dialogue_index
+                                remove = false
+                                continue
                             clip = zf.shape(clip)\move -px, -py
-                            clip = clip.paths[1].path
-                            assert #clip == 4, "expected 4 points, received #{#clip}"
-
-                            {a, b} = clip[1].segment
-                            zf.table(mesh)\push a, b
-                            for i = 2, #clip - 1
-                                zf.table(mesh)\push clip[i].segment[2]
-
-                            shape = zf.shape(shape, .opn)\perspective(mesh)\build!
-                        when "Warp"
-                            zf.tags\dependency rawTag, "clips"
-
-                            clip = zf.util\clip2Draw rawTag
-                            bbox = zf.shape(shape)\getBoudingBoxAssDraw!
-                            if .list6 != "Bezier"
-                                assert not clip\match("b"), "expected linear segments, received bezier segments"
-
-                                clip = zf.shape(clip)\move -px, -py
-                                clip = clip.paths[1].path
-                                size = zf.math\round #clip / 4
-
-                                bbox = bbox\flatten nil, size
-                                bbox = bbox.paths[1].path
-                            else
-                                assert not clip\match("l"), "expected bezier segments, received linear segments"
-
-                                clip = zf.shape(clip)\move -px, -py
-                                size = zf.math\round clip.w / 10
-                                clip = clip\flatten nil, size, nil, "b"
-                                clip = clip.paths[1].path
-
-                                bbox = zf.shape(bbox)\flatten nil, size
-                                bbox = bbox.paths[1].path
-
-                            {a, b} = clip[1].segment
-                            zf.table(mesh)\push a, b
-                            {a, b} = bbox[1].segment
-                            zf.table(real)\push a, b
-                            for i = 2, #bbox - 1
-                                zf.table(mesh)\push clip[i].segment[2]
-                                zf.table(real)\push bbox[i].segment[2]
-
-                            shape = zf.shape(shape, .opn)\envelopeDistort(mesh, real)\build!
-
-                    line.text = tag .. shape
-                    i = zf.util\insertLine line, subs, sel, i
-
+                            clip = clip["paths"][1]["path"]
+                            size = zf.math\round #clip / 4
+                            bbox = zf.shape(bbox)\flatten nil, size
+                            bbox = bbox["paths"][1]["path"]
+                        else
+                            if clip\match "l"
+                                zf.util\warning "The perspective transformation only works with bezier segments.", dialogue_index
+                                remove = false
+                                continue
+                            clip = zf.shape(clip)\move -px, -py
+                            size = zf.math\round clip.w / 10
+                            clip = clip\flatten nil, size, nil, "b"
+                            clip = clip["paths"][1]["path"]
+                            bbox = zf.shape(bbox)\flatten nil, size
+                            bbox = bbox["paths"][1]["path"]
+                        {a, b} = clip[1]["segment"]
+                        zf.table(mesh)\push a, b
+                        {a, b} = bbox[1]["segment"]
+                        zf.table(real)\push a, b
+                        for i = 2, #bbox - 1
+                            zf.table(mesh)\push clip[i]["segment"][2]
+                            zf.table(real)\push bbox[i]["segment"][2]
+                        shape = zf.shape(shape, .opn)\envelopeDistort(mesh, real)\build!
+                        final = zf.tags\removeTags final, "clip", "iclip"
+                    else
+                        zf.util\warning "Tag \"\\clip\" not found", dialogue_index
+                        remove = false
+                        continue
+                line.text = zf.tags\clearStyleValues(line, final) .. shape
+                i[1], i[2] = zf.util\deleteLine l, subs, sel, remove, i[1], i[2]
+                i[1], i[2] = zf.util\insertLine line, subs, sel, new_selection, i[1], i[2]
+        remove = elements.remove
     aegisub.set_undo_point script_name
+    if #new_selection > 0
+        return new_selection, new_selection[1]
 
 aegisub.register_macro script_name, script_description, main
