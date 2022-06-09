@@ -4,20 +4,20 @@ import POINT   from require "ZF.2D.point"
 import SEGMENT from require "ZF.2D.segment"
 import PATH    from require "ZF.2D.path"
 import SHAPE   from require "ZF.2D.shape"
-import TABLE   from require "ZF.util.table"
 
 class CLIPPER
 
-    :version
+    version: "1.0.3"
 
     -- @param subj string || SHAPE
     -- @param clip string || SHAPE
     -- @param close boolean
     -- @param scale number
     new: (subj, clip, close = false) =>
-        assert has_loaded, "libclipper was not found"
-        assert subj, "subject expected"
+        unless has_loaded
+            libError "libpolyclipping"
 
+        assert subj, "subject expected"
         subj = SHAPE(subj, close)\flatten nil, nil, 1, "b"
         clip = clip and SHAPE(clip, close)\flatten(nil, nil, 1, "b") or nil
         scale = CPP.SCALE_POINT_SIZE
@@ -25,9 +25,10 @@ class CLIPPER
         createPaths = (paths) ->
             createPath = (path) ->
                 newPath = CPP.path.new!
-                {a, b} = path[1]["segment"]
-                newPath\add a.x * scale, a.y * scale
-                newPath\add b.x * scale, b.y * scale
+                if path[1]
+                    {a, b} = path[1]["segment"]
+                    newPath\add a.x * scale, a.y * scale
+                    newPath\add b.x * scale, b.y * scale
                 for i = 2, #path
                     c = path[i]["segment"][2]
                     newPath\add c.x * scale, c.y * scale
@@ -126,7 +127,7 @@ class CLIPPER
                 c.y = tonumber(currPoint.Y) * rsc
                 new.paths[i]\push SEGMENT p, c
             if simplifyType
-                new.paths[i] = new.paths[i]\simplify simplifyType
+                new.paths[i] = new.paths[i]\simplify simplifyType, precision, precision * 3
         return new\build decs
 
 {:CLIPPER}

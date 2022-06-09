@@ -6,7 +6,7 @@ import PATH    from require "ZF.2D.path"
 
 class PATHS
 
-    version: "1.0.0"
+    version: "1.0.1"
 
     -- @param ... PATHS || PATH
     new: (...) =>
@@ -30,12 +30,13 @@ class PATHS
 
     -- copies the entire contents of the class
     -- @return PATHS
-    copy: =>
+    copy: (copyPaths = true) =>
         new = PATHS!
         with new
             {l: .l, t: .t, r: .r, b: .b, w: .w, h: .h, c: .c, m: .m} = @
-            for path in *@paths
-                new\push path
+            if copyPaths
+                for path in *@paths
+                    new\push path
         return new
 
     -- opens all path
@@ -308,7 +309,7 @@ class PATHS
     -- @param e number
     -- @return PATHS
     splitPathInInterval: (s, e) =>
-        new = @copy!
+        new = @copy false
         for i = 1, #@paths
             new.paths[i] = @paths[i]\splitInInterval s, e
         return new
@@ -338,7 +339,7 @@ class PATHS
         slen = s * lens.max
         elen = e * lens.max
 
-        spt, inf, new = nil, nil, @copy!
+        spt, inf, new = nil, nil, @copy false
         for i = 1, #lens.sum
             -- if the sum is less than the final value
             if lens.sum[i] >= elen
@@ -356,7 +357,6 @@ class PATHS
                 if i != k
                     spt = val\splitInInterval u, 1
                     new\push spt
-                    -- TABLE(new.paths)\push spt
                 -- if not initial, add the parts that will not be damaged
                 if i > 1
                     for j = k + 1, i - 1
@@ -369,11 +369,9 @@ class PATHS
                 if i != k
                     spt = val\splitInInterval 0, t
                     new\push spt
-                    -- TABLE(new.paths)\push spt
                 else
                     spt = val\splitInInterval u, t
                     new\push spt
-                    -- TABLE(new.paths)\push spt
                 -- gets useful information
                 inf = {:i, :k, :u, :t}
                 break

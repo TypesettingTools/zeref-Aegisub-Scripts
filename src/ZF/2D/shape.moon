@@ -5,6 +5,8 @@ import POINT   from require "ZF.2D.point"
 
 class SHAPE extends PATHS
 
+    version: "1.1.2"
+
     -- @param shape string || SHAPE
     -- @param close boolean
     new: (shape, close = true) =>
@@ -103,52 +105,43 @@ class SHAPE extends PATHS
     -- @param px number
     -- @param py number
     -- @return SHAPE
-    setPosition: (an = 7, mode = "ply", px = 0, py = 0) =>
+    setPosition: (an = 7, mode = "tcp", px = 0, py = 0) =>
         {:w, :h} = @
         switch an
             when 1
                 switch mode
-                    when "ply" then @move 0, -h
                     when "tcp" then @move px, py - h
                     when "ucp" then @move -px, -py + h
             when 2
                 switch mode
-                    when "ply" then @move -w / 2, -h
                     when "tcp" then @move px - w / 2, py - h
                     when "ucp" then @move -px + w / 2, -py + h
             when 3
                 switch mode
-                    when "ply" then @move -w, -h
                     when "tcp" then @move px - w, py - h
                     when "ucp" then @move -px + w, -py + h
             when 4
                 switch mode
-                    when "ply" then @move 0, -h / 2
                     when "tcp" then @move px, py - h / 2
                     when "ucp" then @move -px, -py + h / 2
             when 5
                 switch mode
-                    when "ply" then @move -w / 2, -h / 2
                     when "tcp" then @move px - w / 2, py - h / 2
                     when "ucp" then @move -px + w / 2, -py + h / 2
             when 6
                 switch mode
-                    when "ply" then @move -w, -h / 2
                     when "tcp" then @move px - w, py - h / 2
                     when "ucp" then @move -px + w, -py + h / 2
             when 7
                 switch mode
-                    -- when "ply" then @move 0, 0
                     when "tcp" then @move px, py
                     when "ucp" then @move -px, -py
             when 8
                 switch mode
-                    when "ply" then @move -w / 2
                     when "tcp" then @move px - w / 2, py
                     when "ucp" then @move -px + w / 2, -py
             when 9
                 switch mode
-                    when "ply" then @move -w
                     when "tcp" then @move px - w, py
                     when "ucp" then @move -px + w, -py
         return @
@@ -184,8 +177,8 @@ class SHAPE extends PATHS
             fax = .fax * xscale / yscale
             fay = .fay * yscale / xscale
 
-            x1 = {1, fax, .pos.x - .org.x}
-            y1 = {fay, 1, .pos.y - .org.y}
+            x1 = {1, fax, .pos[1] - .org[1]}
+            y1 = {fay, 1, .pos[2] - .org[2]}
 
             x2, y2 = {}, {}
             for i = 1, 3
@@ -205,8 +198,8 @@ class SHAPE extends PATHS
             dist = 312.5
             z4[3] += dist
 
-            offs_x = .org.x - .pos.x
-            offs_y = .org.y - .pos.y
+            offs_x = .org[1] - .pos[1]
+            offs_y = .org[2] - .pos[2]
 
             matrix = [{} for i = 1, 3]
             for i = 1, 3
@@ -232,7 +225,8 @@ class SHAPE extends PATHS
         mode = mode\lower!
 
         @toOrigin!
-        clip = SHAPE clip, false
+        if type(clip) != "table"
+            clip = SHAPE clip, false
         leng or= clip\length!
         size = leng - @w
 
