@@ -6,7 +6,7 @@ import TEXT  from require "ZF.text.text"
 
 class FBF
 
-    version: "1.0.0"
+    version: "1.0.1"
 
     new: (l, start_time = l.start_time, end_time = l.end_time) =>
         -- copys line
@@ -145,7 +145,7 @@ class FBF
         return tags
 
     -- performs all transformations on the frame
-    perform: (subs, split) =>
+    perform: (split) =>
         split = type(split) == "table" and split or TAGS\splitTextByTags split, false
         for i = 1, #split.tags
             tags, alpha = split.tags[i], nil
