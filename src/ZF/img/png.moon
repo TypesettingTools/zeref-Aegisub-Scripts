@@ -6,9 +6,11 @@ import BUFFER from require "ZF.img.buffer"
 -- https://github.com/koreader/koreader-base/tree/master/ffi
 class LIBPNG
 
-    :version
+    version: "1.0.1"
 
-    new: (@filename = filename) => assert has_loaded, "lodepng was not found"
+    new: (@filename = filename) =>
+        unless has_loaded
+            libError "lodepng"
 
     setArguments: =>
         @rawData = ffi.new "unsigned char*[1]"

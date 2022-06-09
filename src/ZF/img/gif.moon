@@ -8,9 +8,11 @@ require "ZF.img.buffer"
 -- https://luapower.com/giflib
 class LIBGIF
 
-    :version
+    version: "1.0.1"
 
-    new: (@filename = filename) => assert has_loaded, "giflib was not found"
+    new: (@filename = filename) =>
+        unless has_loaded
+            libError "giflib"
 
     read: =>
         open = (err) -> GIF.DGifOpenFileName @filename, err

@@ -6,9 +6,11 @@ import BUFFER from require "ZF.img.buffer"
 -- https://github.com/koreader/koreader-base/tree/master/ffi
 class LIBJPG
 
-    :version
+    version: "1.0.1"
 
-    new: (@filename = filename) => assert has_loaded, "libjpeg-turbo was not found"
+    new: (@filename = filename) =>
+        unless has_loaded
+            libError "libjpeg-turbo"
 
     read: =>
         file = io.open @filename, "rb"
