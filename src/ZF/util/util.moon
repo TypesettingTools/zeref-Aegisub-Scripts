@@ -3,7 +3,7 @@ import TABLE from require "ZF.util.table"
 
 class UTIL
 
-    version: "1.2.6"
+    version: "1.2.7"
 
     -- interpolate n values
     -- @param t number
@@ -55,40 +55,31 @@ class UTIL
         u = floor t
         return fn t - u, values[u + 1], values[u + 2] or values[u + 1]
 
-    -- gets frame duration
-    -- @param dec integer
-    -- @return number
-    getFrameDur: (dec = 3) =>
-        msa, msb = aegisub.ms_from_frame(1), aegisub.ms_from_frame(101)
-        return MATH\round msb and (msb - msa) / 100 or 41.708, dec
-
     -- inserts a line in the subtitles
     -- @param line table
     -- @param subs userdata
     -- @param sel integer
     -- @param selection table
     -- @param i integer
-    -- @param j integer
     -- @return integer, integer
-    insertLine: (line, subs, sel, selection, i, j, k = sel + i + 1) =>
+    insertLine: (line, subs, sel, selection, i, k = sel + i[1] + 1) =>
+        i[1] += 1
+        i[2] += 1
         subs.insert k, line
         TABLE(selection)\push k
-        return i + 1, j + 1
 
     -- delets a line in the subtitles
     -- @param subs userdata
     -- @param sel integer
     -- @param i integer
-    -- @param j integer
     -- @return integer, integer
-    deleteLine: (line, subs, sel, remove, i, j, k = sel + i) =>
+    deleteLine: (line, subs, sel, remove, i, k = sel + i[1]) =>
         line.comment = true
         subs[k] = line
         if remove
+            i[1] -= 1
+            i[2] -= 1
             subs.delete k
-            return i - 1, j - 1
-        else
-            return i, j
 
     -- gets the first subtitle dialog
     -- @param subs userdata

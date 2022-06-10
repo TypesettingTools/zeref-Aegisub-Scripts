@@ -6,7 +6,7 @@ import TEXT  from require "ZF.text.text"
 
 class FBF
 
-    version: "1.0.1"
+    version: "1.0.2"
 
     new: (l, start_time = l.start_time, end_time = l.end_time) =>
         -- copys line
@@ -91,6 +91,11 @@ class FBF
                 return ass_alpha interpolate_alpha @s - @lstart, t1, t2, t3, t4, a1, dec or a2, a3
         }
 
+    -- gets frame duration
+    frameDur: (dec = 0) =>
+        msa, msb = aegisub.ms_from_frame(1), aegisub.ms_from_frame(101)
+        return MATH\round msb and (msb - msa) / 100 or 41.708, dec
+
     -- solves the transformations related to the \t tag
     solveTransformation: (tags) =>
         if tags\match "\\t%b()"
@@ -166,8 +171,7 @@ class FBF
         return TAGS\clearEqualTags split.__tostring!
 
     -- iterate frame by frame
-    iter: (step = 1) =>
-        i = 0
+    iter: (step = 1, i = 0) =>
         {:sframe, :eframe, :dframe, :iframe} = @
         ->
             i += (i == 0 and 1 or step)
