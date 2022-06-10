@@ -1,7 +1,7 @@
 export script_name        = "Make Image"
 export script_description = "Converts images of various formats to pixels written in shape."
 export script_author      = "Zeref"
-export script_version     = "1.1.3"
+export script_version     = "1.1.4"
 -- LIB
 zf = require "ZF.main"
 
@@ -26,21 +26,15 @@ interfacePotrace = ->
         {class: "checkbox", label: "Curve optimization?", name: "opc", :x, y: 8, value: true}
     }
 
-getVals = (inter) ->
-    extensions, frameDur = "*.png;*.jpeg;*.jpe;*.jpg;*.jfif;*.jfi;*.bmp;*.dib;*.gif", zf.util\getFrameDur 0
-
-    filename = aegisub.dialog.open "Open Image File", "", "", "Image extents (#{extensions})|#{extensions};", false, true
-    unless filename
-        aegisub.cancel! 
-
-    button, elements = aegisub.dialog.display inter, {"Ok", "Cancel"}, close: "Cancel"
-
-    return button, elements, filename, frameDur
+exts = "*.png;*.jpeg;*.jpe;*.jpg;*.jfif;*.jfi;*.bmp;*.dib;*.gif"
 
 main = (macro) ->
    (subs, selected) ->
+        filename = aegisub.dialog.open "Open Image File", "", "", "Image extents (#{exts})|#{exts};", false, true
+        unless filename
+            aegisub.cancel!
         new_selection, i = {}, {0, 0, selected[#selected]}
-        button, elements, filename, frameDur = getVals macro == "Pixels" and interfacePixels! or interfacePotrace!
+        button, elements = aegisub.dialog.display macro == "Pixels" and interfacePixels! or interfacePotrace!, {"Ok", "Cancel"}, close: "Cancel"
         if button == "Ok"
             img = zf.potrace filename
             ext = img.extension
@@ -64,7 +58,7 @@ main = (macro) ->
                                 px = tonumber(x) + vx
                                 py = tonumber(y) + vy
                                 return "\\pos(#{px},#{py})"
-                        i[1], i[2] = zf.util\insertLine line, subs, i[3] - 1, new_selection, i[1], i[2]
+                        zf.util\insertLine line, subs, i[3] - 1, new_selection, i
 
                 typer = switch otp
                     when "All in one line" then "oneLine"
@@ -73,7 +67,7 @@ main = (macro) ->
                 if ext != "gif"
                     makePixels img\raster typer
                 else
-                    line.end_time = line.start_time + #img.infos.frames * frameDur
+                    line.end_time = line.start_time + #img.infos.frames * zf.fbf\frameDur!
                     for s, e, d, j in zf.fbf(line)\iter!
                         break if aegisub.progress.is_cancelled!
                         line.start_time = s
@@ -90,14 +84,14 @@ main = (macro) ->
                             px = tonumber(x) + vx
                             py = tonumber(y) + vy
                             return "\\pos(#{px},#{py})"
-                    i[1], i[2] = zf.util\insertLine line, subs, i[3] - 1, new_selection, i[1], i[2]
+                    zf.util\insertLine line, subs, i[3] - 1, new_selection, i
 
                 img\start nil, tpy, tdz, opc, apm, opt
                 if ext != "gif"
                     img\process!
                     makePotrace img\getShape!
                 else
-                    line.end_time = line.start_time + #img.infos.frames * frameDur
+                    line.end_time = line.start_time + #img.infos.frames * zf.fbf\frameDur!
                     for s, e, d, j in zf.fbf(line)\iter!
                         break if aegisub.progress.is_cancelled!
                         line.start_time = s

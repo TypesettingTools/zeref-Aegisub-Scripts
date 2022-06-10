@@ -1,7 +1,7 @@
 export script_name        = "Everything Shape"
 export script_description = "Do \"everything\" you need for a shape!"
 export script_author      = "Zeref"
-export script_version     = "1.4.7"
+export script_version     = "1.4.8"
 -- LIB
 zf = require "ZF.main"
 
@@ -127,9 +127,9 @@ main = (subs, selected, active, button, elements) ->
                 zf.util\warning "The line is commented out or it is an empty line with possible blanks.", dialogue_index
                 remove = false
                 continue
-            i[1], i[2] = zf.util\deleteLine l, subs, sel, remove, i[1], i[2]
+            zf.util\deleteLine l, subs, sel, remove, i
             remove = elements.remove
-        i[1], i[2] = zf.util\insertLine line, subs, selected[#selected], new_selection, i[1], i[2]
+        zf.util\insertLine line, subs, selected[#selected], new_selection, i
         aegisub.set_undo_point script_name
         if #new_selection > 0
             return new_selection, new_selection[1]
@@ -241,10 +241,10 @@ main = (subs, selected, active, button, elements) ->
                     when "Shape Move"
                         shape = zf.shape(shape, .opn)\move(.px, .py)\build!
                 line.text = zf.tags\clearStyleValues(line, final) .. shape
-                i[1], i[2] = zf.util\deleteLine l, subs, sel, remove, i[1], i[2]
-                i[1], i[2] = zf.util\insertLine line, subs, sel, new_selection, i[1], i[2]
+                zf.util\deleteLine l, subs, sel, remove, i
+                zf.util\insertLine line, subs, sel, new_selection, i
             elseif button == "Stroke"
-                i[1], i[2] = zf.util\deleteLine l, subs, sel, remove, i[1], i[2]
+                zf.util\deleteLine l, subs, sel, remove, i
                 final = zf.tags\insertTags final, "\\an7", "\\bord0"
                 shape = zf.clipper zf.shape(shape)\setPosition(align)\build!
                 if .genroo
@@ -252,7 +252,7 @@ main = (subs, selected, active, button, elements) ->
                         when "Inside" then -.strokeSize
                         when "Center" then .strokeSize / 2
                     line.text = zf.tags\clearStyleValues(line, final) .. shape\offset(.strokeSize, .list4, nil, .miterl, .arct)\build stype
-                    i[1], i[2] = zf.util\insertLine line, subs, sel, new_selection, i[1], i[2]
+                    zf.util\insertLine line, subs, sel, new_selection, i
                 else
                     colors = {"\\c" .. line.styleref.color3, "\\c" .. line.styleref.color1}
                     alphas = {"\\1a" .. line.styleref.alpha3, "\\1a" .. line.styleref.alpha1}
@@ -265,7 +265,7 @@ main = (subs, selected, active, button, elements) ->
                     for j = 1, 2
                         final = zf.tags\insertTags final, colors[j], alphas and alphas[j] or nil
                         line.text = zf.tags\clearStyleValues(line, final) .. shapes[j]\build stype
-                        i[1], i[2] = zf.util\insertLine line, subs, sel, new_selection, i[1], i[2]
+                        zf.util\insertLine line, subs, sel, new_selection, i
             elseif button == "Envelope"
                 mesh, real = {}, {}
                 final = zf.tags\insertTags final, "\\an7"
@@ -336,8 +336,8 @@ main = (subs, selected, active, button, elements) ->
                         remove = false
                         continue
                 line.text = zf.tags\clearStyleValues(line, final) .. shape
-                i[1], i[2] = zf.util\deleteLine l, subs, sel, remove, i[1], i[2]
-                i[1], i[2] = zf.util\insertLine line, subs, sel, new_selection, i[1], i[2]
+                zf.util\deleteLine l, subs, sel, remove, i
+                zf.util\insertLine line, subs, sel, new_selection, i
         remove = elements.remove
     aegisub.set_undo_point script_name
     if #new_selection > 0

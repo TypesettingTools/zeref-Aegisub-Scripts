@@ -97,7 +97,7 @@ main = (subs, selected, active, button, elements) ->
                 tags = callText\tags2Lines!
                 left = line.left - (tags.width - line.width) / 2
                 {:shap, :slen, :size, :offx, :animated, :offset} = setConfig clip, tags.width, .off, .mds
-                i[1], i[2] = zf.util\deleteLine l, subs, sel, remove, i[1], i[2]
+                zf.util\deleteLine l, subs, sel, remove, i
                 for ti, tag in ipairs tags
                     chars = callText\chars tag
                     charn = chars.n
@@ -112,7 +112,7 @@ main = (subs, selected, active, button, elements) ->
                                 tag.start_time = s
                                 tag.end_time = e
                                 tag.text = getTextInClipValues t, shap, tag, char
-                                i[1], i[2] = zf.util\insertLine tag, subs, sel, new_selection, i[1], i[2]
+                                zf.util\insertLine tag, subs, sel, new_selection, i
                             continue
                         elseif .mds == "Around"
                             u = (ci - 1) / (charn - 1)
@@ -121,13 +121,13 @@ main = (subs, selected, active, button, elements) ->
                         else
                             t = (offx + cx - left) / slen
                             tag.text = getTextInClipValues t, shap, tag, char
-                        i[1], i[2] = zf.util\insertLine tag, subs, sel, new_selection, i[1], i[2]
+                        zf.util\insertLine tag, subs, sel, new_selection, i
             else
                 rawTag = zf.tags\removeTags rawTag, "clip", "iclip"
                 rawTag = zf.tags\insertTags rawTag, "\\an7", "\\pos(0,0)"
                 shaper = zf.shape shape
                 {:shap, :slen, :size, :offx, :animated, :offset} = setConfig clip, shaper.w, .off, .mds
-                i[1], i[2] = zf.util\deleteLine l, subs, sel, remove, i[1], i[2]
+                zf.util\deleteLine l, subs, sel, remove, i
                 if animated
                     for s, e, d, j, n in fbf\iter offset
                         break if aegisub.progress.is_cancelled!
@@ -136,13 +136,13 @@ main = (subs, selected, active, button, elements) ->
                         line.start_time = s
                         line.end_time = e
                         line.text = rawTag .. zf.shape(shape)\inClip(line.styleref.align, shap, nil, nil, u * size)\build!
-                        i[1], i[2] = zf.util\insertLine line, subs, sel, new_selection, i[1], i[2]
+                        zf.util\insertLine line, subs, sel, new_selection, i
                     continue
                 elseif .mds == "Around"
                     line.text = rawTag .. shaper\inClip(line.styleref.align, shap, .mds, shaper.w)\build!
                 else
                     line.text = rawTag .. shaper\inClip(line.styleref.align, shap, .mds, nil, offset)\build!
-                i[1], i[2] = zf.util\insertLine line, subs, sel, new_selection, i[1], i[2]
+                zf.util\insertLine line, subs, sel, new_selection, i
         remove = elements.remove
     aegisub.set_undo_point script_name
     if #new_selection > 0

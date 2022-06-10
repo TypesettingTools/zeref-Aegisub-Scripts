@@ -30,7 +30,7 @@ main = (__type) ->
             -- calls the TEXT class to get the necessary values
             callText = zf.text subs, line
             {:coords} = callText
-            i[1], i[2] = zf.util\deleteLine l, subs, sel, remove, i[1], i[2]
+            zf.util\deleteLine l, subs, sel, remove, i
             for breaks in *callText\breaks2Lines!
                 for tag in *breaks
                     switch __type
@@ -42,12 +42,12 @@ main = (__type) ->
                                 __tags = zf.tags\replaceCoords tag.tags, callText\orgPos line, value, coords
                                 __tags = zf.tags\clearStyleValues tag, __tags
                                 line.text = "#{__tags}#{value.text_stripped}"
-                                i[1], i[2] = zf.util\insertLine line, subs, sel, new_selection, i[1], i[2]
+                                zf.util\insertLine line, subs, sel, new_selection, i
                         else
                             __tags = zf.tags\replaceCoords tag.tags, callText\orgPos line, tag, coords
                             __tags = zf.tags\clearStyleValues tag, __tags
                             line.text = "#{__tags}#{tag.text_stripped}"
-                            i[1], i[2] = zf.util\insertLine line, subs, sel, new_selection, i[1], i[2]
+                            zf.util\insertLine line, subs, sel, new_selection, i
             remove = true
         aegisub.set_undo_point script_name
         if #new_selection > 0

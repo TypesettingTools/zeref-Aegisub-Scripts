@@ -1,7 +1,7 @@
 export script_name        = "Line To FBF"
 export script_description = "Splits the line frame by frame interpolating all transformations present in it"
 export script_author      = "Zeref"
-export script_version     = "1.0.1"
+export script_version     = "1.0.2"
 -- LIB
 zf = require "ZF.main"
 
@@ -22,8 +22,8 @@ main = (subs, selected) ->
             -- gets the current line
             l, remove = subs[sel + i[1]], true
             -- skips execution if execution is not possible
-            unless zf.util\runMacro l
-                zf.util\warning "The line is commented out or it is an empty line with possible blanks.", dialogue_index
+            if l.comment
+                zf.util\warning "The line is commented out", dialogue_index
                 remove = false
                 continue
             -- copies the current line
@@ -40,19 +40,18 @@ main = (subs, selected) ->
             -- gets the first tag and the text stripped
             rawTag, rawTxt = zf.tags\getRawText line.text
             text, shape = "", zf.util\isShape rawTxt
-            -- adds the style values to the first tag layer
+            -- adds the style values to all tag layers
             split = zf.tags\splitTextByTags zf.tags\fixtr(shape and rawTag or l.text), true
             for i = 1, #split.tags
                 split.tags[i] = zf.tags\addStyleTags line, split.tags[i], nil
             text, shape = split.__tostring!, shape or ""
-            i[1], i[2] = zf.util\deleteLine l, subs, sel, remove, i[1], i[2]
+            zf.util\deleteLine l, subs, sel, remove, i
             for s, e in fbf\iter elements.frs
                 break if aegisub.progress.is_cancelled!
                 line.start_time = s
                 line.end_time = e
-                line.text = fbf\perform text, false
-                line.text ..= shape
-                i[1], i[2] = zf.util\insertLine line, subs, sel, new_selection, i[1], i[2]
+                line.text = fbf\perform(text) .. shape
+                zf.util\insertLine line, subs, sel, new_selection, i
             remove = true
         aegisub.set_undo_point script_name
         if #new_selection > 0

@@ -1,7 +1,7 @@
 export script_name        = "Gradient Cut"
 export script_description = "Generates a gradient from cuts in sequence."
 export script_author      = "Zeref"
-export script_version     = "1.2.2"
+export script_version     = "1.2.3"
 -- LIB
 zf = require "ZF.main"
 
@@ -150,13 +150,13 @@ main = (subs, selected, active, button, elements) ->
             final = zf.tags\insertTags final, "\\an7\\bord0\\shad0"
             final = zf.tags\clearStyleValues line, final
             gcuts = gradientCut shape, .gapSize, .mode, .angle
-            i[1], i[2] = zf.util\deleteLine l, subs, sel, remove, i[1], i[2]
+            zf.util\deleteLine l, subs, sel, remove, i
             for c, gcut in ipairs gcuts
                 t = (c - 1) ^ .accel / (#gcuts - 1) ^ .accel
                 color = zf.util\interpolation t, "color", colors
                 ntext = zf.tags\insertTag final, "\\c#{color}"
                 line.text = ntext .. gcut
-                i[1], i[2] = zf.util\insertLine line, subs, sel, new_selection, i[1], i[2]
+                zf.util\insertLine line, subs, sel, new_selection, i
         remove = elements.remove
     aegisub.set_undo_point script_name
     if #new_selection > 0
