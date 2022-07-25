@@ -7,12 +7,12 @@ with math
 
 class MATH
 
-    version: "1.0.0"
+    version: "1.1.1"
 
     -- rounds numerical values
     -- @param a number
     -- @param dec integer
-    round: (a, dec = 3) => dec >= 1 and floor(a * 10 ^ floor(dec) + 0.5) / 10 ^ floor(dec) or floor(a + 0.5)
+    round: (a, dec = 3, snot = 10 ^ floor(dec)) => dec >= 1 and floor(a * snot + 0.5) / snot or floor(a + 0.5)
 
     -- clamps the value in a rage
     -- @param a number
@@ -26,6 +26,13 @@ class MATH
     -- @param b number
     -- @return number
     random: (a, b) => random! * (b - a) + a
+
+    -- interpolation between two numerical values
+    -- @param t number
+    -- @param a number
+    -- @param b number
+    -- @return number
+    lerp: (t, a, b, u = @clamp t, 0, 1) => @round (1 - u) * a + u * b
 
     -- https://stackoverflow.com/a/27176424
     -- gets the roots of a cubic equation
@@ -68,10 +75,6 @@ class MATH
 
         for i = 1, #roots
             roots[i] -= b / (3 * a)
-
-        for r, root in ipairs roots
-            unless 0 <= root and root <= 1
-                table.remove roots, r
 
         return roots
 

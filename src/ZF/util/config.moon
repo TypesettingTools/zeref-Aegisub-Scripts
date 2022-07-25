@@ -3,7 +3,7 @@ import UTIL  from require "ZF.util.util"
 
 class CONFIG
 
-    version: "1.0.1"
+    version: "1.0.2"
 
     -- checks if a file or folder exists
     -- @param file string
@@ -64,9 +64,9 @@ class CONFIG
     -- @return table
     readGui: (dir) =>
         split = (content) ->
-            result, values = {}, UTIL\headTails content, "|"
+            result, values = {}, UTIL\headsTails content, "|"
             for _, value in ipairs values
-                set = UTIL\headTails value, ":"
+                set = UTIL\headsTails value, ":"
                 conc = table.concat set, "", 2
                 conc = conc == "true" and true or (tonumber(conc) and tonumber(conc) or conc)
                 result[set[1]] = conc

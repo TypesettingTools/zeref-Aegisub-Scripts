@@ -3,7 +3,7 @@ import TABLE from require "ZF.util.table"
 
 class UTIL
 
-    version: "1.2.7"
+    version: "1.3.0"
 
     -- interpolate n values
     -- @param t number
@@ -12,17 +12,32 @@ class UTIL
     -- @return number || string
     interpolation: (t = 0.5, interpolationType = "auto", ...) =>
         values = type(...) == "table" and ... or {...}
-        -- interpolates two shape values if they have the same number of points
-        interpolate_shape = (u, f, l, j = 1) ->
+        -- interpolation between two numerical values
+        interpolate = (u, f, l) ->
+            u = MATH\clamp u, 0, 1
+            return MATH\round (1 - u) * f + u * l
+        -- interpolation between two alpha values
+        interpolate_alpha = (u, f, l) ->
+            a = f\match "&?[hH](%x%x)&?"
+            b = l\match "&?[hH](%x%x)&?"
+            c = interpolate u, tonumber(a, 16), tonumber(b, 16)
+            return ("&H%02X&")\format c
+        -- interpolation between two color values
+        interpolate_color = (u, f, l) ->
+            a = {f\match "&?[hH](%x%x)(%x%x)(%x%x)&?"}
+            b = {l\match "&?[hH](%x%x)(%x%x)(%x%x)&?"}
+            c = [interpolate u, tonumber(a[i], 16), tonumber(b[i], 16) for i = 1, 3]
+            return ("&H%02X%02X%02X&")\format unpack c
+        -- interpolation between two shapes values
+        interpolate_shape = (u, f, l, j = 0) ->
             a = [tonumber(s) for s in f\gmatch "%-?%d[%.%d]*"]
             b = [tonumber(s) for s in l\gmatch "%-?%d[%.%d]*"]
             assert #a == #b, "The shapes must have the same stitch length"
             f = f\gsub "%-?%d[%.%d]*", (s) ->
-                s = MATH\round UTIL\interpolation u, nil, a[j], b[j]
                 j += 1
-                return s
+                return MATH\round interpolate u, a[j], b[j]
             return f
-        -- interpolates the values contained in the tables as long as the number of elements is equal
+        -- interpolation between two table values
         interpolate_table: (u, f, l, new = {}) ->
             assert #f == #l, "The interpolation depends on tables with the same number of elements"
             for i = 1, #f
@@ -31,8 +46,8 @@ class UTIL
         -- gets function from interpolation type
         fn = switch interpolationType
             when "number" then interpolate
-            when "color"  then interpolate_color
             when "alpha"  then interpolate_alpha
+            when "color"  then interpolate_color
             when "shape"  then interpolate_shape
             when "table"  then interpolate_table
             when "auto"
@@ -54,50 +69,6 @@ class UTIL
         t = clamp(t, 0, 1) * (#values - 1)
         u = floor t
         return fn t - u, values[u + 1], values[u + 2] or values[u + 1]
-
-    -- inserts a line in the subtitles
-    -- @param line table
-    -- @param subs userdata
-    -- @param sel integer
-    -- @param selection table
-    -- @param i integer
-    -- @return integer, integer
-    insertLine: (line, subs, sel, selection, i, k = sel + i[1] + 1) =>
-        i[1] += 1
-        i[2] += 1
-        subs.insert k, line
-        TABLE(selection)\push k
-
-    -- delets a line in the subtitles
-    -- @param subs userdata
-    -- @param sel integer
-    -- @param i integer
-    -- @return integer, integer
-    deleteLine: (line, subs, sel, remove, i, k = sel + i[1]) =>
-        line.comment = true
-        subs[k] = line
-        if remove
-            i[1] -= 1
-            i[2] -= 1
-            subs.delete k
-
-    -- gets the first subtitle dialog
-    -- @param subs userdata
-    -- @return integer, table
-    getFirstLine: (subs) =>
-        for i = 1, #subs
-            if subs[i].class == "dialogue"
-                return i, subs[i]
-
-    -- gets the last subtitle dialog
-    -- @param subs userdata
-    -- @return integer, table
-    getLastLine: (subs) => #subs, subs[#subs]
-
-    -- checks if the macro can be started
-    -- @param l table
-    -- @return boolean
-    runMacro: (l) => l.comment == false and not @isBlank l
 
     -- transforms html colors to rgb or the other way around
     -- @param color string
@@ -160,7 +131,7 @@ class UTIL
     -- @param s string
     -- @param div string || number
     -- @return table
-    headTails: (s, div) =>
+    headsTails: (s, div) =>
         add = {}
         while s != ""
             head, tail = UTIL\headTail s, div
@@ -187,19 +158,9 @@ class UTIL
     -- checks if the text is a shape
     -- @param text string
     -- @return boolean, string
-    isShape: (text) =>
-        local isShape, shape
+    isShape: (text, isShape, shape) =>
         if type(text) == "string"
-            if shape = text\match "m%s+%-?%d[%.%-%d mlb]*"
-                isShape = true
-            return isShape and shape or nil
-
-    -- warning log
-    -- @param msg string
-    -- @param n number
-    warning: (msg = "", n = 1) =>
-        aegisub.debug.out 2, "———— [Warning] ➔ Line \"[#{n}]\" skipped\n"
-        aegisub.debug.out 2, "—— [Cause] ➔ " .. msg .. "\n\n"
-        return
+            if shape = text\gsub("%b{}", "")\match "m%s+%-?%d[%.%-%d mlb]*"
+                return shape
 
 {:UTIL}
