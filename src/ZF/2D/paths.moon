@@ -6,13 +6,20 @@ import PATH    from require "ZF.2D.path"
 
 class PATHS
 
-    version: "1.0.1"
+    version: "1.1.2"
 
     -- @param ... PATHS || PATH
     new: (...) =>
         @paths, @l, @t, @r, @b = {}, math.huge, math.huge, -math.huge, -math.huge
         @push ...
         @setBoudingBox!
+
+    -- converts the paths into a sequence of points
+    -- @return table
+    toPoints: (points = {}) =>
+        for path in *@paths
+            TABLE(points)\push path\toPoints!
+        return points
 
     -- adds (paths or path) to paths
     push: (...) =>
@@ -145,7 +152,7 @@ class PATHS
 
     -- does a perspective transformation in the points
     -- @return PATHS
-    perspective: (mesh, ep = 1e-2) =>
+    perspective: (mesh, real, ep = 1e-2) =>
         mesh or= {
             POINT @l, @t
             POINT @r, @t
@@ -153,7 +160,7 @@ class PATHS
             POINT @l, @b
         }
 
-        real = {
+        real or= {
             POINT @l, @t
             POINT @r, @t
             POINT @r, @b
