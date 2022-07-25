@@ -1,7 +1,7 @@
 export script_name        = "All Characters To"
 export script_description = "Converts all characters to uppercase, lowercase or capitalized."
 export script_author      = "Zeref"
-export script_version     = "1.0.3"
+export script_version     = "1.0.4"
 -- LIB
 zf = require "ZF.main"
 
@@ -21,9 +21,10 @@ unicode.to_capitalized = (text, i = 1) ->
 
 splitMap = (text, fn) ->
     concat = ""
-    with zf.tags\splitTextByTags text\gsub("\\N", "%[@%]")\gsub("\\h", "%[#%]"), false
-        for i = 1, #.text
-            concat ..= .tags[i] .. fn .text[i], i
+    with zf.tags text\gsub("\\N", "%[@%]")\gsub("\\h", "%[#%]"), false
+        for i = 1, #.between
+            sucess, result = pcall fn, .between[i], i
+            concat ..= .layers[i]["layer"] .. (sucess and result or fn .between[i])
     return concat\gsub("%[@%]", "\\N")\gsub("%[#%]", "\\h")\gsub "{%s*}", ""
 
 main = (fn) ->
