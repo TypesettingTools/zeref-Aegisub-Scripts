@@ -1,7 +1,7 @@
 export script_name        = "Gradient Cut"
 export script_description = "Generates a gradient from cuts in sequence."
 export script_author      = "Zeref"
-export script_version     = "1.2.3"
+export script_version     = "1.3.0"
 -- LIB
 zf = require "ZF.main"
 
@@ -78,6 +78,15 @@ addColor = (gui, colorLimit = 16) ->
         aegisub.debug.out 2, "color limit reached" .. "\n"
     return gui
 
+remColor = (gui) ->
+    {:x, :y, :name, :value} = gui[#gui]
+    i = tonumber name\match "%d+"
+    if i > 2
+        zf.table(gui)\pop!
+    else
+        aegisub.debug.out 2, "cannot remove any more" .. "\n"
+    return gui
+
 addDropColors = (gui, read) ->
     colors = {}
     for name, value in pairs read
@@ -88,78 +97,71 @@ addDropColors = (gui, read) ->
         zf.table(gui)\push {class: "color", name: "color#{i}", :x, y: y + 2, height: 2, value: colors[i]}
     return gui
 
-interface = ->
-    types, x = {"Vertical", "Horizontal", "By Angle"}, 5
+interface = (x = 7) ->
+    modes = {"Vertical", "Horizontal", "By Angle"}
     {
         {class: "label", label: "Gradient Type:", :x, y: 0}
-        {class: "dropdown", name: "mode", items: types, :x, y: 1, value: types[1]}
+        {class: "dropdown", name: "mode", items: modes, :x, y: 1, value: modes[1]}
         {class: "label", label: "Gap Size:", :x, y: 2}
         {class: "intedit", name: "gapSize", :x, y: 3, value: 2}
         {class: "label", label: "Accel:", :x, y: 4}
         {class: "floatedit", name: "accel", :x, y: 5, value: 1}
         {class: "label", label: "Angle:", :x, y: 6}
         {class: "floatedit", name: "angle", :x, y: 7, value: 0}
-        {class: "checkbox", label: "Remove selected layers?\t", name: "remove", :x, y: 8, value: true}
+        {class: "checkbox", label: "Remove selected layers?\t\t\t\t", name: "remove", :x, y: 8, value: true}
         {class: "label", label: "Colors:", :x, y: 10}
         {class: "color", name: "color1", :x, y: 11, height: 2, value: "#FFFFFF"}
         {class: "color", name: "color2", :x, y: 13, height: 2, value: "#FF0000"}
     }
 
 main = (subs, selected, active, button, elements) ->
-    new_selection, i = {}, {0, 0, selected[#selected], zf.util\getFirstLine subs}
     gui, read = zf.config\loadGui interface!, script_name
     gui = addDropColors gui, read if read
     while true
-        button, elements = aegisub.dialog.display gui, {"Ok", "Add+", "Reset", "Cancel"}, close: "Cancel"
+        button, elements = aegisub.dialog.display gui, {"Ok", "Add+", "Rem-", "Reset", "Cancel"}, close: "Cancel"
         gui = switch button
             when "Add+"   then addColor gui
+            when "Rem-"   then remColor gui
             when "Reset"  then interface!
             when "Cancel" then return
             else               break
     zf.config\saveGui elements, script_name
     colors = [zf.util\convertColor elements["color#{j - 10}"] for j = 11, #gui]
-    for sel in *selected
-        dialogue_index = sel + i[1] - i[2] - i[4] + 1
-        aegisub.progress.set 100 * sel / i[3]
-        aegisub.progress.task "Processing line: #{dialogue_index}"
-        -- gets the current line
-        l, remove = subs[sel + i[1]], elements.remove
+    dlg = zf.dialog subs, selected, active, elements.remove
+    for l, line, sel, i, n in dlg\iterSelected!
+        dlg\progressLine sel
         -- skips execution if execution is not possible
-        unless zf.util\runMacro l
-            zf.util\warning "The line is commented out or it is an empty line with possible blanks.", dialogue_index
-            remove = false
+        if l.comment
+            dlg\warning sel, "The line is commented out."
             continue
-        -- copies the current line
-        line = zf.table(l)\copy!
-        line.comment = false
-        -- calls the TEXT class to get the necessary values
-        callText = zf.text subs, line
-        {:coords} = callText
-        {px, py} = coords.pos
-        -- gets the first tag and the text stripped
-        rawTag, rawTxt = zf.tags\getRawText line.text
-        shape, clip = zf.util\isShape rawTxt
+        -- gets the shape if it exists in the line
+        shape, clip = zf.util\isShape line.text
+        rawTag = zf.layer line.text, false
+        -- extends the line information
+        call = zf.line(line)\prepoc dlg
+        pers = dlg\getPerspectiveTags line
+        {px, py} = pers["pos"]
+        -- if the shape is not found transform the text into a shape
         unless shape
-            shape, clip = callText\toShape nil, px, py
-            rawTag = zf.tags\clearByPreset rawTag, "To Text"
-            rawTag = zf.tags\insertTag rawTag, "\\p1"
+            if elements.list1 != "Clip To Shape"
+                shape, clip = call\toShape dlg, nil, px, py
+            -- removes unnecessary tags
+            rawTag\remove "fs", "fscx", "fscy", "fsp", "fn", "b", "i", "u", "s"
+            rawTag\insert "\\fscx100\\fscy100\\p1"
         shape = zf.shape(shape)\setPosition(line.styleref.align)\build!
         with elements
-            final = zf.tags\replaceCoords rawTag, coords.pos
-            final = zf.tags\removeTags final, "1c", "xbord", "ybord", "xshad", "yshad"
-            final = zf.tags\insertTags final, "\\an7\\bord0\\shad0"
-            final = zf.tags\clearStyleValues line, final
+            dlg\removeLine l, sel
+            final = zf.layer(rawTag)\replaceCoords {px, py}
+            final\remove "an", "bord", "xbord", "ybord", "shad", "xshad", "yshad"
+            final\insert {"\\an7", true}, "\\bord0\\shad0"
             gcuts = gradientCut shape, .gapSize, .mode, .angle
-            zf.util\deleteLine l, subs, sel, remove, i
             for c, gcut in ipairs gcuts
                 t = (c - 1) ^ .accel / (#gcuts - 1) ^ .accel
                 color = zf.util\interpolation t, "color", colors
-                ntext = zf.tags\insertTag final, "\\c#{color}"
-                line.text = ntext .. gcut
-                zf.util\insertLine line, subs, sel, new_selection, i
-        remove = elements.remove
-    aegisub.set_undo_point script_name
-    if #new_selection > 0
-        return new_selection, new_selection[1]
+                final\remove "1c"
+                final\insert "\\1c#{color}"
+                line.text = final\__tostring! .. gcut
+                dlg\insertLine line, sel
+    return dlg\getSelection!
 
 aegisub.register_macro script_name, script_description, main
