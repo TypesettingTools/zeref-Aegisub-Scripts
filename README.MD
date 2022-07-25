@@ -297,7 +297,8 @@ Its functionality is to make a lot of manipulations in shapes, unfortunately it 
 | ----------- | ---------------------------------------------------------------- |
 | Mesh        | Creates a new mesh using the `\clip` tag                         |
 | Warp        | Envelope distortion through a mesh defined by the `\clip` tag    |
-| Perspective | Perspective distortion through a mesh defined by the `\clip` tag |
+| Perspective - A | Perspective distortion through a mesh defined by the `\clip` tag that uses the \clip bounding box as reference |
+| Perspective - B | Perspective distortion through a mesh defined by the `\clip` tag that uses the shape bounding box as reference |
 
 ---
 
