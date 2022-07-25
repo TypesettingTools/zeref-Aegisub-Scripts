@@ -7,13 +7,24 @@ import UTIL    from require "ZF.util.util"
 
 class PATH
 
-    version: "1.0.0"
+    version: "1.1.0"
 
     -- @param ... PATH || SEGMENT
     new: (...) =>
         @path = {}
         @push ...
 
+    -- converts the path into a sequence of points
+    -- @return table
+    toPoints: (points = {}) =>
+        {:path} = @
+        points = {path[1]\unpack!}
+        for j = 2, #path - 1
+            TABLE(points)\push path[j]["segment"][2]
+        return points
+
+    -- adds points to the path
+    -- @return PATH
     push: (...) =>
         args = {...}
         if #args == 1 and rawget args[1], "path"
