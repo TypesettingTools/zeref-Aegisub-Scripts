@@ -3,11 +3,12 @@
 Aegisub-Macros is a collection of automations for the Aegisub tool. These automations were made exclusively for Typesetting, which is a type of function found in Fansubs.
 
 ---
+
 ## **Table of contents**
 
-- [**Dependencies**](#id-1)
-- [**Installation**](#id-2)
-- [**How to use?**](#id-3)
+* [**Dependencies**](#id-1)
+* [**Installation**](#id-2)
+* [**How to use?**](#id-3)
     - [**All Characters To**](#id-3-1)
     - [**Split Text By**](#id-3-2)
     - [**Make Image**](#id-3-3)
@@ -17,20 +18,22 @@ Aegisub-Macros is a collection of automations for the Aegisub tool. These automa
     - [**Text in Clip**](#id-3-5)
     - [**Gradient Cut**](#id-3-6)
     - [**Everything Shape**](#id-3-7)
-- [**Thanks**](#id-4)
-- [**Final considerations**](#id-5)
+* [**Thanks**](#id-4)
+* [**Final considerations**](#id-5)
 
 ---
+
 ## **Dependencies** <a id="id-1"></a>
 
 Aegisub-Macros depends on some external libraries for its functioning, follow the list below and check all these dependencies:
 
-- [**Yutils**](https://github.com/Youka/Yutils)
-- [**requireffi**](https://github.com/TypesettingTools/ffi-experiments/tree/master/requireffi)
+* [**Yutils**](https://github.com/Youka/Yutils)
+* [**requireffi**](https://github.com/TypesettingTools/ffi-experiments/tree/master/requireffi)
 
 Furthermore, Aegisub-macros contains some additional dependencies for its full functionality. They are intended for specific macros and can be found in the branch [**build**](https://github.com/zerefxx/Aegisub-macros/tree/build).
 
 ---
+
 ## **Installation** <a id="id-2"></a>
 
 <!-- https://github.com/zerefxx/Aegisub-macros/releases -->
@@ -41,15 +44,16 @@ Furthermore, Aegisub-macros contains some additional dependencies for its full f
 
 ### Find `automation` directory:
 
-- Windows (**Aegisub Installed**): Open the file explorer and type `%appdata%` in the search engine and then open the Aegisub folder, if you don't have the `automation` folder, do another search only now changing the typing to `%programfiles%` and open the Aegisub folder.
+* Windows (**Aegisub Installed**): Open the file explorer and type `%appdata%` in the search engine and then open the Aegisub folder, if you don't have the `automation` folder, do another search only now changing the typing to `%programfiles%` and open the Aegisub folder.
 
-- Windows (**Aegisub Portable**): Identify where you extracted the Aegisub Portable and open the folder.
+* Windows (**Aegisub Portable**): Identify where you extracted the Aegisub Portable and open the folder.
 
-- Linux: Open the folder `~/.aegisub/`
+* Linux: Open the folder `~/.aegisub/`
 
-- MacOS: Open the folder `~/Library/Application Support/Aegisub/`
+* MacOS: Open the folder `~/Library/Application Support/Aegisub/`
 
 ---
+
 ## **How to use?** <a id="id-3"></a>
 
 Macros were developed to be used in the simplest possible way, especially because they are automations and not complications.
@@ -67,6 +71,7 @@ To start processing a macro, click the **Ok** button.
 To cancel the execution of the macro click on the **Cancel** button.
 
 ---
+
 ### - Macro: **All Characters To** <a id="id-3-1"></a>
 
 It has no interface, but it does have _submacros_. Its functionality is to convert characters to a specific mode, defined by _submacros_. Below is the description for each of these modes:
@@ -78,6 +83,7 @@ It has no interface, but it does have _submacros_. Its functionality is to conve
 | Capitalized | Converts the first character of a sentence to upper-case |
 
 ---
+
 ### - Macro: **Splits Text By** <a id="id-3-2"></a>
 
 It has no interface, but it does have _submacros_. Its functionality is to split the text in a specific way, defined by the _submacros_. Below is the description for each of these modes:
@@ -89,6 +95,7 @@ It has no interface, but it does have _submacros_. Its functionality is to split
 | Tags  | Splits text to tag by tag             |
 
 ---
+
 ### - Macro: **Make Image** <a id="id-3-3"></a>
 
 First of all, it is important to explain the dependence that this macro has on additional libraries, you can use this macro as long as you have at least 1 image decoding library and that the image you want to convert is compatible with this library or use a **.bmp** image that does not depend on external libraries.
@@ -100,6 +107,7 @@ When entering any of the _submacros_ you will come across a file explorer window
 Below is the description for each of these modes:
 
 ---
+
 ### - Submacro: **Pixels** <a id="id-3-3-1"></a>
 
 Converts an image's pixels into **.ass** drawing pixels by adding the colors and opacities.
@@ -112,9 +120,10 @@ Converts an image's pixels into **.ass** drawing pixels by adding the colors and
 | ------------------------ | --------------------------------------------------- |
 | All in one line          | Converts pixels to just 1 line                      |
 | On several lines - "Rec" | Converts pixels to just their height value in lines |
-| Pixel by Pixel           | Converts pixels by pixels                           |
+| Pixel by Pixel           | Converts pixel by pixel                           |
 
 ---
+
 ### - Submacro: **Potrace** <a id="id-3-3-2"></a>
 
 Convert the image to a vector graphic, which allows smoothing and scaling of the image.
@@ -130,9 +139,10 @@ Convert the image to a vector graphic, which allows smoothing and scaling of the
 | Curve optimization? | Enables or disables curve optimization             |
 
 ---
+
 ### - Macro: **Line To FBF** <a id="id-3-4"></a>
 
-Its functionality is to convert the original line to frame by frame and it can also do all the line transformations. This means that it can transform `\move`, `\fad`, `\fade` and `\t` tags frame by frame accurately.
+Its functionality is to convert the original line to frame by frame and it can also do all the line transformations. This means that it can transform `\move` , `\fad` , `\fade` and `\t` tags frame by frame accurately.
 
 The differential of this macro is that it can transform vector `\clip` with the `\t` tag, as long as they have the same number of points.
 
@@ -141,9 +151,10 @@ The differential of this macro is that it can transform vector `\clip` with the 
 **Frame steps:** Defines what the frame space will be until the next line.
 
 ---
+
 ### - Macro: **Text in Clip** <a id="id-3-5"></a>
 
-Its functionality is to make text or a shape distort around a `\clip`.
+Its functionality is to make text or a shape distort around a `\clip` .
 
 ### **Interface options settings:**
 
@@ -151,10 +162,10 @@ Its functionality is to make text or a shape distort around a `\clip`.
 
 | Name                     | Description                               |
 | ------------------------ | ----------------------------------------- |
-| Left                     | At the beginning of `\clip`               |
-| Center                   | At the center of `\clip`                  |
-| Right                    | At the end of `\clip`                     |
-| Around                   | Around the `\clip`                        |
+| Left                     | At the beginning of `\clip` |
+| Center                   | At the center of `\clip` |
+| Right                    | At the end of `\clip` |
+| Around                   | Around the `\clip` |
 | Animated - Left to Right | Animated from beginning to end of `\clip` |
 | Animated - Right to Left | Animated from end to beginning of `\clip` |
 
@@ -163,9 +174,14 @@ Its functionality is to make text or a shape distort around a `\clip`.
 **Offset:** Defines the offset of the text in relation to `\clip` and also defines what the frame space will be until the next line in the case where the defined mode is animated.
 
 ---
+
 ### - Macro: **Gradient Cut** <a id="id-3-6"></a>
 
 Its functionality is to create a gradient in a text or in a shape through cuts in sequence, it uses the clipper library to make these cuts, that is, it needs an additional dependency.
+
+**Add+** button, adds a color palette to the interface. If the interface reaches 16 colors, it will no longer be possible to add.
+
+**Rem-** button, removes a color palette from the interface. If the interface contains only 2 color palettes, it will no longer be possible to remove.
 
 ### **Interface options settings:**
 
@@ -183,9 +199,10 @@ Its functionality is to create a gradient in a text or in a shape through cuts i
 
 **Angle:** Defines the angle if your **Gradient Type** is defined to **By Angle**.
 
-**Colors:** Defines the colors will be in the gradient, you can add more colors in the **Add+** button.
+**Colors:** Defines the colors will be in the gradient.
 
 ---
+
 ### - Macro: **Everything Shape** <a id="id-3-7"></a>
 
 First of all, it is interesting to talk about the macro's relationship with text, it treats text in the same way as a shape, because it is able to identify if the text is in fact a text, and if it is, it automatically converts it to a shape . Furthermore, it is important to know that some macro features need the clipper library, that is, it needs an additional dependency.
@@ -193,11 +210,12 @@ First of all, it is interesting to talk about the macro's relationship with text
 Its functionality is to make a lot of manipulations in shapes, unfortunately it is not possible to have a definitive description for this macro because of so many features that are implemented in it, so follow the definitions below to know what each functionality contained in it is capable of doing.
 
 ---
+
 ### **Interface options settings:**
 
 **Close paths:** Defines if the new shape will be closed or open, open means that the last point in the path is not equal to the first point and closed is the opposite.
 
-> All options that are below this sentence are processed by the button `Shape`.
+> All options that are below this sentence are processed by the button `Shape` .
 
 **Mode List:** Defines which way the shape will be manipulated.
 
@@ -206,7 +224,7 @@ Its functionality is to make a lot of manipulations in shapes, unfortunately it 
 | Clip To Shape       | Converts the `\clip` or `\iclip` tag into a shape                                                                                                                             |
 | Shape Bounding Box  | Replaces the shape with its bounding box                                                                                                                                      |
 | Shape Clipper       | Makes a real cut in the shape through the overlay made by the `\clip` or `\iclip` tag                                                                                         |
-| Shape Expand        | Distorts the shape according to positioning, scale and perspective tags (`\org`, `\pos`, `frx`, `\fry`, `\frz`, `\fax`, `\fay`, `\fscx`, `\fscy`, `\p`)                       |
+| Shape Expand        | Distorts the shape according to positioning, scale and perspective tags ( `\org` , `\pos` , `frx` , `\fry` , `\frz` , `\fax` , `\fay` , `\fscx` , `\fscy` , `\p` )                       |
 | Shape Flatten       | Flattens the segments of the shape uniformly, thus increasing the number of points. The flattening distance is defined in the **Tolerance** option                            |
 | Shape Merge         | Merges multiple shapes to just 1 shape.                                                                                                                                       |
 | Shape Move          | Moves the shape through the X-Axis and Y-Axis options settings                                                                                                                |
@@ -236,7 +254,7 @@ Its functionality is to make a lot of manipulations in shapes, unfortunately it 
 
 **Tolerance:** This option has several definitions, because it is used as a specific variable in different modes. In **Shape Flatten** mode it is defined as the flattening distance, in **Shape Round** mode it is defined as the precision for the rounding, in **Shape Round Corners** mode it is defined as the rounding radius and in **Shape Simplify** mode is defined as the precision of the simplification.
 
-> All options that are below this sentence are processed by the button `Stroke`.
+> All options that are below this sentence are processed by the button `Stroke` .
 
 **Stroke Corner:** Defines the type of corner of the stroke.
 
@@ -262,7 +280,7 @@ Its functionality is to make a lot of manipulations in shapes, unfortunately it 
 
 **Generate only offset:** Defines if the output will be just the offset instead of the stroke itself.
 
-> All options that are below this sentence are processed by the button `Envelope`.
+> All options that are below this sentence are processed by the button `Envelope` .
 
 **Control Points:** Defines the amount of divisions that will be made in the bounding box, the amount of new segments can be found by multiplying 4 (original number of segments) times the defined value. This option is only valid if the **Type** option is set to **Line** and the **Generator** option is set to **Mesh**.
 
@@ -282,22 +300,24 @@ Its functionality is to make a lot of manipulations in shapes, unfortunately it 
 | Perspective | Perspective distortion through a mesh defined by the `\clip` tag |
 
 ---
+
 ## **Thanks** <a id="id-4"></a>
 
 Thanks to all the authors of the external libraries that are part of Aegisub-macros.
 
-- [Yutils](https://github.com/Youka/Yutils) Youka
-- [requireffi](https://github.com/TypesettingTools/ffi-experiments/tree/master/requireffi) torque
-- [clipper](http://www.angusj.com/delphi/clipper.php) Angus Johnson
-- [giflib](http://giflib.sourceforge.net/) Gershon Elber, Eric S. Raymond, Toshio Kuratomi.
-- [libjpeg-turbo](https://libjpeg-turbo.org/) Miyasaka Masaru
-- [lodepng](https://lodev.org/lodepng/) Lode Vandevenne
-- [lua-bitmap](https://github.com/max1220/lua-bitmap) Max Sahm
-- [polyline2bezier](https://github.com/ynakajima/polyline2bezier) Philip J. Schneider's
-- [simplify-js](https://github.com/mourner/simplify-js) Vladimir Agafonkin
-- [libass](https://github.com/libass/libass) libass
+* [Yutils](https://github.com/Youka/Yutils) Youka
+* [requireffi](https://github.com/TypesettingTools/ffi-experiments/tree/master/requireffi) torque
+* [clipper](http://www.angusj.com/delphi/clipper.php) Angus Johnson
+* [giflib](http://giflib.sourceforge.net/) Gershon Elber, Eric S. Raymond, Toshio Kuratomi.
+* [libjpeg-turbo](https://libjpeg-turbo.org/) Miyasaka Masaru
+* [lodepng](https://lodev.org/lodepng/) Lode Vandevenne
+* [lua-bitmap](https://github.com/max1220/lua-bitmap) Max Sahm
+* [polyline2bezier](https://github.com/ynakajima/polyline2bezier) Philip J. Schneider's
+* [simplify-js](https://github.com/mourner/simplify-js) Vladimir Agafonkin
+* [libass](https://github.com/libass/libass) libass
 
 ---
+
 ## **Final considerations** <a id="id-5"></a>
 
 These macros are the result of several complications and headaches that I've suffered being a Fansubber, even nowadays I don't have that energy anymore it's really cool to know that I can make some people's lives easier.
