@@ -1,7 +1,7 @@
 export script_name        = "Make Image"
 export script_description = "Converts images of various formats to pixels written in shape."
 export script_author      = "Zeref"
-export script_version     = "1.1.4"
+export script_version     = "1.2.0"
 -- LIB
 zf = require "ZF.main"
 
@@ -33,15 +33,17 @@ main = (macro) ->
         filename = aegisub.dialog.open "Open Image File", "", "", "Image extents (#{exts})|#{exts};", false, true
         unless filename
             aegisub.cancel!
-        new_selection, i = {}, {0, 0, selected[#selected]}
         button, elements = aegisub.dialog.display macro == "Pixels" and interfacePixels! or interfacePotrace!, {"Ok", "Cancel"}, close: "Cancel"
         if button == "Ok"
+            dlg = zf.dialog subs, selected, active
+            sel = selected[#selected]
             img = zf.potrace filename
             ext = img.extension
             aegisub.progress.task "Processing #{ext\upper!}..."
             -- copies the current line
-            line = zf.table(subs[i[3]])\copy!
+            line = zf.table(subs[sel])\copy!
             dur = line.end_time - line.start_time
+            -- unpacks elements
             {:tpy, :tdz, :opc, :apm, :opt, :otp} = elements
             -- start processing
             aegisub.progress.task "Processing..."
@@ -49,7 +51,6 @@ main = (macro) ->
                 makePixels = (pixels, isGif) ->
                     for p, pixel in pairs pixels
                         break if aegisub.progress.is_cancelled!
-                        aegisub.progress.set 100 * p / #pixels
                         line.text = pixel\gsub "}{", ""
                         if isGif
                             -- repositions the coordinates
@@ -58,7 +59,7 @@ main = (macro) ->
                                 px = tonumber(x) + vx
                                 py = tonumber(y) + vy
                                 return "\\pos(#{px},#{py})"
-                        zf.util\insertLine line, subs, i[3] - 1, new_selection, i
+                        dlg\insertLine line, sel
 
                 typer = switch otp
                     when "All in one line" then "oneLine"
@@ -67,9 +68,8 @@ main = (macro) ->
                 if ext != "gif"
                     makePixels img\raster typer
                 else
-                    line.end_time = line.start_time + #img.infos.frames * zf.fbf\frameDur!
                     for s, e, d, j in zf.fbf(line)\iter!
-                        break if aegisub.progress.is_cancelled!
+                        break if aegisub.progress.is_cancelled! or j > #img.infos.frames
                         line.start_time = s
                         line.end_time = e
                         makePixels img\raster(typer, j), true
@@ -84,25 +84,22 @@ main = (macro) ->
                             px = tonumber(x) + vx
                             py = tonumber(y) + vy
                             return "\\pos(#{px},#{py})"
-                    zf.util\insertLine line, subs, i[3] - 1, new_selection, i
+                    dlg\insertLine line, sel
 
                 img\start nil, tpy, tdz, opc, apm, opt
                 if ext != "gif"
                     img\process!
                     makePotrace img\getShape!
                 else
-                    line.end_time = line.start_time + #img.infos.frames * zf.fbf\frameDur!
                     for s, e, d, j in zf.fbf(line)\iter!
-                        break if aegisub.progress.is_cancelled!
+                        break if aegisub.progress.is_cancelled! or j > #img.infos.frames
                         line.start_time = s
                         line.end_time = e
                         img\start j
                         if pcall -> img\process!
                             makePotrace img\getShape!, true
 
-        aegisub.set_undo_point macro
-        if #new_selection > 0
-            return new_selection, new_selection[1]
+            return dlg\getSelection!
 
 aegisub.register_macro "#{script_name} / Pixels", script_description, main "Pixels"
 aegisub.register_macro "#{script_name} / Potrace", script_description, main "Potrace"
