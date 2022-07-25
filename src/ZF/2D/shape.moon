@@ -5,7 +5,7 @@ import POINT   from require "ZF.2D.point"
 
 class SHAPE extends PATHS
 
-    version: "1.1.2"
+    version: "1.1.3"
 
     -- @param shape string || SHAPE
     -- @param close boolean
@@ -162,7 +162,7 @@ class SHAPE extends PATHS
                 sy /= 2
                 pf sx, sy, p
         with data
-            .p = .p == "text" and 1 or .p
+            p = .p == "text" and 1 or .p
 
             frx = pi / 180 * .frx
             fry = pi / 180 * .fry
@@ -172,13 +172,30 @@ class SHAPE extends PATHS
             sy, cy =  sin(fry), cos(fry)
             sz, cz = -sin(frz), cos(frz)
 
-            xscale, yscale = pf line.styleref.scale_x, line.styleref.scale_y, .p
+            xscale, yscale = pf line.styleref.scale_x, line.styleref.scale_y, p
 
             fax = .fax * xscale / yscale
             fay = .fay * yscale / xscale
 
-            x1 = {1, fax, .pos[1] - .org[1]}
-            y1 = {fay, 1, .pos[2] - .org[2]}
+            wx = line.styleref.shadow
+            wy = line.styleref.shadow
+            if data.xshad != 0 and data.yshad == 0
+                wx = data.xshad
+            elseif data.xshad == 0 and data.yshad != 0
+                wy = data.yshad
+            elseif data.xshad != 0 and data.yshad != 0
+                wx = data.xshad
+                wy = data.yshad
+
+            ascent = 0
+            switch line.styleref.align
+                when 1, 2, 3
+                    ascent = .p == "text" and line.height or @h
+                when 4, 5, 6
+                    ascent = (.p == "text" and line.height or @h) / 2
+
+            x1 = {1, fax, .pos[1] - .org[1] + wx + fax * ascent}
+            y1 = {fay, 1, .pos[2] - .org[2] + wy}
 
             x2, y2 = {}, {}
             for i = 1, 3
@@ -198,8 +215,8 @@ class SHAPE extends PATHS
             dist = 312.5
             z4[3] += dist
 
-            offs_x = .org[1] - .pos[1]
-            offs_y = .org[2] - .pos[2]
+            offs_x = .org[1] - .pos[1] - wx
+            offs_y = .org[2] - .pos[2] - wy
 
             matrix = [{} for i = 1, 3]
             for i = 1, 3
