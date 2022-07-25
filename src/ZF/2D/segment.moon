@@ -11,7 +11,7 @@ argsArePoints = (args) ->
 
 class SEGMENT
 
-    version: "1.0.0"
+    version: "1.0.1"
 
     -- @param ... SEGMENT || POINT
     new: (...) =>
@@ -516,7 +516,7 @@ class SEGMENT
     -- finds intersections between bezier segments and linear segments
     -- @param linear SEGMENT
     -- @return string, table
-    c2lIntersection: (linear) =>
+    c2lIntersection: (linear, ep = 1e-8) =>
         @assert "cubic"
         p1, p2, p3, p4 = @unpack!
 
@@ -539,24 +539,25 @@ class SEGMENT
         }
 
         roots = MATH\cubicRoots unpack P
-        for _, t in ipairs roots
-            p5  = p1\lerp p2, t
-            p6  = p2\lerp p3, t
-            p7  = p3\lerp p4, t
-            p8  = p5\lerp p6, t
-            p9  = p6\lerp p7, t
-            p10 = p8\lerp p9, t
-            if a1.x == a2.x
-                if pmin.y <= p10.y and p10.y <= pmax.y
+        for t in *roots
+            if ep <= t and t <= 1
+                p5  = p1\lerp p2, t
+                p6  = p2\lerp p3, t
+                p7  = p3\lerp p4, t
+                p8  = p5\lerp p6, t
+                p9  = p6\lerp p7, t
+                p10 = p8\lerp p9, t
+                if a1.x == a2.x
+                    if pmin.y <= p10.y and p10.y <= pmax.y
+                        status = "intersected"
+                        TABLE(result)\push p10
+                elseif a1.y == a2.y
+                    if pmin.x <= p10.x and p10.x <= pmax.x
+                        status = "intersected"
+                        TABLE(result)\push p10
+                elseif pmin.x <= p10.x and p10.x <= pmax.x and pmin.y <= p10.y and p10.y <= pmax.y
                     status = "intersected"
                     TABLE(result)\push p10
-            elseif a1.y == a2.y
-                if pmin.x <= p10.x and p10.x <= pmax.x
-                    status = "intersected"
-                    TABLE(result)\push p10
-            elseif pmin.x <= p10.x and p10.x <= pmax.x and pmin.y <= p10.y and p10.y <= pmax.y
-                status = "intersected"
-                TABLE(result)\push p10
 
         return status, result
 
