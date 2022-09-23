@@ -13,7 +13,7 @@ bmp_header = {
 -- https://github.com/max1220/lua-bitmap
 class LIBBMP
 
-    version: "1.0.0"
+    version: "1.0.1"
 
     new: (@filename = filename) =>
         file = io.open @filename, "rb"
@@ -28,16 +28,16 @@ class LIBBMP
 
         @raw = {}
         for i = 1, #raw
-            @raw[i - 1] = raw\sub i, i
+            @raw[i - 1] = raw\sub(i, i)\byte!
 
     -- reading 8/16/32-bit little-endian integer values from a string
     -- read uint8
     read: (offset) =>
         offset = tonumber offset
         assert offset
-        value = @raw[math.floor offset]
+        value = @raw[math.floor(offset)]
         assert value
-        return value\byte!
+        return value
 
     -- read uint16
     read_word: (offset) => @read(offset + 1) * 0x100 + @read offset
