@@ -1,0 +1,6 @@
+https://github.com/TypesettingTools/ffi-experiments.git
+https://github.com/zerefxx/Yutils.git
+https://github.com/zerefxx/Clipper2.git
+https://github.com/zerefxx/lodepng.git
+https://github.com/zerefxx/giflib.git
+https://github.com/zerefxx/libjpeg-turbo.git
