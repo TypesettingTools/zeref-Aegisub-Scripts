@@ -1,12 +1,12 @@
 ffi = require "ffi"
 
-import JPG, has_loaded, version from require "ZJPG.turbojpeg"
+import JPG, has_loaded, version from require "zturbojpeg.turbojpeg"
 import BUFFER from require "ZF.img.buffer"
 
 -- https://github.com/koreader/koreader-base/tree/master/ffi
 class LIBJPG
 
-    version: "1.0.1"
+    version: "1.0.2"
 
     new: (@filename = filename) =>
         unless has_loaded

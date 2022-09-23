@@ -1,6 +1,6 @@
 ffi = require "ffi"
 
-import GIF, has_loaded, version from require "ZGIF.giflib"
+import GIF, has_loaded, version from require "zgiflib.giflib"
 import TABLE from require "ZF.util.table"
 
 require "ZF.img.buffer"
@@ -8,7 +8,7 @@ require "ZF.img.buffer"
 -- https://luapower.com/giflib
 class LIBGIF
 
-    version: "1.0.1"
+    version: "1.0.2"
 
     new: (@filename = filename) =>
         unless has_loaded

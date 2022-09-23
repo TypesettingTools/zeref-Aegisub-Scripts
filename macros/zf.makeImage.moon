@@ -1,7 +1,7 @@
 export script_name        = "Make Image"
 export script_description = "Converts images of various formats to pixels written in shape."
 export script_author      = "Zeref"
-export script_version     = "1.2.0"
+export script_version     = "1.2.1"
 -- LIB
 zf = require "ZF.main"
 
@@ -26,10 +26,9 @@ interfacePotrace = ->
         {class: "checkbox", label: "Curve optimization?", name: "opc", :x, y: 8, value: true}
     }
 
-exts = "*.png;*.jpeg;*.jpe;*.jpg;*.jfif;*.jfi;*.bmp;*.dib;*.gif"
-
 main = (macro) ->
-   (subs, selected) ->
+    exts = "*.png;*.jpeg;*.jpe;*.jpg;*.jfif;*.jfi;*.bmp;*.dib;*.gif"
+    (subs, selected) ->
         filename = aegisub.dialog.open "Open Image File", "", "", "Image extents (#{exts})|#{exts};", false, true
         unless filename
             aegisub.cancel!
@@ -49,7 +48,7 @@ main = (macro) ->
             aegisub.progress.task "Processing..."
             if macro == "Pixels"
                 makePixels = (pixels, isGif) ->
-                    for p, pixel in pairs pixels
+                    for pixel in *pixels
                         break if aegisub.progress.is_cancelled!
                         line.text = pixel\gsub "}{", ""
                         if isGif
@@ -66,13 +65,13 @@ main = (macro) ->
                     when "On several lines - \"Rec\"" then true
 
                 if ext != "gif"
-                    makePixels img\raster typer
+                    makePixels img\toAss typer
                 else
                     for s, e, d, j in zf.fbf(line)\iter!
                         break if aegisub.progress.is_cancelled! or j > #img.infos.frames
                         line.start_time = s
                         line.end_time = e
-                        makePixels img\raster(typer, j), true
+                        makePixels img\toAss(typer, j), true
 
             else -- if potrace
                 makePotrace = (shp, isGif) ->
