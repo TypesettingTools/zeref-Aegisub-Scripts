@@ -1,7 +1,7 @@
 export script_name        = "Gradient Cut"
 export script_description = "Generates a gradient from cuts in sequence."
 export script_author      = "Zeref"
-export script_version     = "1.3.1"
+export script_version     = "1.3.0"
 -- LIB
 zf = require "ZF.main"
 
@@ -11,21 +11,26 @@ gradientCut = (shape, pixel = 4, mode = "Horizontal", angle = 0, offset = 0) ->
         when "Horizontal" then 0
         when "Vertical"   then 90
 
-    sh = zf.shape shape
-    original = zf.point sh.l, sh.t
+    -- moves points to origin
+    shape = zf.shape(shape)\toOrigin!
+    oLeft, oTop = shape.l, shape.t
+    shape = zf.shape shape\build!
 
     -- gets the bounding box values before rotation
-    sh\toOrigin!
-    sh\setBoudingBox!
+    left, top, right, bottom = shape\unpackBoudingBox!
 
     -- difference between the original point and the origin point
-    diff = original - zf.point sh\unpackBoudingBox!
+    diff = zf.point oLeft - left, oTop - top
+
+    -- width and height values
+    width = right - left
+    height = bottom - top
 
     -- gets the center point of the bounding box
-    pmid = zf.point sh.w / 2, sh.h / 2
+    pMid = zf.point width / 2, height / 2
 
     -- gets the bounding box shape and rotates through the defined angle
-    shapeBox = sh\getBoudingBoxAssDraw!
+    shapeBox = shape\getBoudingBoxAssDraw!
     rotateBox = zf.shape(shapeBox)\rotate angle
 
     -- gets the bounding box values after rotation
@@ -39,18 +44,23 @@ gradientCut = (shape, pixel = 4, mode = "Horizontal", angle = 0, offset = 0) ->
     pRight1 = zf.point rRight + offset, rTop - offset
     pRight2 = zf.point rRight + offset, rBottom + offset
 
+    -- converts left and right lines to shape
+    lLeft = "m #{pLeft1.x} #{pLeft1.y} l #{pLeft2.x} #{pLeft2.y} "
+    lRight = "m #{pRight1.x} #{pRight1.y} l #{pRight2.x} #{pRight2.y} "
+
     -- rotates the left and right lines and moves them to their original position
-    lLeft = zf.shape("m #{pLeft1.x} #{pLeft1.y} l #{pLeft2.x} #{pLeft2.y} ", false)\rotate(angle, pmid.x, pmid.y)\move(diff.x, diff.y)\build!
-    lRight = zf.shape("m #{pRight1.x} #{pRight1.y} l #{pRight2.x} #{pRight2.y} ", false)\rotate(angle, pmid.x, pmid.y)\move(diff.x, diff.y)\build!
+    lLeft = zf.shape(lLeft, false)\rotate(angle, pMid.x, pMid.y)\move(diff.x, diff.y)\build!
+    lRight = zf.shape(lRight, false)\rotate(angle, pMid.x, pMid.y)\move(diff.x, diff.y)\build!
 
     -- moves the shape to its original position
-    sclip = zf.clipper sh\move(diff.x, diff.y)\build!
+    sclip = zf.clipper shape\move diff.x, diff.y
 
     clipped, len = {}, zf.math\round (rRight - rLeft + offset) / pixel, 0
     for i = 1, len
+        t = (i - 1) / (len - 1)
         -- interpolates the points from the left-hand line to the right-hand line
-        ipol = zf.util\interpolation (i - 1) / (len - 1), "shape", lLeft, lRight
-        ipol = zf.clipper(ipol)\offset pixel * 1.5, "miter", "butt"
+        ipol = zf.util\interpolation t, "shape", lLeft, lRight
+        ipol = zf.clipper(ipol)\offset pixel, "miter", "closed_line"
         -- adds the shape as a clip
         ipol.clp = sclip.sbj
         -- clip and build the new shape
@@ -59,19 +69,22 @@ gradientCut = (shape, pixel = 4, mode = "Horizontal", angle = 0, offset = 0) ->
         zf.table(clipped)\push clip if clip != ""
     return clipped
 
-colorConfig = (gui, mode = "add", colorLimit = 16) ->
+addColor = (gui, colorLimit = 16) ->
     {:x, :y, :name, :value} = gui[#gui]
     i = tonumber name\match "%d+"
-    if mode == "add"
-        if i <= colorLimit
-            zf.table(gui)\push {class: "color", name: "color#{i + 1}", :x, y: y + 2, height: 2, :value}
-        else
-            aegisub.debug.out 2, "color limit reached" .. "\n"
-    elseif mode == "rem"
-        if i > 2
-            zf.table(gui)\pop!
-        else
-            aegisub.debug.out 2, "cannot remove any more" .. "\n"
+    if i <= colorLimit
+        zf.table(gui)\push {class: "color", name: "color#{i + 1}", :x, y: y + 2, height: 2, :value}
+    else
+        aegisub.debug.out 2, "color limit reached" .. "\n"
+    return gui
+
+remColor = (gui) ->
+    {:x, :y, :name, :value} = gui[#gui]
+    i = tonumber name\match "%d+"
+    if i > 2
+        zf.table(gui)\pop!
+    else
+        aegisub.debug.out 2, "cannot remove any more" .. "\n"
     return gui
 
 addDropColors = (gui, read) ->
@@ -107,8 +120,8 @@ main = (subs, selected, active, button, elements) ->
     while true
         button, elements = aegisub.dialog.display gui, {"Ok", "Add+", "Rem-", "Reset", "Cancel"}, close: "Cancel"
         gui = switch button
-            when "Add+"   then colorConfig gui, "add"
-            when "Rem-"   then colorConfig gui, "rem"
+            when "Add+"   then addColor gui
+            when "Rem-"   then remColor gui
             when "Reset"  then interface!
             when "Cancel" then return
             else               break

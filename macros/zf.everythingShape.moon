@@ -1,7 +1,7 @@
 export script_name        = "Everything Shape"
 export script_description = "Do \"everything\" you need for a shape!"
 export script_author      = "Zeref"
-export script_version     = "1.5.2"
+export script_version     = "1.5.0"
 -- LIB
 zf = require "ZF.main"
 
@@ -144,14 +144,14 @@ main = (subs, selected, active, button, elements) ->
         {px, py} = pers["pos"]
         -- if the shape is not found transform the text into a shape
         unless shape
-            unless button == "Shape" and elements.list1 == "Clip To Shape"
+            if elements.list1 != "Clip To Shape"
                 shape, clip = call\toShape dlg, nil, px, py
-                -- fixes the scale interference in the function expand
-                line.styleref.scale_x = 100
-                line.styleref.scale_y = 100
             -- removes unnecessary tags
             rawTag\remove "fs", "fscx", "fscy", "fsp", "fn", "b", "i", "u", "s"
             rawTag\insert "\\fscx100\\fscy100\\p1"
+            -- fixes the scale interference in the function expand
+            line.styleref.scale_x = 100
+            line.styleref.scale_y = 100
 
         with elements
             stype = .list2 == "Full" and "bezier" or "line"
@@ -212,7 +212,7 @@ main = (subs, selected, active, button, elements) ->
                             cclip = zf.shape(cclip, .opn)\move(-px, -py)\build!
                             shape = zf.shape(shape, .opn)\setPosition(align)\build!
                             shape = zf.clipper(shape, cclip, .opn)\clip(iclip)\build stype
-                            final\remove "an", "clip", "iclip"
+                            final\remove "clip", "iclip"
                             final\insert {"\\an7", true}
                         else
                             dlg\warning sel, "Tag \"\\clip\" not found"
@@ -246,7 +246,7 @@ main = (subs, selected, active, button, elements) ->
             elseif button == "Stroke"
                 dlg\removeLine l, sel
                 final\remove "an", "bord"
-                final\insert {"\\an7", true}, "\\bord0"
+                final\insert "\\an7", "\\bord0"
                 final\clear line.styleref_old
                 shape = zf.clipper zf.shape(shape)\setPosition(align)\build!
                 if .genroo
@@ -274,7 +274,7 @@ main = (subs, selected, active, button, elements) ->
             elseif button == "Envelope"
                 local mesh, real
                 final\remove "an", "clip", "iclip"
-                final\insert {"\\an7", true}
+                final\insert "\\an7"
                 shape = zf.shape(shape, .opn)\setPosition(align)\build!
                 if .list7 == "Mesh"
                     bbox = zf.shape(shape)\getBoudingBoxAssDraw!

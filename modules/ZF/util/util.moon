@@ -163,11 +163,4 @@ class UTIL
             if shape = text\gsub("%b{}", "")\match "m%s+%-?%d[%.%-%d mlb]*"
                 return shape
 
-    log: (...) =>
-        for val in *{...}
-            if type(val) == "string"
-                aegisub.log val .. "\n"
-            else
-                aegisub.log TABLE(val)\view! .. "\n"
-
 {:UTIL}
