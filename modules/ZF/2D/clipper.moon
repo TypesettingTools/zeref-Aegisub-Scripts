@@ -1,4 +1,4 @@
-import CPP, has_loaded, version from require "ZPCP.polyclipping"
+import CPP, has_loaded, version from require "zpclipper.clipper"
 
 import POINT   from require "ZF.2D.point"
 import SEGMENT from require "ZF.2D.segment"
@@ -7,31 +7,29 @@ import SHAPE   from require "ZF.2D.shape"
 
 class CLIPPER
 
-    version: "1.0.3"
+    version: "1.1.4"
 
     -- @param subj string || SHAPE
     -- @param clip string || SHAPE
     -- @param close boolean
-    -- @param scale number
     new: (subj, clip, close = false) =>
         unless has_loaded
-            libError "libpolyclipping"
+            libError "Clipper2"
 
         assert subj, "subject expected"
         subj = SHAPE(subj, close)\flatten nil, nil, 1, "b"
         clip = clip and SHAPE(clip, close)\flatten(nil, nil, 1, "b") or nil
-        scale = CPP.SCALE_POINT_SIZE
 
         createPaths = (paths) ->
             createPath = (path) ->
                 newPath = CPP.path.new!
                 if path[1]
                     {a, b} = path[1]["segment"]
-                    newPath\add a.x * scale, a.y * scale
-                    newPath\add b.x * scale, b.y * scale
+                    newPath\add a.x, a.y
+                    newPath\add b.x, b.y
                 for i = 2, #path
                     c = path[i]["segment"][2]
-                    newPath\add c.x * scale, c.y * scale
+                    newPath\add c.x, c.y
                 return newPath
             newPaths = CPP.paths.new!
             for p in *paths
@@ -44,20 +42,21 @@ class CLIPPER
 
     -- removes useless vertices from a shape
     -- @return CLIPPER
-    simplify: (ft) =>
-        @sbj = @sbj\simplify ft
+    simplify: (fr) =>
+        c = CPP.clipper.new!
+        c\add_paths @sbj, @sbj
+        @sbj = c\execute "union"
         return @
 
     -- creates a run for the clipper
     -- @param fr string
     -- @param ct string
     -- @return CLIPPER
-    clipper: (ct = "intersection", ft = "even_odd") =>
+    clipper: (ct = "intersection", fr = "non_zero") =>
         assert @clp, "expected clip"
         c = CPP.clipper.new!
-        c\add_paths @sbj, "subject"
-        c\add_paths @clp, "clip"
-        @sbj = c\execute ct, ft
+        c\add_paths @sbj, @clp
+        @sbj = c\execute ct, fr
         return @
 
     -- creates a run for clipper offset
@@ -67,10 +66,11 @@ class CLIPPER
     -- @param mtl number
     -- @param act number
     -- @return CLIPPER
-    offset: (size, jt = "round", et = "closed_polygon", mtl = 2, act = 0.25) =>
+    offset: (size, jt = "round", et = "polygon", mtl = 2, act = 0.25) =>
         jt = jt\lower!
         o = CPP.offset.new mtl, act
-        @sbj = o\paths @sbj, size, jt, et
+        o\add_paths @sbj, jt, et
+        @sbj = o\execute size
         return @
 
     -- generates a stroke around the shape
@@ -86,7 +86,7 @@ class CLIPPER
         mode = mode\lower!
         size = mode == "inside" and -size or size
         fill = CLIPPER (mode != "center" and @simplify! or @)\build!
-        offs = CLIPPER @offset(size, jt, mode == "center" and "closed_line" or nil, mtl, act)\build!
+        offs = CLIPPER @offset(size, jt, mode == "center" and "joined" or nil, mtl, act)\build!
 
         switch mode
             when "outside"
@@ -113,18 +113,15 @@ class CLIPPER
     -- @param decs integer
     -- @return string
     build: (simplifyType, precision = 1, decs = 3) =>
-        new, rsc = SHAPE!, CPP.RESCALE_POINT_SIZE
+        new = SHAPE!
         for i = 1, @sbj\len!
             path = @sbj\get i
             new.paths[i] = PATH!
             for j = 2, path\len!
-                prevPoint = path\get j - 1
-                currPoint = path\get j - 0
-                p, c = POINT!, POINT!
-                p.x = tonumber(prevPoint.X) * rsc
-                p.y = tonumber(prevPoint.Y) * rsc
-                c.x = tonumber(currPoint.X) * rsc
-                c.y = tonumber(currPoint.Y) * rsc
+                a = path\get j - 1
+                b = path\get j - 0
+                p = POINT a.x, a.y
+                c = POINT b.x, b.y
                 new.paths[i]\push SEGMENT p, c
             if simplifyType
                 new.paths[i] = new.paths[i]\simplify simplifyType, precision, precision * 3

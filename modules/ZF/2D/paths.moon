@@ -6,11 +6,11 @@ import PATH    from require "ZF.2D.path"
 
 class PATHS
 
-    version: "1.1.2"
+    version: "1.1.3"
 
     -- @param ... PATHS || PATH
     new: (...) =>
-        @paths, @l, @t, @r, @b = {}, math.huge, math.huge, -math.huge, -math.huge
+        @paths = {}
         @push ...
         @setBoudingBox!
 
@@ -63,6 +63,7 @@ class PATHS
     -- finds the coordinates of the rectangle gives boundingBox
     -- @return PATHS
     setBoudingBox: =>
+        @l, @t, @r, @b = math.huge, math.huge, -math.huge, -math.huge
         for path in *@paths
             l, t, r, b = path\boudingBox!
             @l, @t = min(@l, l), min(@t, t)

@@ -5,7 +5,7 @@ import POINT   from require "ZF.2D.point"
 
 class SHAPE extends PATHS
 
-    version: "1.1.3"
+    version: "1.1.4"
 
     -- @param shape string || SHAPE
     -- @param close boolean
@@ -17,7 +17,7 @@ class SHAPE extends PATHS
             else
                 error "unknown shape"
 
-        @paths, @l, @t, @r, @b = {}, math.huge, math.huge, -math.huge, -math.huge
+        @paths = {}
         if type(shape) == "string"
             -- indexes all values that are different from a space
             i, data = 1, [s for s in shape\gmatch "%S+"]
