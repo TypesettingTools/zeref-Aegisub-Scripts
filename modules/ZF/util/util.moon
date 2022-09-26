@@ -3,7 +3,7 @@ import TABLE from require "ZF.util.table"
 
 class UTIL
 
-    version: "1.3.0"
+    version: "1.3.1"
 
     -- interpolate n values
     -- @param t number
@@ -38,7 +38,7 @@ class UTIL
                 return MATH\round interpolate u, a[j], b[j]
             return f
         -- interpolation between two table values
-        interpolate_table: (u, f, l, new = {}) ->
+        interpolate_table = (u, f, l, new = {}) ->
             assert #f == #l, "The interpolation depends on tables with the same number of elements"
             for i = 1, #f
                 new[i] = UTIL\interpolation u, nil, f[j], l[j]
@@ -163,6 +163,8 @@ class UTIL
             if shape = text\gsub("%b{}", "")\match "m%s+%-?%d[%.%-%d mlb]*"
                 return shape
 
+    -- prints any type of value to the aegisub log
+    -- @param ... any
     log: (...) =>
         for val in *{...}
             if type(val) == "string"
