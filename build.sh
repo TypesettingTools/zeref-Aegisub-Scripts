@@ -10,19 +10,17 @@ aut="release/autoload/"
 inc="release/include/"
 sub="dependencies/subprojects/"
 
+# windows
+ext=".dll"
+lib=""
+
 # check OS
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     ext=".so"
-    add="lib"
+    lib="lib"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     ext=".dylib"
-    add="lib"
-elif [[ "$OSTYPE" == "cygwin" ]]; then
-    ext=".dll"
-elif [[ "$OSTYPE" == "msys" ]]; then
-    ext=".dll"
-elif [[ "$OSTYPE" == "win32" ]]; then
-    ext=".dll"
+    lib="lib"
 fi
 
 # creates folders
@@ -49,6 +47,7 @@ while read -u3 rep; do
             # creates $inc/requireffi
             ffi_dir="$inc/requireffi"
             [ ! -d $ffi_dir ] && mkdir -p $ffi_dir
+
             # copies the files to release
             cp -f "$sub/ffi-experiments/requireffi/requireffi.moon" $ffi_dir
             continue
@@ -57,7 +56,7 @@ while read -u3 rep; do
             cp -f "$sub/Yutils/src/Yutils.lua" $inc
             continue
         elif [ $rep_name = "Clipper2" ]; then
-            cpp_dir="dependencies/subprojects/Clipper2/CPP/Clipper2Lib"
+            cpp_dir="dependencies/subprojects/Clipper2/CPP/Clipper2Lib/src"
             cpp_rel="release/include/zpclipper/clipper"
             c_files="$cpp_dir/clipper.engine.cpp $cpp_dir/clipper.offset.cpp $cpp_dir/clipper.wrap.cpp"
 
@@ -67,11 +66,11 @@ while read -u3 rep; do
             mkdir -p $cpp_rel
 
             if [[ $ext = ".dylib" ]]; then
-                clang++ -std=c++11 $flags -c $c_files
-                clang++ -shared *.o -o "$cpp_rel/libclipper${ext}"
+                clang++ $flags -std=c++17 '-Idependencies/subprojects/Clipper2/CPP/Clipper2Lib/include/' -c $c_files
+                clang++ -shared *.o -o "$cpp_rel/${lib}clipper${ext}"
             else
-                g++ $flags -c $c_files
-                g++ -shared *.o -o "$cpp_rel/${add}clipper${ext}"
+                g++ $flags -std=c++17 '-Idependencies/subprojects/Clipper2/CPP/Clipper2Lib/include/' -c $c_files
+                g++ -shared *.o -o "$cpp_rel/${lib}clipper${ext}"
             fi
         elif [ $rep_name = "lodepng" ]; then
             ldp_dir="dependencies/subprojects/lodepng"
@@ -84,7 +83,7 @@ while read -u3 rep; do
             mkdir -p $ldp_rel
 
             gcc $flags -ansi -pedantic -c $c_files
-            gcc -shared *.o -o "$ldp_rel/${add}lodepng${ext}"
+            gcc -shared *.o -o "$ldp_rel/${lib}lodepng${ext}"
         elif [ $rep_name = "giflib" ]; then
             gif_dir="dependencies/subprojects/giflib/lib"
             gif_rel="release/include/zgiflib/giflib"
@@ -94,7 +93,7 @@ while read -u3 rep; do
             mkdir -p $gif_rel
 
             gcc $flags -w -c $gif_dir/*.c
-            gcc -shared *.o -o "$gif_rel/${add}giflib${ext}"
+            gcc -shared *.o -o "$gif_rel/${lib}giflib${ext}"
         elif [ $rep_name = "libjpeg-turbo" ]; then
             peg_dir="dependencies/subprojects/libjpeg-turbo"
             peg_rel="release/include/zturbojpeg/turbojpeg"
@@ -106,16 +105,9 @@ while read -u3 rep; do
 
             cmake $peg_dir -DCMAKE_C_COMPILER=gcc -G "Unix Makefiles" -B $peg_bld
             make -C $peg_bld
-            cp -f "$peg_bld/libturbojpeg${ext}" "$peg_rel/${add}turbojpeg${ext}"
+            cp -f "$peg_bld/libturbojpeg${ext}" "$peg_rel/${lib}turbojpeg${ext}"
         fi
         # removes the object files after the build
         rm -rf *.o
     fi
 done 3< "dependencies/list.txt"
-
-if [[ $ext = ".dll" ]]; then
-    # downloads moonscript binaries
-    curl -L -O https://github.com/leafo/moonscript/releases/download/win32-v0.5.0/moonscript-187bac54ee5a7450013e9c38e005a0e671b76f45.zip
-    unzip moonscript-187bac54ee5a7450013e9c38e005a0e671b76f45.zip -d moonscript
-    "moonscript/moon.exe" "scripts/moon2lua.moon"
-fi

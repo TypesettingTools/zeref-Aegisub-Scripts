@@ -1,6 +1,5 @@
 #include <stdio.h>
-#include "clipper.engine.h"
-#include "clipper.offset.h"
+#include "clipper2/clipper.h"
 
 #ifdef _WIN32
 	#define EXPORT extern "C" __declspec(dllexport)
@@ -16,7 +15,7 @@ using namespace Clipper2Lib;
 std::string err_msg;
 
 EXPORT const char *version() {
-    return "1.0.0";
+    return CLIPPER2_VERSION;
 }
 
 EXPORT const char *err_val() {

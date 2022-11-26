@@ -43,7 +43,7 @@ files = {
     line:    {export_name: "LINE",    module_name: "ZF.ass.line",       version: "1.4.0"}
     -- img
     img:     {export_name: "IMAGE",   module_name: "ZF.img.img",        version: "1.1.0"}
-    potrace: {export_name: "POTRACE", module_name: "ZF.img.potrace",    version: "1.0.0"}
+    potrace: {export_name: "POTRACE", module_name: "ZF.img.potrace",    version: "1.1.0"}
     -- util
     config:  {export_name: "CONFIG",  module_name: "ZF.util.config",    version: "1.0.2"}
     math:    {export_name: "MATH",    module_name: "ZF.util.math",      version: "1.1.1"}
