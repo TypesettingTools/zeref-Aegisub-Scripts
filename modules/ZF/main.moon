@@ -47,7 +47,7 @@ classError = (module_name, export_name) ->
 -- defines the files that will be exported
 files = {
     -- 2D
-    clipper: {export_name: "CLIPPER", module_name: "ZF.main.2D.clipper",     version: "1.1.4"}
+    clipper: {export_name: "CLIPPER", module_name: "ZF.main.2D.clipper",     version: "1.0.3"}
     path:    {export_name: "PATH",    module_name: "ZF.main.2D.path",        version: "1.1.0"}
     paths:   {export_name: "PATHS",   module_name: "ZF.main.2D.paths",       version: "1.1.3"}
     point:   {export_name: "POINT",   module_name: "ZF.main.2D.point",       version: "1.0.0"}
