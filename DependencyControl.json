@@ -7,6 +7,7 @@
     "url": "@{baseUrl}",
     "fileBaseUrl": "https://raw.githubusercontent.com/TypesettingTools/zeref-Aegisub-Scripts/@{channel}/",
     "knownFeeds": {
+        "zeref": "https://raw.githubusercontent.com/TypesettingTools/zeref-Aegisub-Scripts/main/DependencyControl.json",
         "ffi-experiments": "https://raw.githubusercontent.com/TypesettingTools/ffi-experiments/master/DependencyControl.json"
     },
     "macros": {
@@ -28,7 +29,7 @@
                     "requiredModules": [
                         {
                             "moduleName": "ZF.main",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts",
+                            "feed": "@{feed:zeref}",
                             "version": "1.0.0"
                         }
                     ]
@@ -61,7 +62,7 @@
                     "requiredModules": [
                         {
                             "moduleName": "ZF.main",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts",
+                            "feed": "@{feed:zeref}",
                             "version": "1.0.0"
                         }
                     ]
@@ -94,7 +95,7 @@
                     "requiredModules": [
                         {
                             "moduleName": "ZF.main",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts",
+                            "feed": "@{feed:zeref}",
                             "version": "1.0.0"
                         }
                     ]
@@ -127,7 +128,7 @@
                     "requiredModules": [
                         {
                             "moduleName": "ZF.main",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts",
+                            "feed": "@{feed:zeref}",
                             "version": "1.0.0"
                         }
                     ]
@@ -160,7 +161,7 @@
                     "requiredModules": [
                         {
                             "moduleName": "ZF.main",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts",
+                            "feed": "@{feed:zeref}",
                             "version": "1.0.0"
                         }
                     ]
@@ -193,7 +194,7 @@
                     "requiredModules": [
                         {
                             "moduleName": "ZF.main",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts",
+                            "feed": "@{feed:zeref}",
                             "version": "1.0.0"
                         }
                     ]
@@ -226,7 +227,7 @@
                     "requiredModules": [
                         {
                             "moduleName": "ZF.main",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts",
+                            "feed": "@{feed:zeref}",
                             "version": "1.0.0"
                         }
                     ]
@@ -384,16 +385,24 @@
                             "moduleName": "ffi"
                         },
                         {
-                            "moduleName": "zgiflib.giflib"
+                            "moduleName": "zgiflib.giflib",
+                            "feed": "@{feed:zeref}",
+                            "version": "5.2.1"
                         },
                         {
-                            "moduleName": "zlodepng.lodepng"
+                            "moduleName": "zlodepng.lodepng",
+                            "feed": "@{feed:zeref}",
+                            "version": "22.11.8"
                         },
                         {
-                            "moduleName": "zpclipper.clipper"
+                            "moduleName": "zpclipper.clipper",
+                            "feed": "@{feed:zeref}",
+                            "version": "1.0.6"
                         },
                         {
-                            "moduleName": "zturbojpeg.turbojpeg"
+                            "moduleName": "zturbojpeg.turbojpeg",
+                            "feed": "@{feed:zeref}",
+                            "version": "2.1.4"
                         }
                     ]
                 }
