@@ -1,7 +1,7 @@
 ffi = require "ffi"
 
 import PNG, has_loaded, version from require "zlodepng.lodepng"
-import BUFFER from require "ZF.img.buffer"
+import BUFFER from require "ZF.main.img.buffer"
 
 -- https://github.com/koreader/koreader-base/tree/master/ffi
 class LIBPNG

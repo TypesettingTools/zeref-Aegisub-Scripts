@@ -1,8 +1,8 @@
-import UTIL  from require "ZF.util.util"
-import MATH  from require "ZF.util.math"
-import TABLE from require "ZF.util.table"
-import LAYER from require "ZF.ass.tags.layer"
-import TAGS  from require "ZF.ass.tags.tags"
+import UTIL  from require "ZF.main.util.util"
+import MATH  from require "ZF.main.util.math"
+import TABLE from require "ZF.main.util.table"
+import LAYER from require "ZF.main.ass.tags.layer"
+import TAGS  from require "ZF.main.ass.tags.tags"
 
 ffm = aegisub.frame_from_ms
 mff = aegisub.ms_from_frame

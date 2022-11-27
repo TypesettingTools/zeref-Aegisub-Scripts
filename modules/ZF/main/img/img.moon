@@ -1,10 +1,10 @@
-import CONFIG from require "ZF.util.config"
-import TABLE  from require "ZF.util.table"
+import CONFIG from require "ZF.main.util.config"
+import TABLE  from require "ZF.main.util.table"
 
-import LIBBMP from require "ZF.img.bmp"
-import LIBJPG from require "ZF.img.jpg"
-import LIBGIF from require "ZF.img.gif"
-import LIBPNG from require "ZF.img.png"
+import LIBBMP from require "ZF.main.img.bmp"
+import LIBJPG from require "ZF.main.img.jpg"
+import LIBGIF from require "ZF.main.img.gif"
+import LIBPNG from require "ZF.main.img.png"
 
 class IMAGE
 

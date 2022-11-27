@@ -1,9 +1,23 @@
 export script_name        = "Text in Clip"
 export script_description = "Causes the characters in your text to go through the coordinates of your clip!"
 export script_author      = "Zeref"
-export script_version     = "2.1.0"
+export script_version     = "2.1.1"
+export script_namespace   = "zf.textInClip"
 -- LIB
-zf = require "ZF.main"
+haveDepCtrl, DependencyControl = pcall require, "l0.DependencyControl"
+local zf, depctrl
+if haveDepCtrl
+    depctrl = DependencyControl {
+        url: "https://github.com/TypesettingTools/zeref-Aegisub-Scripts"
+        feed: "https://raw.githubusercontent.com/TypesettingTools/zeref-Aegisub-Scripts/main/DependencyControl.json"
+        {
+            "ZF.main"
+        }
+    }
+    zf = depctrl\requireModules!
+
+else
+    zf = require "ZF.main"
 
 setConfig = (shape, width, offset = 0, mode = 1) ->
     shap = zf.shape shape, false
@@ -143,4 +157,9 @@ main = (subs, selected, active, button, elements) ->
                 dlg\insertLine line, sel
     return dlg\getSelection!
 
-aegisub.register_macro script_name, script_description, main
+if haveDepCtrl
+    depctrl\registerMacros {
+        {script_name, script_description, main}
+    }
+else
+    aegisub.register_macro script_name, script_description, main

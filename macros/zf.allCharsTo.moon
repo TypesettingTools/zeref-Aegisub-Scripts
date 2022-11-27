@@ -1,9 +1,23 @@
 export script_name        = "All Characters To"
 export script_description = "Converts all characters to uppercase, lowercase or capitalized."
 export script_author      = "Zeref"
-export script_version     = "1.0.4"
+export script_version     = "1.0.5"
+export script_namespace   = "zf.allCharsTo"
 -- LIB
-zf = require "ZF.main"
+haveDepCtrl, DependencyControl = pcall require, "l0.DependencyControl"
+local zf, depctrl
+if haveDepCtrl
+    depctrl = DependencyControl {
+        url: "https://github.com/TypesettingTools/zeref-Aegisub-Scripts"
+        feed: "https://raw.githubusercontent.com/TypesettingTools/zeref-Aegisub-Scripts/main/DependencyControl.json"
+        {
+            "ZF.main"
+        }
+    }
+    zf = depctrl\requireModules!
+
+else
+    zf = require "ZF.main"
 
 unicode.to_capitalized = (text, i = 1) ->
     concat, done = "", false
@@ -36,6 +50,13 @@ main = (fn) ->
             subs[sel] = l
         aegisub.set_undo_point script_name
 
-aegisub.register_macro "#{script_name} / Upper-case",  script_description, main unicode.to_upper_case
-aegisub.register_macro "#{script_name} / Lower-case",  script_description, main unicode.to_lower_case
-aegisub.register_macro "#{script_name} / Capitalized", script_description, main unicode.to_capitalized
+if haveDepCtrl
+    depctrl\registerMacros {
+        {"Upper-case", script_description, main unicode.to_upper_case}
+        {"Lower-case", script_description, main unicode.to_lower_case}
+        {"Capitalized", script_description, main unicode.to_capitalized}
+    }
+else
+    aegisub.register_macro "#{script_name} / Upper-case",  script_description, main unicode.to_upper_case
+    aegisub.register_macro "#{script_name} / Lower-case",  script_description, main unicode.to_lower_case
+    aegisub.register_macro "#{script_name} / Capitalized", script_description, main unicode.to_capitalized

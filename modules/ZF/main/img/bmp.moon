@@ -1,5 +1,5 @@
 ffi = require "ffi"
-require "ZF.img.buffer"
+require "ZF.main.img.buffer"
 
 bmp_header = {
     offset: 0

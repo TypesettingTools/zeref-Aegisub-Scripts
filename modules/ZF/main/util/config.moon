@@ -1,5 +1,5 @@
-import TABLE from require "ZF.util.table"
-import UTIL  from require "ZF.util.util"
+import TABLE from require "ZF.main.util.table"
+import UTIL  from require "ZF.main.util.util"
 
 class CONFIG
 

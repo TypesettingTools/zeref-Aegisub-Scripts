@@ -1,4 +1,4 @@
-import TABLE from require "ZF.util.table"
+import TABLE from require "ZF.main.util.table"
 
 -- gets the patterns for ass tags
 getPatterns = (get_value) ->

@@ -1,4 +1,4 @@
-import MATH from require "ZF.util.math"
+import MATH from require "ZF.main.util.math"
 
 class POINT
 

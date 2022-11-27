@@ -1,9 +1,9 @@
 import CPP, has_loaded, version from require "zpclipper.clipper"
 
-import POINT   from require "ZF.2D.point"
-import SEGMENT from require "ZF.2D.segment"
-import PATH    from require "ZF.2D.path"
-import SHAPE   from require "ZF.2D.shape"
+import POINT   from require "ZF.main.2D.point"
+import SEGMENT from require "ZF.main.2D.segment"
+import PATH    from require "ZF.main.2D.path"
+import SHAPE   from require "ZF.main.2D.shape"
 
 class CLIPPER
 

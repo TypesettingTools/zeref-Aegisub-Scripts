@@ -1,7 +1,7 @@
-import PATHS   from require "ZF.2D.paths"
-import PATH    from require "ZF.2D.path"
-import SEGMENT from require "ZF.2D.segment"
-import POINT   from require "ZF.2D.point"
+import PATHS   from require "ZF.main.2D.paths"
+import PATH    from require "ZF.main.2D.path"
+import SEGMENT from require "ZF.main.2D.segment"
+import POINT   from require "ZF.main.2D.point"
 
 class SHAPE extends PATHS
 

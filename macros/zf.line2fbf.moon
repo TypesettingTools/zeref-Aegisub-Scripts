@@ -1,9 +1,23 @@
 export script_name        = "Line To FBF"
 export script_description = "Splits the line frame by frame interpolating all transformations present in it"
 export script_author      = "Zeref"
-export script_version     = "1.1.0"
+export script_version     = "1.1.1"
+export script_namespace   = "zf.line2fbf"
 -- LIB
-zf = require "ZF.main"
+haveDepCtrl, DependencyControl = pcall require, "l0.DependencyControl"
+local zf, depctrl
+if haveDepCtrl
+    depctrl = DependencyControl {
+        url: "https://github.com/TypesettingTools/zeref-Aegisub-Scripts"
+        feed: "https://raw.githubusercontent.com/TypesettingTools/zeref-Aegisub-Scripts/main/DependencyControl.json"
+        {
+            "ZF.main"
+        }
+    }
+    zf = depctrl\requireModules!
+
+else
+    zf = require "ZF.main"
 
 interface = ->
     {
@@ -40,4 +54,9 @@ main = (subs, selected, active) ->
                 dlg\insertLine line, sel
         return dlg\getSelection!
 
-aegisub.register_macro script_name, script_description, main
+if haveDepCtrl
+    depctrl\registerMacros {
+        {script_name, script_description, main}
+    }
+else
+    aegisub.register_macro script_name, script_description, main

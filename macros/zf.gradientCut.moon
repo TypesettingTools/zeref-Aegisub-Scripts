@@ -1,9 +1,23 @@
 export script_name        = "Gradient Cut"
 export script_description = "Generates a gradient from cuts in sequence."
 export script_author      = "Zeref"
-export script_version     = "1.3.1"
+export script_version     = "1.3.2"
+export script_namespace   = "zf.gradientCut"
 -- LIB
-zf = require "ZF.main"
+haveDepCtrl, DependencyControl = pcall require, "l0.DependencyControl"
+local zf, depctrl
+if haveDepCtrl
+    depctrl = DependencyControl {
+        url: "https://github.com/TypesettingTools/zeref-Aegisub-Scripts"
+        feed: "https://raw.githubusercontent.com/TypesettingTools/zeref-Aegisub-Scripts/main/DependencyControl.json"
+        {
+            "ZF.main"
+        }
+    }
+    zf = depctrl\requireModules!
+
+else
+    zf = require "ZF.main"
 
 -- makes linear cuts in the shape from its bounding box values
 gradientCut = (shape, pixel = 4, mode = "Horizontal", angle = 0, offset = 0) ->
@@ -151,4 +165,9 @@ main = (subs, selected, active, button, elements) ->
                 dlg\insertLine line, sel
     return dlg\getSelection!
 
-aegisub.register_macro script_name, script_description, main
+if haveDepCtrl
+    depctrl\registerMacros {
+        {script_name, script_description, main}
+    }
+else
+    aegisub.register_macro script_name, script_description, main

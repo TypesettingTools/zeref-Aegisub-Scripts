@@ -1,6 +1,6 @@
-import TABLE from require "ZF.util.table"
-import UTIL  from require "ZF.util.util"
-import LAYER from require "ZF.ass.tags.layer"
+import TABLE from require "ZF.main.util.table"
+import UTIL  from require "ZF.main.util.util"
+import LAYER from require "ZF.main.ass.tags.layer"
 
 class TAGS
 

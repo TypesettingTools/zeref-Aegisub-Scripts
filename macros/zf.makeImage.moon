@@ -1,9 +1,23 @@
 export script_name        = "Make Image"
 export script_description = "Converts images of various formats to pixels written in shape."
 export script_author      = "Zeref"
-export script_version     = "1.2.1"
+export script_version     = "1.2.2"
+export script_namespace   = "zf.makeImage"
 -- LIB
-zf = require "ZF.main"
+haveDepCtrl, DependencyControl = pcall require, "l0.DependencyControl"
+local zf, depctrl
+if haveDepCtrl
+    depctrl = DependencyControl {
+        url: "https://github.com/TypesettingTools/zeref-Aegisub-Scripts"
+        feed: "https://raw.githubusercontent.com/TypesettingTools/zeref-Aegisub-Scripts/main/DependencyControl.json"
+        {
+            "ZF.main"
+        }
+    }
+    zf = depctrl\requireModules!
+
+else
+    zf = require "ZF.main"
 
 interfacePixels = ->
     items = {"All in one line", "On several lines - \"Rec\"", "Pixel by Pixel"}
@@ -100,5 +114,11 @@ main = (macro) ->
 
             return dlg\getSelection!
 
-aegisub.register_macro "#{script_name} / Pixels", script_description, main "Pixels"
-aegisub.register_macro "#{script_name} / Potrace", script_description, main "Potrace"
+if haveDepCtrl
+    depctrl\registerMacros {
+        {"Pixels", script_description,  main "Pixels"}
+        {"Potrace", script_description, main "Potrace"}
+    }
+else
+    aegisub.register_macro "#{script_name} / Pixels", script_description, main "Pixels"
+    aegisub.register_macro "#{script_name} / Potrace", script_description, main "Potrace"

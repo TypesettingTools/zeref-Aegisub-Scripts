@@ -1,9 +1,9 @@
 ffi = require "ffi"
 
 import GIF, has_loaded, version from require "zgiflib.giflib"
-import TABLE from require "ZF.util.table"
+import TABLE from require "ZF.main.util.table"
 
-require "ZF.img.buffer"
+require "ZF.main.img.buffer"
 
 -- https://luapower.com/giflib
 class LIBGIF

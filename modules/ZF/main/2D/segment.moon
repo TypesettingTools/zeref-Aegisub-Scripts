@@ -1,7 +1,7 @@
 import bor   from require "bit"
-import MATH  from require "ZF.util.math"
-import TABLE from require "ZF.util.table"
-import POINT from require "ZF.2D.point"
+import MATH  from require "ZF.main.util.math"
+import TABLE from require "ZF.main.util.table"
+import POINT from require "ZF.main.2D.point"
 
 argsArePoints = (args) ->
     for point in *args
