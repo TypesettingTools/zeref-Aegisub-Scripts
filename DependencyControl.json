@@ -406,6 +406,210 @@
             "name": "ZF main",
             "description": "A library used in zeref's Aegisub scripts.",
             "author": "Zeref"
+        },
+        "zgiflib.giflib": {
+            "url": "@{baseUrl}",
+            "author": "Zeref",
+            "name": "giflib",
+            "description": "giflib is a library for reading and writing gif images.",
+            "fileBaseUrl": "@{fileBaseUrl}modules/@{namespacePath}",
+            "channels": {
+                "main": {
+                    "version": "5.2.1",
+                    "released": "2015-05-10",
+                    "default": true,
+                    "platforms": ["Windows-x64", "OSX-x64", "Linux-x64"],
+                    "files": [
+                        {
+                            "name": ".moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "6480cfad1405d5c03089a4e2c35778c50481ccb6"
+                        },
+                        {
+                            "name": "/giflib.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/giflib.dll",
+                            "platform": "Windows-x64",
+                            "sha1": "b64e954545671e5938da3a5bd1ea9c5e2d0eca95"
+                        },
+                        {
+                            "name": "/libgiflib.dylib",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/libgiflib.dylib",
+                            "platform": "OSX-x64",
+                            "sha1": "316bdcf6c79c3d49d31c49f46ed7a172c78b122c"
+                        },
+                        {
+                            "name": "/libgiflib.so",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/libgiflib.so",
+                            "platform": "Linux-x64",
+                            "sha1": "83dfb9b53562267a9d74adc13b72374c33c616f1"
+                        }
+                    ],
+                    "requiredModules": [
+                        {
+                            "moduleName": "ffi"
+                        },
+                        {
+                            "moduleName": "requireffi.requireffi",
+                            "version": "0.1.2",
+                            "feed": "@{feed:ffi-experiments}"
+                        }
+                    ]
+                }
+            },
+            "changelog": {}
+        },
+        "zlodepng.lodepng": {
+            "url": "@{baseUrl}",
+            "author": "Zeref",
+            "name": "lodepng",
+            "description": "PNG encoder and decoder",
+            "fileBaseUrl": "@{fileBaseUrl}modules/@{namespacePath}",
+            "channels": {
+                "main": {
+                    "version": "22.11.8",
+                    "released": "2022-11-08",
+                    "default": true,
+                    "platforms": ["Windows-x64", "OSX-x64", "Linux-x64"],
+                    "files": [
+                        {
+                            "name": ".moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "25b7647395985d8e332f41435ba07ee5b779b67c"
+                        },
+                        {
+                            "name": "/lodepng.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/lodepng.dll",
+                            "platform": "Windows-x64",
+                            "sha1": "147338e7c931bf4a47fd4a824da291bf2ca4d4ac"
+                        },
+                        {
+                            "name": "/liblodepng.dylib",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/liblodepng.dylib",
+                            "platform": "OSX-x64",
+                            "sha1": "a3ffd775b76d48d4e4e49539871abf83735069e9"
+                        },
+                        {
+                            "name": "/liblodepng.so",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/liblodepng.so",
+                            "platform": "Linux-x64",
+                            "sha1": "4b7b1aa595ba7449a1733126768614ecb3775bd2"
+                        }
+                    ],
+                    "requiredModules": [
+                        {
+                            "moduleName": "ffi"
+                        },
+                        {
+                            "moduleName": "requireffi.requireffi",
+                            "version": "0.1.2",
+                            "feed": "@{feed:ffi-experiments}"
+                        }
+                    ]
+                }
+            },
+            "changelog": {}
+        },
+        "zpclipper.clipper": {
+            "url": "@{baseUrl}",
+            "author": "Zeref",
+            "name": "clipper",
+            "description": "Polygon Clipping and Offsetting",
+            "fileBaseUrl": "@{fileBaseUrl}modules/@{namespacePath}",
+            "channels": {
+                "main": {
+                    "version": "1.0.6",
+                    "released": "2022-10-28",
+                    "default": true,
+                    "platforms": ["Windows-x64", "OSX-x64", "Linux-x64"],
+                    "files": [
+                        {
+                            "name": ".moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "8378e53578159e2a5045fa153b44afddd093a4db"
+                        },
+                        {
+                            "name": "/clipper.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/clipper.dll",
+                            "platform": "Windows-x64",
+                            "sha1": "5dfe5a0c166ff06b970c99be46e6de9fb4a8a953"
+                        },
+                        {
+                            "name": "/libclipper.dylib",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/libclipper.dylib",
+                            "platform": "OSX-x64",
+                            "sha1": "53998a29ff4b28ec5103c537595f0bb40a315445"
+                        },
+                        {
+                            "name": "/libclipper.so",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/libclipper.so",
+                            "platform": "Linux-x64",
+                            "sha1": "523ac732cf87e8b2440dcbe9024f3e7efa8f443b"
+                        }
+                    ],
+                    "requiredModules": [
+                        {
+                            "moduleName": "ffi"
+                        },
+                        {
+                            "moduleName": "requireffi.requireffi",
+                            "version": "0.1.2",
+                            "feed": "@{feed:ffi-experiments}"
+                        }
+                    ]
+                }
+            },
+            "changelog": {}
+        },
+        "zturbojpeg.turbojpeg": {
+            "url": "@{baseUrl}",
+            "author": "Zeref",
+            "name": "turbojpeg",
+            "description": "jpeg library",
+            "fileBaseUrl": "@{fileBaseUrl}modules/@{namespacePath}",
+            "channels": {
+                "main": {
+                    "version": "2.1.4",
+                    "released": "2022-08-12",
+                    "default": true,
+                    "platforms": ["Windows-x64", "OSX-x64", "Linux-x64"],
+                    "files": [
+                        {
+                            "name": ".moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "7f39f369ec8a39e3ad41ea18e3b8ae46d8e8090b"
+                        },
+                        {
+                            "name": "/turbojpeg.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/turbojpeg.dll",
+                            "platform": "Windows-x64",
+                            "sha1": "ae9b5951101350c3e226a84430051f14056f824a"
+                        },
+                        {
+                            "name": "/libturbojpeg.dylib",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/libturbojpeg.dylib",
+                            "platform": "OSX-x64",
+                            "sha1": "a2c7e2be4a88b628f45b2e219519089a164623e6"
+                        },
+                        {
+                            "name": "/libturbojpeg.so",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/libturbojpeg.so",
+                            "platform": "Linux-x64",
+                            "sha1": "48561562291e0144473584da415f529e2d04c15c"
+                        }
+                    ],
+                    "requiredModules": [
+                        {
+                            "moduleName": "ffi"
+                        },
+                        {
+                            "moduleName": "requireffi.requireffi",
+                            "version": "0.1.2",
+                            "feed": "@{feed:ffi-experiments}"
+                        }
+                    ]
+                }
+            },
+            "changelog": {}
         }
     }
 }
