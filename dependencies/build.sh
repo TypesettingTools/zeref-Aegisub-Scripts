@@ -43,21 +43,21 @@ while read -u3 rep_path; do
         git checkout $commit
         cd $cwd
 
-        if [ $rep_name = "Clipper2" ]; then
-            cpp_dir="$sub/Clipper2/CPP/Clipper2Lib/src"
+        if [ $rep_name = "libpolyclipping" ]; then
+            cpp_dir="$sub/libpolyclipping"
             cpp_rel="$inc/zpclipper"
-            c_files="$cpp_dir/clipper.engine.cpp $cpp_dir/clipper.offset.cpp $cpp_dir/clipper.wrap.cpp"
+            c_files="$cpp_dir/clipper.cpp $cpp_dir/clipper.wrap.cpp"
 
             # required files and folders
             cp -f "dependencies/clipper.wrap.cpp" $cpp_dir
             mkdir -p $cpp_rel
 
             if [[ $ext = ".dylib" ]]; then
-                clang++ $flags -std=c++17 "-I$sub/Clipper2/CPP/Clipper2Lib/include/" -c $c_files
-                clang++ -shared *.o -o "$cpp_rel/${lib}clipper${ext}"
+                clang++ $flags -std=c++17 -c $c_files
+                clang++ -shared *.o -o "$cpp_rel/${lib}polyclipping${ext}"
             else
-                g++ $flags -std=c++17 "-I$sub/Clipper2/CPP/Clipper2Lib/include/" -c $c_files
-                g++ -shared *.o -o "$cpp_rel/${lib}clipper${ext}"
+                g++ $flags -std=c++17 -c $c_files
+                g++ -shared *.o -o "$cpp_rel/${lib}polyclipping${ext}"
             fi
         elif [ $rep_name = "lodepng" ]; then
             ldp_dir="$sub/lodepng"

@@ -256,12 +256,12 @@
                         {
                             "name": ".moon",
                             "url": "@{fileBaseUrl}@{fileName}",
-                            "sha1": "0f2a79e1490534c0d9bf0355b88b96d35054340e"
+                            "sha1": "a8e67e65bade31094814d431f0209e591ee0c66b"
                         },
                         {
                             "name": "/2D/clipper.moon",
                             "url": "@{fileBaseUrl}@{fileName}",
-                            "sha1": "52fea959132249288156adc792e68b88d7b9a76d"
+                            "sha1": "ec097bb51d49a4ddb9a8804e002dcd661ea50756"
                         },
                         {
                             "name": "/2D/path.moon",
@@ -395,9 +395,9 @@
                             "version": "22.11.8"
                         },
                         {
-                            "moduleName": "zpclipper.clipper",
+                            "moduleName": "zpolyclipping.polyclipping",
                             "feed": "@{feed:zeref}",
-                            "version": "1.0.6"
+                            "version": "6.4.2"
                         },
                         {
                             "moduleName": "zturbojpeg.turbojpeg",
@@ -518,41 +518,41 @@
             },
             "changelog": {}
         },
-        "zpclipper.clipper": {
+        "zpolyclipping.polyclipping": {
             "url": "@{baseUrl}",
             "author": "Zeref",
-            "name": "clipper",
+            "name": "polyclipping",
             "description": "Polygon Clipping and Offsetting",
             "fileBaseUrl": "@{fileBaseUrl}modules/@{namespacePath}",
             "channels": {
                 "main": {
-                    "version": "1.0.6",
-                    "released": "2022-10-28",
+                    "version": "6.4.2",
+                    "released": "2017-02-27",
                     "default": true,
                     "platforms": ["Windows-x64", "OSX-x64", "Linux-x64"],
                     "files": [
                         {
                             "name": ".moon",
                             "url": "@{fileBaseUrl}@{fileName}",
-                            "sha1": "8378e53578159e2a5045fa153b44afddd093a4db"
+                            "sha1": "3cd4af60683f0891ab0322cc51b141cede3720be"
                         },
                         {
-                            "name": "/clipper.dll",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/clipper.dll",
+                            "name": "/polyclipping.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/polyclipping.dll",
                             "platform": "Windows-x64",
-                            "sha1": "5dfe5a0c166ff06b970c99be46e6de9fb4a8a953"
+                            "sha1": "8cc589eb77717282559883d5473965001ba3751a"
                         },
                         {
-                            "name": "/libclipper.dylib",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/libclipper.dylib",
+                            "name": "/libpolyclipping.dylib",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/libpolyclipping.dylib",
                             "platform": "OSX-x64",
-                            "sha1": "53998a29ff4b28ec5103c537595f0bb40a315445"
+                            "sha1": "168b6551cebf2839af86060b678ed8255a4308cd"
                         },
                         {
-                            "name": "/libclipper.so",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/libclipper.so",
+                            "name": "/libpolyclipping.so",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/libpolyclipping.so",
                             "platform": "Linux-x64",
-                            "sha1": "523ac732cf87e8b2440dcbe9024f3e7efa8f443b"
+                            "sha1": "97d475ed2090068171ab35591ab8fe0142bac68d"
                         }
                     ],
                     "requiredModules": [
