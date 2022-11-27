@@ -1,12 +1,12 @@
-# **Aegisub-Macros**
+# **Zeref's Aegisub Macros**
 
 Aegisub-Macros is a collection of automations for the Aegisub tool. These automations were made exclusively for Typesetting, which is a type of function found in Fansubs.
+These tools were originally developed by Zeref and are now maintained in TypesettingTools.
 
 ---
 
 ## **Table of contents**
 
-* [**Dependencies**](#id-1)
 * [**Installation**](#id-2)
 * [**How to use?**](#id-3)
     - [**All Characters To**](#id-3-1)
@@ -23,24 +23,20 @@ Aegisub-Macros is a collection of automations for the Aegisub tool. These automa
 
 ---
 
-## **Dependencies** <a id="id-1"></a>
+## **Installation** <a id="id-2"></a>
 
-Aegisub-Macros depends on some external libraries for its functioning, follow the list below and check all these dependencies:
+The easiest way to install macros from here is through [DependencyControl](https://github.com/TypesettingTools/DependencyControl) which should be part of any modern Aegisub install.
 
+Alternatively a manual installation is possible, though it is significantly more complicated.
+The following dependencies are required:
 * [**Yutils**](https://github.com/Youka/Yutils)
 * [**requireffi**](https://github.com/TypesettingTools/ffi-experiments/tree/master/requireffi)
 
-Furthermore, Aegisub-macros contains some additional dependencies for its full functionality. They are intended for specific macros and can be found in the branch [**build**](https://github.com/zerefxx/Aegisub-macros/tree/build).
+After cloning the repo, the contents of the `macros` folder needs to be placed in the Aegisub `automation/autoload` folder and the contents of the `modules` folder need to be placed in the Aegisub `automation/include` folder.
 
----
-
-## **Installation** <a id="id-2"></a>
-
-<!-- https://github.com/zerefxx/Aegisub-macros/releases -->
-1. [Download](https://github.com/zerefxx/Aegisub-macros/releases) the latest released version according to your operating system
-2. Extract the file and copy the `autoload` and `include` folders
-3. Find your Aegisub's `automation` directory and open it
-4. Paste the `autoload` and `include` folders
+In addition the correct binary files need to be downloaded from the releases section and placed in the corrosponding `automation/include` folder.
+The files also need to be renamed correctly.
+For example, on Windows with a 64-bit Aegisub install the `win-x64-giflib.dll` needs to be downloaded and placed as `giflib.dll` under `automation/include/zgiflib/giflib`. This needs to be done for all ffi modules.
 
 ### Find `automation` directory:
 
