@@ -1,8 +1,8 @@
-import MATH    from require "ZF.util.math"
-import TABLE   from require "ZF.util.table"
-import POINT   from require "ZF.2D.point"
-import SEGMENT from require "ZF.2D.segment"
-import PATH    from require "ZF.2D.path"
+import MATH    from require "ZF.main.util.math"
+import TABLE   from require "ZF.main.util.table"
+import POINT   from require "ZF.main.2D.point"
+import SEGMENT from require "ZF.main.2D.segment"
+import PATH    from require "ZF.main.2D.path"
 
 class PATHS
 

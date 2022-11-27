@@ -1,0 +1,411 @@
+{
+    "dependencyControlFeedFormatVersion": "0.3.0",
+    "name": "zeref-aegisub-scripts",
+    "description": "Aegisub scripts from zerefxx",
+    "maintainer": "Zeref",
+    "baseUrl": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts",
+    "url": "@{baseUrl}",
+    "fileBaseUrl": "https://raw.githubusercontent.com/TypesettingTools/zeref-Aegisub-Scripts/@{channel}/",
+    "knownFeeds": {
+        "ffi-experiments": "https://raw.githubusercontent.com/TypesettingTools/ffi-experiments/master/DependencyControl.json"
+    },
+    "macros": {
+        "zf.allCharsTo": {
+            "url": "@{baseUrl}#@{namespace}",
+            "fileBaseUrl": "@{fileBaseUrl}macros/@{namespace}",
+            "channels": {
+                "main": {
+                    "default": true,
+                    "version": "1.0.5",
+                    "released": "2022-11-27",
+                    "files": [
+                        {
+                            "name": ".moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "bb9ccb55c8be3515e9331cfefdfd4e418a89fece"
+                        }
+                    ],
+                    "requiredModules": [
+                        {
+                            "moduleName": "ZF.main",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts",
+                            "version": "1.0.0"
+                        }
+                    ]
+                }
+            },
+            "changelog": {
+                "1.0.5": [
+                    "Initial depctrl release"
+                ]
+            },
+            "name": "All Characters To",
+            "description": "Converts all characters to uppercase, lowercase or capitalized.",
+            "author": "Zeref"
+        },
+        "zf.everythingShape": {
+            "url": "@{baseUrl}#@{namespace}",
+            "fileBaseUrl": "@{fileBaseUrl}macros/@{namespace}",
+            "channels": {
+                "main": {
+                    "default": true,
+                    "version": "1.5.3",
+                    "released": "2022-11-27",
+                    "files": [
+                        {
+                            "name": ".moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "e57617a174a21f97ee76bf47455f274abfe1eca6"
+                        }
+                    ],
+                    "requiredModules": [
+                        {
+                            "moduleName": "ZF.main",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts",
+                            "version": "1.0.0"
+                        }
+                    ]
+                }
+            },
+            "changelog": {
+                "1.5.3": [
+                    "Initial depctrl release"
+                ]
+            },
+            "name": "Everything Shape",
+            "description": "Do \"everything\" you need for a shape!",
+            "author": "Zeref"
+        },
+        "zf.gradientCut": {
+            "url": "@{baseUrl}#@{namespace}",
+            "fileBaseUrl": "@{fileBaseUrl}macros/@{namespace}",
+            "channels": {
+                "main": {
+                    "default": true,
+                    "version": "1.3.2",
+                    "released": "2022-11-27",
+                    "files": [
+                        {
+                            "name": ".moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "97803b244f38b3810c2bd993aece6b7d538d1baa"
+                        }
+                    ],
+                    "requiredModules": [
+                        {
+                            "moduleName": "ZF.main",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts",
+                            "version": "1.0.0"
+                        }
+                    ]
+                }
+            },
+            "changelog": {
+                "1.3.2": [
+                    "Initial depctrl release"
+                ]
+            },
+            "name": "Gradient Cut",
+            "description": "Generates a gradient from cuts in sequence.",
+            "author": "Zeref"
+        },
+        "zf.line2fbf": {
+            "url": "@{baseUrl}#@{namespace}",
+            "fileBaseUrl": "@{fileBaseUrl}macros/@{namespace}",
+            "channels": {
+                "main": {
+                    "default": true,
+                    "version": "1.1.1",
+                    "released": "2022-11-27",
+                    "files": [
+                        {
+                            "name": ".moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "d884ee492bb492da9d96cc8667c7e4f995fef821"
+                        }
+                    ],
+                    "requiredModules": [
+                        {
+                            "moduleName": "ZF.main",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts",
+                            "version": "1.0.0"
+                        }
+                    ]
+                }
+            },
+            "changelog": {
+                "1.1.1": [
+                    "Initial depctrl release"
+                ]
+            },
+            "name": "Line To FBF",
+            "description": "Splits the line frame by frame interpolating all transformations present in it",
+            "author": "Zeref"
+        },
+        "zf.makeImage": {
+            "url": "@{baseUrl}#@{namespace}",
+            "fileBaseUrl": "@{fileBaseUrl}macros/@{namespace}",
+            "channels": {
+                "main": {
+                    "default": true,
+                    "version": "1.2.2",
+                    "released": "2022-11-27",
+                    "files": [
+                        {
+                            "name": ".moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "36956fa38d54159e1968951df13f54f0fcf6ddba"
+                        }
+                    ],
+                    "requiredModules": [
+                        {
+                            "moduleName": "ZF.main",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts",
+                            "version": "1.0.0"
+                        }
+                    ]
+                }
+            },
+            "changelog": {
+                "1.2.2": [
+                    "Initial depctrl release"
+                ]
+            },
+            "name": "Make Image",
+            "description": "Converts images of various formats to pixels written in shape.",
+            "author": "Zeref"
+        },
+        "zf.split": {
+            "url": "@{baseUrl}#@{namespace}",
+            "fileBaseUrl": "@{fileBaseUrl}macros/@{namespace}",
+            "channels": {
+                "main": {
+                    "default": true,
+                    "version": "1.3.1",
+                    "released": "2022-11-27",
+                    "files": [
+                        {
+                            "name": ".moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "28127a18719973475f75a7e7414d881dcea9c896"
+                        }
+                    ],
+                    "requiredModules": [
+                        {
+                            "moduleName": "ZF.main",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts",
+                            "version": "1.0.0"
+                        }
+                    ]
+                }
+            },
+            "changelog": {
+                "1.3.1": [
+                    "Initial depctrl release"
+                ]
+            },
+            "name": "Splits Text By",
+            "description": "Splits the text in several ways",
+            "author": "Zeref"
+        },
+        "zf.textInClip": {
+            "url": "@{baseUrl}#@{namespace}",
+            "fileBaseUrl": "@{fileBaseUrl}macros/@{namespace}",
+            "channels": {
+                "main": {
+                    "default": true,
+                    "version": "2.1.1",
+                    "released": "2022-11-27",
+                    "files": [
+                        {
+                            "name": ".moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "1fc890d05af7ebd30585fee0786f584712a1504b"
+                        }
+                    ],
+                    "requiredModules": [
+                        {
+                            "moduleName": "ZF.main",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts",
+                            "version": "1.0.0"
+                        }
+                    ]
+                }
+            },
+            "changelog": {
+                "2.1.1": [
+                    "Initial depctrl release"
+                ]
+            },
+            "name": "Text in Clip",
+            "description": "Causes the characters in your text to go through the coordinates of your clip!",
+            "author": "Zeref"
+        }
+    },
+    "modules": {
+        "ZF.main": {
+            "url": "@{baseUrl}#@{namespace}",
+            "fileBaseUrl": "@{fileBaseUrl}modules/@{namespacePath}",
+            "channels": {
+                "main": {
+                    "default": true,
+                    "version": "1.0.0",
+                    "released": "2022-11-27",
+                    "files": [
+                        {
+                            "name": ".moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "0f2a79e1490534c0d9bf0355b88b96d35054340e"
+                        },
+                        {
+                            "name": "/2D/clipper.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "52fea959132249288156adc792e68b88d7b9a76d"
+                        },
+                        {
+                            "name": "/2D/path.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "57b52571e3ccc2a5873a6e44b5ee170c5970ac97"
+                        },
+                        {
+                            "name": "/2D/paths.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "58923f85591d70c8eb9d819e51a30e14ba8e2211"
+                        },
+                        {
+                            "name": "/2D/point.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "769b9a44f845d06d2c5b87bb698ce8fe68ed5f9f"
+                        },
+                        {
+                            "name": "/2D/segment.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "bbd31f6ee65f2d9823dfb21d0abcddbbdc5e007a"
+                        },
+                        {
+                            "name": "/2D/shape.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "11f9fa89cea495f8a2fc1f41d87e8f869cdc7198"
+                        },
+                        {
+                            "name": "/ass/tags/layer.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "da52d4cb568435fbfce6e81239fc1d08a4b1d3c5"
+                        },
+                        {
+                            "name": "/ass/tags/tags.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "bef9957f7fc291b1618668f14dcfde9d73e00d54"
+                        },
+                        {
+                            "name": "/ass/dialog.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "3142f0f3a00bfb6e1b9d1d2d17b169e4c635b463"
+                        },
+                        {
+                            "name": "/ass/fbf.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "1a190ff6bc3bc75b4d65749a2bd1f28be24517d1"
+                        },
+                        {
+                            "name": "/ass/font.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "5e6fcf500e76c2a3b92360b4c1980473df3c681c"
+                        },
+                        {
+                            "name": "/ass/line.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "4d1fc99b511e31eddcf44b919040a5806bb779aa"
+                        },
+                        {
+                            "name": "/img/bmp.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "f38b839f86fe35b9909c572461fcf36f35e3cb98"
+                        },
+                        {
+                            "name": "/img/buffer.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "4bfc0475532b26005d5a0a5be4228da9549c970d"
+                        },
+                        {
+                            "name": "/img/gif.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "3fbe1d97754ff9318d4435b3d125722fabbb4678"
+                        },
+                        {
+                            "name": "/img/img.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "2a8b814798d8c9c24973ac328e6dd6c2b21d2698"
+                        },
+                        {
+                            "name": "/img/jpg.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "45f772bd8e184e65ff931b57ddf1f3d48c375310"
+                        },
+                        {
+                            "name": "/img/png.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "fb95338d04d8e098f5b67c84fef1a00b8e53c2e1"
+                        },
+                        {
+                            "name": "/img/potrace.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "58ff21bf77c1d1fba0fa2d17fb237b608d31cb9b"
+                        },
+                        {
+                            "name": "/util/config.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "d1cf8f3d3d75879c54774be407242e007f157770"
+                        },
+                        {
+                            "name": "/util/math.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "3dbc26c42952d1f1c102ffcdc10677774415ce44"
+                        },
+                        {
+                            "name": "/util/table.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "523fb18651f2534938793ba583dcd129e77f5f16"
+                        },
+                        {
+                            "name": "/util/util.moon",
+                            "url": "@{fileBaseUrl}@{fileName}",
+                            "sha1": "44e0373ea7f152f8c1ec770337acd8b6135a8a7e"
+                        }
+                    ],
+                    "requiredModules": [
+                        {
+                            "moduleName": "karaskel"
+                        },
+                        {
+                            "moduleName": "Yutils"
+                        },
+                        {
+                            "moduleName": "ffi"
+                        },
+                        {
+                            "moduleName": "zgiflib.giflib"
+                        },
+                        {
+                            "moduleName": "zlodepng.lodepng"
+                        },
+                        {
+                            "moduleName": "zpclipper.clipper"
+                        },
+                        {
+                            "moduleName": "zturbojpeg.turbojpeg"
+                        }
+                    ]
+                }
+            },
+            "changelog": {
+                "1.0.0": [
+                    "Initial depctrl release"
+                ]
+            },
+            "name": "ZF main",
+            "description": "A library used in zeref's Aegisub scripts.",
+            "author": "Zeref"
+        }
+    }
+}

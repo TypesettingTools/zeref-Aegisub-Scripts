@@ -1,9 +1,9 @@
 local *
-import POINT   from require "ZF.2D.point"
-import SEGMENT from require "ZF.2D.segment"
-import MATH    from require "ZF.util.math"
-import TABLE   from require "ZF.util.table"
-import UTIL    from require "ZF.util.util"
+import POINT   from require "ZF.main.2D.point"
+import SEGMENT from require "ZF.main.2D.segment"
+import MATH    from require "ZF.main.util.math"
+import TABLE   from require "ZF.main.util.table"
+import UTIL    from require "ZF.main.util.util"
 
 class PATH
 

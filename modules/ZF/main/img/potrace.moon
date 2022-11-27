@@ -1,8 +1,8 @@
 -- Lua port of https://github.com/kilobtye/potrace
 
-import MATH  from require "ZF.util.math"
-import SHAPE from require "ZF.2D.shape"
-import IMAGE from require "ZF.img.img"
+import MATH  from require "ZF.main.util.math"
+import SHAPE from require "ZF.main.2D.shape"
+import IMAGE from require "ZF.main.img.img"
 
 push_b0 = (t, ...) -> -- table.push base 0
     insert, n = table.insert, select "#", ...

@@ -1,5 +1,5 @@
-import TABLE from require "ZF.util.table"
-import LAYER from require "ZF.ass.tags.layer"
+import TABLE from require "ZF.main.util.table"
+import LAYER from require "ZF.main.ass.tags.layer"
 
 class DIALOG
 

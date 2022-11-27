@@ -1,5 +1,5 @@
-import MATH  from require "ZF.util.math"
-import TABLE from require "ZF.util.table"
+import MATH  from require "ZF.main.util.math"
+import TABLE from require "ZF.main.util.table"
 
 class UTIL
 

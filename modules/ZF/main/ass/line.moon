@@ -1,9 +1,9 @@
-import SHAPE from require "ZF.2D.shape"
-import MATH  from require "ZF.util.math"
-import TABLE from require "ZF.util.table"
-import UTIL  from require "ZF.util.util"
-import TAGS  from require "ZF.ass.tags.tags"
-import FONT  from require "ZF.ass.font"
+import SHAPE from require "ZF.main.2D.shape"
+import MATH  from require "ZF.main.util.math"
+import TABLE from require "ZF.main.util.table"
+import UTIL  from require "ZF.main.util.util"
+import TAGS  from require "ZF.main.ass.tags.tags"
+import FONT  from require "ZF.main.ass.font"
 
 class LINE
 
