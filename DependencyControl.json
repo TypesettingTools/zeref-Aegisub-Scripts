@@ -392,7 +392,7 @@
                         {
                             "moduleName": "zlodepng.lodepng",
                             "feed": "@{feed:zeref}",
-                            "version": "22.11.8"
+                            "version": "22.1.9"
                         },
                         {
                             "moduleName": "zpolyclipping.polyclipping",
@@ -402,7 +402,7 @@
                         {
                             "moduleName": "zturbojpeg.turbojpeg",
                             "feed": "@{feed:zeref}",
-                            "version": "2.1.4"
+                            "version": "2.1.3"
                         }
                     ]
                 }
@@ -427,7 +427,7 @@
                     "version": "5.2.1",
                     "released": "2015-05-10",
                     "default": true,
-                    "platforms": ["Windows-x64", "OSX-x64", "Linux-x64"],
+                    "platforms": ["Windows-x64", "Windows-x86", "OSX-x64", "Linux-x64"],
                     "files": [
                         {
                             "name": ".moon",
@@ -436,21 +436,27 @@
                         },
                         {
                             "name": "/giflib.dll",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/giflib.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/v2.0.0-win-x64-giflib.dll",
                             "platform": "Windows-x64",
-                            "sha1": "b64e954545671e5938da3a5bd1ea9c5e2d0eca95"
+                            "sha1": "191661e18eb6f0853c0f55a7067e86ad970e49c7"
+                        },
+                        {
+                            "name": "/giflib.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/v2.0.0-win-x86-giflib.dll",
+                            "platform": "Windows-x86",
+                            "sha1": "ec600b512717f0b66832cb62e631a00833bc15ff"
                         },
                         {
                             "name": "/libgiflib.dylib",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/libgiflib.dylib",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/v2.0.0-macOS-x64-libgiflib.dylib",
                             "platform": "OSX-x64",
-                            "sha1": "316bdcf6c79c3d49d31c49f46ed7a172c78b122c"
+                            "sha1": "bb7090f87e79343784050dc0622ade2d837dbc5e"
                         },
                         {
                             "name": "/libgiflib.so",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/libgiflib.so",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/v2.0.0-linux-x64-libgiflib.so",
                             "platform": "Linux-x64",
-                            "sha1": "83dfb9b53562267a9d74adc13b72374c33c616f1"
+                            "sha1": "ddfbfacf9fa36a42af15d2dc6b0839e0e24caf72"
                         }
                     ],
                     "requiredModules": [
@@ -475,33 +481,39 @@
             "fileBaseUrl": "@{fileBaseUrl}modules/@{namespacePath}",
             "channels": {
                 "main": {
-                    "version": "22.11.8",
-                    "released": "2022-11-08",
+                    "version": "22.1.9",
+                    "released": "2022-01-09",
                     "default": true,
-                    "platforms": ["Windows-x64", "OSX-x64", "Linux-x64"],
+                    "platforms": ["Windows-x64", "Windows-x86", "OSX-x64", "Linux-x64"],
                     "files": [
                         {
                             "name": ".moon",
                             "url": "@{fileBaseUrl}@{fileName}",
-                            "sha1": "25b7647395985d8e332f41435ba07ee5b779b67c"
+                            "sha1": "55997ac1181b2070ffe64fe9146b7bce32f5a066"
                         },
                         {
                             "name": "/lodepng.dll",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/lodepng.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/v2.0.0-win-x64-lodepng.dll",
                             "platform": "Windows-x64",
-                            "sha1": "147338e7c931bf4a47fd4a824da291bf2ca4d4ac"
+                            "sha1": "fe6d675abb3b1fdedd399daf3689cc571b8ad1b5"
+                        },
+                        {
+                            "name": "/lodepng.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/v2.0.0-win-x86-lodepng.dll",
+                            "platform": "Windows-x86",
+                            "sha1": "96eb3c782014f095eb746f25d37e7ae181eef2c0"
                         },
                         {
                             "name": "/liblodepng.dylib",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/liblodepng.dylib",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/v2.0.0-macOS-x64-liblodepng.dylib",
                             "platform": "OSX-x64",
-                            "sha1": "a3ffd775b76d48d4e4e49539871abf83735069e9"
+                            "sha1": "6e990d8f0fd654dc705fb7a2479aa460d83fe249"
                         },
                         {
                             "name": "/liblodepng.so",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/liblodepng.so",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/v2.0.0-linux-x64-liblodepng.so",
                             "platform": "Linux-x64",
-                            "sha1": "4b7b1aa595ba7449a1733126768614ecb3775bd2"
+                            "sha1": "1a460b5bf6215a9f89a2a57c92905b7a9b5556f3"
                         }
                     ],
                     "requiredModules": [
@@ -529,7 +541,7 @@
                     "version": "6.4.2",
                     "released": "2017-02-27",
                     "default": true,
-                    "platforms": ["Windows-x64", "OSX-x64", "Linux-x64"],
+                    "platforms": ["Windows-x64", "Windows-x86", "OSX-x64", "Linux-x64"],
                     "files": [
                         {
                             "name": ".moon",
@@ -538,21 +550,27 @@
                         },
                         {
                             "name": "/polyclipping.dll",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/polyclipping.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/v2.0.0-win-x64-polyclipping.dll",
                             "platform": "Windows-x64",
                             "sha1": "8cc589eb77717282559883d5473965001ba3751a"
                         },
                         {
+                            "name": "/polyclipping.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/v2.0.0-win-x86-polyclipping.dll",
+                            "platform": "Windows-x86",
+                            "sha1": "5d282aefdad636bfddf145d2eb698763b64be0d9"
+                        },
+                        {
                             "name": "/libpolyclipping.dylib",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/libpolyclipping.dylib",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/v2.0.0-macOS-x64-libpolyclipping.dylib",
                             "platform": "OSX-x64",
-                            "sha1": "168b6551cebf2839af86060b678ed8255a4308cd"
+                            "sha1": "c261df20626ea27d8d2571bc927ec9d65bef6c32"
                         },
                         {
                             "name": "/libpolyclipping.so",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/libpolyclipping.so",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/v2.0.0-linux-x64-libpolyclipping.so",
                             "platform": "Linux-x64",
-                            "sha1": "97d475ed2090068171ab35591ab8fe0142bac68d"
+                            "sha1": "5f87241e750891048fc419d65fb05da7005c674a"
                         }
                     ],
                     "requiredModules": [
@@ -577,33 +595,39 @@
             "fileBaseUrl": "@{fileBaseUrl}modules/@{namespacePath}",
             "channels": {
                 "main": {
-                    "version": "2.1.4",
-                    "released": "2022-08-12",
+                    "version": "2.1.3",
+                    "released": "2022-02-25",
                     "default": true,
-                    "platforms": ["Windows-x64", "OSX-x64", "Linux-x64"],
+                    "platforms": ["Windows-x64", "Windows-x86", "OSX-x64", "Linux-x64"],
                     "files": [
                         {
                             "name": ".moon",
                             "url": "@{fileBaseUrl}@{fileName}",
-                            "sha1": "7f39f369ec8a39e3ad41ea18e3b8ae46d8e8090b"
+                            "sha1": "13e847ca8689b080425c28619a932ab781363c26"
                         },
                         {
                             "name": "/turbojpeg.dll",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/turbojpeg.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/v2.0.0-win-x64-turbojpeg.dll",
                             "platform": "Windows-x64",
-                            "sha1": "ae9b5951101350c3e226a84430051f14056f824a"
+                            "sha1": "a87aa56b190dc00221cf5b6e83d11975b21d4173"
+                        },
+                        {
+                            "name": "/turbojpeg.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/v2.0.0-win-x86-turbojpeg.dll",
+                            "platform": "Windows-x86",
+                            "sha1": "6838b78129c3cc7dec9fb9ba67cb053fbfc7889a"
                         },
                         {
                             "name": "/libturbojpeg.dylib",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/libturbojpeg.dylib",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/v2.0.0-macOS-x64-libturbojpeg.dylib",
                             "platform": "OSX-x64",
-                            "sha1": "a2c7e2be4a88b628f45b2e219519089a164623e6"
+                            "sha1": "c2b9a558c9437ce9017e0b425acb4b5db4c3766a"
                         },
                         {
                             "name": "/libturbojpeg.so",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/libturbojpeg.so",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v1.0.0/v2.0.0-linux-x64-libturbojpeg.so",
                             "platform": "Linux-x64",
-                            "sha1": "48561562291e0144473584da415f529e2d04c15c"
+                            "sha1": "afbded9209041003f0d7f628ebfc64eccca33c5a"
                         }
                     ],
                     "requiredModules": [
