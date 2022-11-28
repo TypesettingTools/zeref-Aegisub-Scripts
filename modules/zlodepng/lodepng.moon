@@ -1,4 +1,4 @@
-versionRecord = "22.11.8"
+versionRecord = "22.1.9"
 
 haveDepCtrl, DependencyControl = pcall require, 'l0.DependencyControl'
 
