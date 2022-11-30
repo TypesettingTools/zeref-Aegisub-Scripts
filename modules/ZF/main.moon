@@ -1,4 +1,4 @@
-versionRecord = "1.0.0"
+versionRecord = "2.2.0"
 haveDepCtrl, DependencyControl = pcall require, "l0.DependencyControl"
 
 local karaskel, yutils, depctrl
