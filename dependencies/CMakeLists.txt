@@ -19,9 +19,9 @@ if (NOT UNIX)
 endif (UNIX)
 
 # lodepng
-project(lodepng_wrap LANGUAGES CXX)
+project(lodepng_wrap LANGUAGES C)
 
-set(LODEPNG_SRC subprojects/lodepng/lodepng.cpp)
+set(LODEPNG_SRC subprojects/lodepng/lodepng.c)
 set(CMAKE_INSTALL_LIBDIR ${CMAKE_SOURCE_DIR}/lodepng_build)
 
 add_library(lodepng_wrap SHARED ${LODEPNG_SRC})
