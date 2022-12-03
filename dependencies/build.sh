@@ -1,97 +1,33 @@
-#!/bin/sh
+# https://github.com/tamasmeszaros/libpolyclipping.git#784ff113071f1fa7832ebe74667f2fd0756c634f
+# https://github.com/lvandeve/lodepng.git#997936fd2b45842031e4180d73d7880e381cf33f
+# https://github.com/rcancro/giflib.git#4b0c893cfddf16421bd3f59207fdf65f06e9a10d
+# https://github.com/libjpeg-turbo/libjpeg-turbo.git#8162eddf041e0be26f5c671bb6528723c55fed9d
 
-# captures git repository name with HTTPS protocol
-git_HTTPS="https://github.com/.+/(.+)\.git#.+"
+pvd=$PWD
 
-# shortcut to subprojects and additional folders
-inc="release"
-sub="dependencies/subprojects"
-
-# windows
-ext=".dll"
-lib=""
-
-# check OS
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    ext=".so"
-    lib="lib"
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    ext=".dylib"
-    lib="lib"
-fi
-
-# creates folders
+sub=$pvd/dependencies/subprojects
 [ ! -d $sub ] && mkdir -p $sub
-[ ! -d $inc ] && mkdir -p $inc
 
-# sets flags
-flags="-Wall -Wextra -fPIC -O3"
+bin=$pvd/dependencies/binaries
+[ ! -d $bin ] && mkdir -p $bin
 
-# calls additional dependencies
-while read -u3 rep_path; do
-    if [[ $rep_path =~ $git_HTTPS ]]; then
-        # Clone repo and checkout correct commit
-        rep="${rep_path%\#*}"
-        commit="${rep_path#*\#}"
-        rep_name=${BASH_REMATCH[1]}
-        rep_dir="$sub/$rep_name"
-        rm -rf $rep_dir
+binj=$pvd/dependencies/binaries/jpeg
+[ ! -d $binj ] && mkdir -p $binj
 
-        git clone $rep $rep_dir
-        cwd="$PWD"
-        cd $rep_dir
-        git checkout $commit
-        cd $cwd
+git clone https://github.com/tamasmeszaros/libpolyclipping.git $sub/libpolyclipping && cd $sub/libpolyclipping
+git checkout 784ff113071f1fa7832ebe74667f2fd0756c634f
 
-        if [ $rep_name = "libpolyclipping" ]; then
-            cpp_dir="$sub/libpolyclipping"
-            cpp_rel="$inc/zpclipper"
-            c_files="$cpp_dir/clipper.cpp $cpp_dir/clipper.wrap.cpp"
+git clone https://github.com/lvandeve/lodepng.git $sub/lodepng && cd $sub/lodepng
+git checkout 997936fd2b45842031e4180d73d7880e381cf33f
 
-            # required files and folders
-            cp -f "dependencies/clipper.wrap.cpp" $cpp_dir
-            mkdir -p $cpp_rel
+git clone https://github.com/rcancro/giflib.git $sub/giflib && cd $sub/giflib
+git checkout 4b0c893cfddf16421bd3f59207fdf65f06e9a10d
 
-            if [[ $ext = ".dylib" ]]; then
-                clang++ $flags -std=c++17 -c $c_files
-                clang++ -shared *.o -o "$cpp_rel/${lib}polyclipping${ext}"
-            else
-                g++ $flags -std=c++17 -c $c_files
-                g++ -shared *.o -o "$cpp_rel/${lib}polyclipping${ext}"
-            fi
-        elif [ $rep_name = "lodepng" ]; then
-            ldp_dir="$sub/lodepng"
-            ldp_rel="$inc/zlodepng"
-            c_files="$ldp_dir/lodepng.c"
+git clone https://github.com/libjpeg-turbo/libjpeg-turbo.git $sub/libjpeg-turbo && cd $sub/libjpeg-turbo
+git checkout 8162eddf041e0be26f5c671bb6528723c55fed9d
 
-            # required files and folders
-            cp -f "$ldp_dir/lodepng.cpp" $c_files
-            mkdir -p $ldp_rel
+cmake $pvd/dependencies -DCMAKE_CXX_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -G "Unix Makefiles" -B $bin
+cd $bin && make clipper_wrap && make lodepng_wrap && make giflib_wrap
 
-            gcc $flags -ansi -pedantic -c $c_files
-            gcc -shared *.o -o "$ldp_rel/${lib}lodepng${ext}"
-        elif [ $rep_name = "giflib" ]; then
-            gif_dir="$sub/giflib/lib"
-            gif_rel="$inc/zgiflib"
-
-            # required files and folders
-            mkdir -p $gif_rel
-
-            gcc $flags -w -c $gif_dir/*.c
-            gcc -shared *.o -o "$gif_rel/${lib}giflib${ext}"
-        elif [ $rep_name = "libjpeg-turbo" ]; then
-            peg_dir="$sub/libjpeg-turbo"
-            peg_rel="$inc/zturbojpeg"
-            peg_bld="$peg_dir/build"
-
-            # required files and folders
-            mkdir -p $peg_rel
-
-            cmake $peg_dir -DCMAKE_C_COMPILER=gcc -G "Unix Makefiles" -B $peg_bld
-            make -C $peg_bld
-            cp -f "$peg_bld/libturbojpeg${ext}" "$peg_rel/${lib}turbojpeg${ext}"
-        fi
-        # removes the object files after the build
-        rm -rf *.o
-    fi
-done 3< "dependencies/list.txt"
+cmake $pvd/dependencies/subprojects/libjpeg-turbo -DCMAKE_CXX_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -G "Unix Makefiles" -B $binj
+make -C $binj
