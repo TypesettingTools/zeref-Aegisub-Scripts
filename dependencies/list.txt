@@ -1,4 +1,0 @@
-https://github.com/tamasmeszaros/libpolyclipping.git#784ff113071f1fa7832ebe74667f2fd0756c634f
-https://github.com/lvandeve/lodepng.git#997936fd2b45842031e4180d73d7880e381cf33f
-https://github.com/rcancro/giflib.git#4b0c893cfddf16421bd3f59207fdf65f06e9a10d
-https://github.com/libjpeg-turbo/libjpeg-turbo.git#8162eddf041e0be26f5c671bb6528723c55fed9d
