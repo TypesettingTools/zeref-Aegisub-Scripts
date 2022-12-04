@@ -29,7 +29,9 @@ add_library(giflib SHARED ${GIFLIB_SRC})
 target_compile_options(giflib PRIVATE -w -fno-builtin -g -c -W -Wreturn-type -Wcomment -O3)
 
 if (NOT UNIX)
-    target_link_libraries(polyclipping lodepng giflib PUBLIC -static)
+    target_link_libraries(polyclipping PUBLIC -static)
+    target_link_libraries(lodepng PUBLIC -static)
+    target_link_libraries(giflib PUBLIC -static)
 endif (UNIX)
 
 install(TARGETS polyclipping lodepng giflib
