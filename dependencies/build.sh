@@ -28,7 +28,7 @@ git clone https://github.com/libjpeg-turbo/libjpeg-turbo.git $sub/libjpeg-turbo 
 git checkout 8162eddf041e0be26f5c671bb6528723c55fed9d
 
 cmake $pvd/dependencies -DCMAKE_CXX_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -G "Unix Makefiles" -B $bin
-cd $bin && make clipper_wrap && make lodepng_wrap && make giflib_wrap
+cd $bin && make polyclipping && make lodepng && make giflib
 
 cmake $pvd/dependencies/subprojects/libjpeg-turbo -DCMAKE_CXX_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -G "Unix Makefiles" -B $binj
 make -C $binj
