@@ -448,9 +448,9 @@
                         },
                         {
                             "name": "/giflib.dll",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.0.0/v2.0.0-win-x64-giflib.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.1.0/v2.1.0-win-x64-giflib.dll",
                             "platform": "Windows-x64",
-                            "sha1": "191661e18eb6f0853c0f55a7067e86ad970e49c7"
+                            "sha1": "4bf213a7506069ca15f271a3228a2250f62558a0"
                         },
                         {
                             "name": "/giflib.dll",
@@ -460,15 +460,15 @@
                         },
                         {
                             "name": "/libgiflib.dylib",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.0.0/v2.0.0-macOS-x64-libgiflib.dylib",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.1.0/v2.1.0-macOS-x64-libgiflib.dylib",
                             "platform": "OSX-x64",
-                            "sha1": "bb7090f87e79343784050dc0622ade2d837dbc5e"
+                            "sha1": "cf79915f6e3ee3223c52afc18b171ba37ac46d0a"
                         },
                         {
                             "name": "/libgiflib.so",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.0.0/v2.0.0-linux-x64-libgiflib.so",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.1.0/v2.1.0-linux-x64-libgiflib.so",
                             "platform": "Linux-x64",
-                            "sha1": "ddfbfacf9fa36a42af15d2dc6b0839e0e24caf72"
+                            "sha1": "d824ec9cc6d775795515abb4ab70dcae5808c176"
                         }
                     ],
                     "requiredModules": [
@@ -505,9 +505,9 @@
                         },
                         {
                             "name": "/lodepng.dll",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.0.0/v2.0.0-win-x64-lodepng.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.1.0/v2.1.0-win-x64-lodepng.dll",
                             "platform": "Windows-x64",
-                            "sha1": "fe6d675abb3b1fdedd399daf3689cc571b8ad1b5"
+                            "sha1": "a8f77a4406a2c9f16d71e75a6a24497646d0ac55"
                         },
                         {
                             "name": "/lodepng.dll",
@@ -517,15 +517,15 @@
                         },
                         {
                             "name": "/liblodepng.dylib",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.0.0/v2.0.0-macOS-x64-liblodepng.dylib",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.1.0/v2.1.0-macOS-x64-liblodepng.dylib",
                             "platform": "OSX-x64",
-                            "sha1": "6e990d8f0fd654dc705fb7a2479aa460d83fe249"
+                            "sha1": "4d7452a0a77551437062d59d9ef01f141422b562"
                         },
                         {
                             "name": "/liblodepng.so",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.0.0/v2.0.0-linux-x64-liblodepng.so",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.1.0/v2.1.0-linux-x64-liblodepng.so",
                             "platform": "Linux-x64",
-                            "sha1": "1a460b5bf6215a9f89a2a57c92905b7a9b5556f3"
+                            "sha1": "22a58b4cce2f202c7e96d3518fa35868793aac43"
                         }
                     ],
                     "requiredModules": [
@@ -562,9 +562,9 @@
                         },
                         {
                             "name": "/polyclipping.dll",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.0.0/v2.0.0-win-x64-polyclipping.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.1.0/v2.1.0-win-x64-polyclipping.dll",
                             "platform": "Windows-x64",
-                            "sha1": "8cc589eb77717282559883d5473965001ba3751a"
+                            "sha1": "db6eed51964b77f6002629aa80cd54f025dc125e"
                         },
                         {
                             "name": "/polyclipping.dll",
@@ -574,15 +574,15 @@
                         },
                         {
                             "name": "/libpolyclipping.dylib",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.0.0/v2.0.0-macOS-x64-libpolyclipping.dylib",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.1.0/v2.1.0-macOS-x64-libpolyclipping.dylib",
                             "platform": "OSX-x64",
-                            "sha1": "c261df20626ea27d8d2571bc927ec9d65bef6c32"
+                            "sha1": "f66d41ddd815aa918800e1db87f0007a1ebae6c5"
                         },
                         {
                             "name": "/libpolyclipping.so",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.0.0/v2.0.0-linux-x64-libpolyclipping.so",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.1.0/v2.1.0-linux-x64-libpolyclipping.so",
                             "platform": "Linux-x64",
-                            "sha1": "5f87241e750891048fc419d65fb05da7005c674a"
+                            "sha1": "778def6b486500a5f56b4a115aceaaa64ff707d7"
                         }
                     ],
                     "requiredModules": [
@@ -619,9 +619,9 @@
                         },
                         {
                             "name": "/turbojpeg.dll",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.0.0/v2.0.0-win-x64-turbojpeg.dll",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.1.0/v2.1.0-win-x64-turbojpeg.dll",
                             "platform": "Windows-x64",
-                            "sha1": "a87aa56b190dc00221cf5b6e83d11975b21d4173"
+                            "sha1": "92ea0a8ca8bc3904e7b53232a99caa2c9eda4d6a"
                         },
                         {
                             "name": "/turbojpeg.dll",
@@ -631,15 +631,15 @@
                         },
                         {
                             "name": "/libturbojpeg.dylib",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.0.0/v2.0.0-macOS-x64-libturbojpeg.dylib",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.1.0/v2.1.0-macOS-x64-libturbojpeg.dylib",
                             "platform": "OSX-x64",
-                            "sha1": "c2b9a558c9437ce9017e0b425acb4b5db4c3766a"
+                            "sha1": "9d4d96a37b0d49dddef24d1b7abd1d98c958dafb"
                         },
                         {
                             "name": "/libturbojpeg.so",
-                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.0.0/v2.0.0-linux-x64-libturbojpeg.so",
+                            "url": "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/download/v2.1.0/v2.1.0-linux-x64-libturbojpeg.so",
                             "platform": "Linux-x64",
-                            "sha1": "afbded9209041003f0d7f628ebfc64eccca33c5a"
+                            "sha1": "22939afc295b4c56131dbbe5507de1a8fe64b903"
                         }
                     ],
                     "requiredModules": [
