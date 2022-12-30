@@ -50,13 +50,13 @@
             "channels": {
                 "main": {
                     "default": true,
-                    "version": "1.5.3",
-                    "released": "2022-11-27",
+                    "version": "1.5.4",
+                    "released": "2022-12-30",
                     "files": [
                         {
                             "name": ".moon",
                             "url": "@{fileBaseUrl}@{fileName}",
-                            "sha1": "e57617a174a21f97ee76bf47455f274abfe1eca6"
+                            "sha1": "1f77e2f18b67ced9b65fd8c02d7ee6cc3d82a18b"
                         }
                     ],
                     "requiredModules": [
@@ -71,6 +71,9 @@
             "changelog": {
                 "1.5.3": [
                     "Initial depctrl release"
+                ],
+                "1.5.4": [
+                    "Fixed depctrl registration"
                 ]
             },
             "name": "Everything Shape",
@@ -83,13 +86,13 @@
             "channels": {
                 "main": {
                     "default": true,
-                    "version": "1.3.2",
-                    "released": "2022-11-27",
+                    "version": "1.3.3",
+                    "released": "2022-12-30",
                     "files": [
                         {
                             "name": ".moon",
                             "url": "@{fileBaseUrl}@{fileName}",
-                            "sha1": "97803b244f38b3810c2bd993aece6b7d538d1baa"
+                            "sha1": "2e6f9b82937383a9d765a40c8e64484737422434"
                         }
                     ],
                     "requiredModules": [
@@ -104,6 +107,9 @@
             "changelog": {
                 "1.3.2": [
                     "Initial depctrl release"
+                ],
+                "1.3.3": [
+                    "Fixed depctrl registration"
                 ]
             },
             "name": "Gradient Cut",
@@ -116,13 +122,13 @@
             "channels": {
                 "main": {
                     "default": true,
-                    "version": "1.1.1",
-                    "released": "2022-11-27",
+                    "version": "1.1.2",
+                    "released": "2022-12-30",
                     "files": [
                         {
                             "name": ".moon",
                             "url": "@{fileBaseUrl}@{fileName}",
-                            "sha1": "d884ee492bb492da9d96cc8667c7e4f995fef821"
+                            "sha1": "cec7c9299ea15ab34d3db7482b585ff6651cbc6b"
                         }
                     ],
                     "requiredModules": [
@@ -137,6 +143,9 @@
             "changelog": {
                 "1.1.1": [
                     "Initial depctrl release"
+                ],
+                "1.1.2": [
+                    "Fixed depctrl registration"
                 ]
             },
             "name": "Line To FBF",
@@ -215,13 +224,13 @@
             "channels": {
                 "main": {
                     "default": true,
-                    "version": "2.1.1",
-                    "released": "2022-11-27",
+                    "version": "2.1.2",
+                    "released": "2022-12-30",
                     "files": [
                         {
                             "name": ".moon",
                             "url": "@{fileBaseUrl}@{fileName}",
-                            "sha1": "1fc890d05af7ebd30585fee0786f584712a1504b"
+                            "sha1": "113b9abc0fa7e1a7167ccd2511d0091f62a68124"
                         }
                     ],
                     "requiredModules": [
@@ -236,6 +245,9 @@
             "changelog": {
                 "2.1.1": [
                     "Initial depctrl release"
+                ],
+                "2.1.2": [
+                    "Fixed depctrl registration"
                 ]
             },
             "name": "Text in Clip",

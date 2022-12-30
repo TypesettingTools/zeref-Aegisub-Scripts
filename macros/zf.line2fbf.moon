@@ -1,7 +1,7 @@
 export script_name        = "Line To FBF"
 export script_description = "Splits the line frame by frame interpolating all transformations present in it"
 export script_author      = "Zeref"
-export script_version     = "1.1.1"
+export script_version     = "1.1.2"
 export script_namespace   = "zf.line2fbf"
 -- LIB
 haveDepCtrl, DependencyControl = pcall require, "l0.DependencyControl"
@@ -55,8 +55,6 @@ main = (subs, selected, active) ->
         return dlg\getSelection!
 
 if haveDepCtrl
-    depctrl\registerMacros {
-        {script_name, script_description, main}
-    }
+    depctrl\registerMacro main
 else
     aegisub.register_macro script_name, script_description, main

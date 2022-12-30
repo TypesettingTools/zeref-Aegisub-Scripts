@@ -1,7 +1,7 @@
 export script_name        = "Gradient Cut"
 export script_description = "Generates a gradient from cuts in sequence."
 export script_author      = "Zeref"
-export script_version     = "1.3.2"
+export script_version     = "1.3.3"
 export script_namespace   = "zf.gradientCut"
 -- LIB
 haveDepCtrl, DependencyControl = pcall require, "l0.DependencyControl"
@@ -166,8 +166,6 @@ main = (subs, selected, active, button, elements) ->
     return dlg\getSelection!
 
 if haveDepCtrl
-    depctrl\registerMacros {
-        {script_name, script_description, main}
-    }
+    depctrl\registerMacro main
 else
     aegisub.register_macro script_name, script_description, main

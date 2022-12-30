@@ -1,7 +1,7 @@
 export script_name        = "Text in Clip"
 export script_description = "Causes the characters in your text to go through the coordinates of your clip!"
 export script_author      = "Zeref"
-export script_version     = "2.1.1"
+export script_version     = "2.1.2"
 export script_namespace   = "zf.textInClip"
 -- LIB
 haveDepCtrl, DependencyControl = pcall require, "l0.DependencyControl"
@@ -158,8 +158,6 @@ main = (subs, selected, active, button, elements) ->
     return dlg\getSelection!
 
 if haveDepCtrl
-    depctrl\registerMacros {
-        {script_name, script_description, main}
-    }
+    depctrl\registerMacro main
 else
     aegisub.register_macro script_name, script_description, main
