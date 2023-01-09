@@ -1,7 +1,7 @@
 export script_name        = "Gradient Cut"
 export script_description = "Generates a gradient from cuts in sequence."
 export script_author      = "Zeref"
-export script_version     = "1.3.3"
+export script_version     = "1.3.4"
 export script_namespace   = "zf.gradientCut"
 -- LIB
 haveDepCtrl, DependencyControl = pcall require, "l0.DependencyControl"
@@ -64,7 +64,7 @@ gradientCut = (shape, pixel = 4, mode = "Horizontal", angle = 0, offset = 0) ->
     for i = 1, len
         -- interpolates the points from the left-hand line to the right-hand line
         ipol = zf.util\interpolation (i - 1) / (len - 1), "shape", lLeft, lRight
-        ipol = zf.clipper(ipol)\offset pixel * 1.5, "miter", "butt"
+        ipol = zf.clipper(ipol)\offset pixel, "miter", "closed_line"
         -- adds the shape as a clip
         ipol.clp = sclip.sbj
         -- clip and build the new shape
