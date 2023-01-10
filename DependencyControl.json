@@ -86,13 +86,13 @@
             "channels": {
                 "main": {
                     "default": true,
-                    "version": "1.3.3",
-                    "released": "2022-12-30",
+                    "version": "1.3.4",
+                    "released": "2023-01-10",
                     "files": [
                         {
                             "name": ".moon",
                             "url": "@{fileBaseUrl}@{fileName}",
-                            "sha1": "2e6f9b82937383a9d765a40c8e64484737422434"
+                            "sha1": "dab2b31f3059d945d1800a7e581bbcec111be9ca"
                         }
                     ],
                     "requiredModules": [
@@ -105,6 +105,9 @@
                 }
             },
             "changelog": {
+				"1.3.3": [
+                    "Fix crash due to incomplete clipper2 reversion"
+                ],
                 "1.3.2": [
                     "Initial depctrl release"
                 ],
