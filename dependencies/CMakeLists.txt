@@ -1,13 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 option(BUILD_SHARED_LIBS "Build Shared Libs" ON)
 
-# libpolyclipping
-project(polyclipping LANGUAGES CXX)
-set(CLIPPER_SRC subprojects/libpolyclipping/clipper.cpp clipper.wrap.cpp)
-add_library(polyclipping SHARED ${CLIPPER_SRC})
-target_include_directories(polyclipping PUBLIC subprojects/libpolyclipping)
-target_compile_options(polyclipping PRIVATE -w -O3)
-
 # lodepng
 project(lodepng LANGUAGES C)
 set(LODEPNG_SRC subprojects/lodepng/lodepng.c)
@@ -29,12 +22,11 @@ add_library(giflib SHARED ${GIFLIB_SRC})
 target_compile_options(giflib PRIVATE -w -fno-builtin -g -c -W -Wreturn-type -Wcomment -O3)
 
 if (NOT UNIX)
-    target_link_libraries(polyclipping PUBLIC -static)
     target_link_libraries(lodepng PUBLIC -static)
     target_link_libraries(giflib PUBLIC -static)
 endif (UNIX)
 
-install(TARGETS polyclipping lodepng giflib
+install(TARGETS lodepng giflib
     RUNTIME DESTINATION "${CMAKE_SOURCE_DIR}"
     LIBRARY DESTINATION "${CMAKE_SOURCE_DIR}"
 )

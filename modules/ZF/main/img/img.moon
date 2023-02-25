@@ -1,30 +1,10 @@
 import CONFIG from require "ZF.main.util.config"
 import TABLE  from require "ZF.main.util.table"
+import IMG    from require "zimg.main"
 
-import LIBBMP from require "ZF.main.img.bmp"
-import LIBJPG from require "ZF.main.img.jpg"
-import LIBGIF from require "ZF.main.img.gif"
-import LIBPNG from require "ZF.main.img.png"
+class IMAGE extends IMG
 
-class IMAGE
-
-    version: "1.1.0"
-
-    new: (filename) =>
-        @extension = type(filename) == "string" and filename\match("^.+%.(.+)$") or "gif"
-        @infos = switch @extension
-            when "png"                               then LIBPNG(filename)\decode!
-            when "jpeg", "jpe", "jpg", "jfif", "jfi" then LIBJPG(filename)\decode!
-            when "bmp", "dib"                        then LIBBMP(filename)\decode!
-            when "gif"                               then LIBGIF(filename)\decode!
-
-    setInfos: (frame = 1) =>
-        infos = @extension == "gif" and @infos.frames[frame] or @infos
-        if @extension == "gif"
-            {delayMs: @delayMs, x: @x, y: @y} = infos
-        @width = infos.width
-        @height = infos.height
-        @data = infos\getData!
+    version: "1.2.0"
 
     toAss: (reduce, frame) =>
         @setInfos frame

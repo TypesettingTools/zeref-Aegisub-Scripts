@@ -1,3 +1,10 @@
 release/
 dependencies/subprojects/
 dependencies/binaries/
+dependencies/buildJP/
+dependencies/buildLG/
+dependencies/buildPC/
+modules/zpolyclipping/polyclipping/
+modules/zimg/main/giflib/giflib/
+modules/zimg/main/lodepng/lodepng/
+modules/zimg/main/turbojpeg/turbojpeg/
