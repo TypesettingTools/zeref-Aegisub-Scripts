@@ -30,12 +30,21 @@ jobs:
 
       - uses: actions/checkout@v3
 
+      - name: Add MSBuild to PATH
+        if: matrix.os.host == 'windows-latest'
+        uses: microsoft/setup-msbuild@v1.0.2  
+
+      - name: Building Libraries Windows MSVC
+        if: matrix.os.host == 'windows-latest'
+        run: dependencies/build.bat
+
       - name: Building Libraries Windows
         if: matrix.os.host == 'windows-latest'
         shell: bash
         run: |
           bash dependencies/build.sh
-          cp -f dependencies/binaries/jpeg/libturbojpeg.dll dependencies/binaries/libturbojpeg.dll
+          cp -f dependencies/buildLG/libgiflib.dll dependencies/binaries/giflib.dll
+          cp -f dependencies/buildLG/liblodepng.dll dependencies/binaries/lodepng.dll
 
       - name: Upload Artifacts Windows
         uses: actions/upload-artifact@v3
@@ -48,8 +57,11 @@ jobs:
         if: matrix.os.host == 'ubuntu-latest'
         shell: bash
         run: |
-          bash dependencies/build.sh
-          cp -f dependencies/binaries/jpeg/libturbojpeg.so dependencies/binaries/libturbojpeg.so
+          bash dependencies/build.sh -all
+          cp -f dependencies/buildPC/libpolyclipping.so dependencies/binaries/libpolyclipping.so
+          cp -f dependencies/buildJP/libturbojpeg.so dependencies/binaries/libturbojpeg.so
+          cp -f dependencies/buildLG/libgiflib.so dependencies/binaries/libgiflib.so
+          cp -f dependencies/buildLG/liblodepng.so dependencies/binaries/liblodepng.so
 
       - name: Upload Artifacts Linux
         uses: actions/upload-artifact@v3
@@ -62,8 +74,11 @@ jobs:
         if: matrix.os.host == 'macos-11'
         shell: bash
         run: |
-          bash dependencies/build.sh
-          cp -f dependencies/binaries/jpeg/libturbojpeg.dylib dependencies/binaries/libturbojpeg.dylib
+          bash dependencies/build.sh -all
+          cp -f dependencies/buildPC/libpolyclipping.dylib dependencies/binaries/libpolyclipping.dylib
+          cp -f dependencies/buildJP/libturbojpeg.dylib dependencies/binaries/libturbojpeg.dylib
+          cp -f dependencies/buildLG/libgiflib.dylib dependencies/binaries/libgiflib.dylib
+          cp -f dependencies/buildLG/liblodepng.dylib dependencies/binaries/liblodepng.dylib
 
       - name: Upload Artifacts MacOS
         uses: actions/upload-artifact@v3

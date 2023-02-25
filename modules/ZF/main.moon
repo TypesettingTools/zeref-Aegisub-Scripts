@@ -1,4 +1,4 @@
-versionRecord = "2.2.0"
+versionRecord = "2.3.0"
 haveDepCtrl, DependencyControl = pcall require, "l0.DependencyControl"
 
 local karaskel, yutils, depctrl
@@ -29,7 +29,7 @@ export libError = (name) ->
     error table.concat {
         "\n--> #{name} was not found <--\n\n"
         "⬇ To fix this error, download the file via the link below ⬇\n"
-        "https://github.com/zerefxx/Aegisub-macros/releases/"
+        "https://github.com/TypesettingTools/zeref-Aegisub-Scripts/releases/"
     }
 
 -- checks if the version gives class matches the current one
@@ -62,8 +62,8 @@ files = {
     font:    {export_name: "FONT",    module_name: "ZF.main.ass.font",       version: "1.0.0"}
     line:    {export_name: "LINE",    module_name: "ZF.main.ass.line",       version: "1.4.0"}
     -- img
-    img:     {export_name: "IMAGE",   module_name: "ZF.main.img.img",        version: "1.1.0"}
-    potrace: {export_name: "POTRACE", module_name: "ZF.main.img.potrace",    version: "1.1.0"}
+    img:     {export_name: "IMAGE",   module_name: "ZF.main.img.img",        version: "1.2.0"}
+    potrace: {export_name: "POTRACE", module_name: "ZF.main.img.potrace",    version: "1.2.0"}
     -- util
     config:  {export_name: "CONFIG",  module_name: "ZF.main.util.config",    version: "1.0.2"}
     math:    {export_name: "MATH",    module_name: "ZF.main.util.math",      version: "1.1.1"}
