@@ -1,3 +1,28 @@
+versionRecord = "1.0.0"
+
+haveDepCtrl, DependencyControl = pcall require, 'l0.DependencyControl'
+
+local depctrl
+if haveDepCtrl
+    depctrl = DependencyControl({
+        name: "zimg"
+        version: versionRecord
+        description: "A library for loading images in various foramts"
+        author: "Zeref"
+        url: "https://github.com/TypesettingTools/zeref-Aegisub-Scripts"
+        moduleName: "zimg.main"
+        feed: "https://raw.githubusercontent.com/TypesettingTools/zeref-Aegisub-Scripts/main/DependencyControl.json"
+        {
+            { "ffi" }
+            { "requireffi.requireffi", version: "0.1.2" }
+        }
+    })
+    ffi, requireffi = depctrl\requireModules!
+else
+    ffi = require "ffi"
+    requireffi = require "requireffi.requireffi"
+
+
 import LIBBMP from require "zimg.main.bitmap.bitmap"
 import LIBJPG from require "zimg.main.turbojpeg.turbojpeg"
 import LIBGIF from require "zimg.main.giflib.giflib"
@@ -25,4 +50,7 @@ class IMG
         @height = infos.height
         @data = infos\getData!
 
-{:IMG, :LIBBMP, :LIBJPG, :LIBGIF, :LIBPNG}
+if haveDepCtrl
+	return depctrl\register {:IMG, :LIBBMP, :LIBJPG, :LIBGIF, :LIBPNG, version: versionRecord}
+else
+	return {:IMG, :LIBBMP, :LIBJPG, :LIBGIF, :LIBPNG, version: versionRecord}
