@@ -1,28 +1,6 @@
-versionRecord = "2.1.3"
-
-haveDepCtrl, DependencyControl = pcall require, 'l0.DependencyControl'
-
-local ffi, requireffi, bff, depctrl
-if haveDepCtrl
-    depctrl = DependencyControl({
-        name: "turbojpeg"
-        version: versionRecord
-        description: "jpeg library"
-        author: "Zeref"
-        url: "https://github.com/TypesettingTools/zeref-Aegisub-Scripts"
-        moduleName: "zimg.main.turbojpeg.turbojpeg"
-        feed: "https://raw.githubusercontent.com/TypesettingTools/zeref-Aegisub-Scripts/main/DependencyControl.json"
-        {
-            { "ffi" }
-            { "requireffi.requireffi", version: "0.1.2" }
-            { "zimg.main.buffer.buffer" }
-        }
-    })
-    ffi, requireffi, bff = depctrl\requireModules!
-else
-    ffi = require "ffi"
-    requireffi = require "requireffi.requireffi"
-    bff = require "zimg.main.buffer.buffer"
+ffi = require "ffi"
+requireffi = require "requireffi.requireffi"
+bff = require "zimg.main.buffer.buffer"
 
 has_loaded, JPG = pcall requireffi, "zimg.main.turbojpeg.turbojpeg.turbojpeg"
 
@@ -117,7 +95,4 @@ class LIBJPG
 
         return @
 
-if haveDepCtrl
-	return depctrl\register {:LIBJPG, :has_loaded, version: versionRecord}
-else
-	return {:LIBJPG, :has_loaded, version: versionRecord}
+{:LIBJPG}

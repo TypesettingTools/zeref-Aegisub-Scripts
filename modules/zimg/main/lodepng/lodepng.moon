@@ -1,28 +1,6 @@
-versionRecord = "22.1.9"
-
-haveDepCtrl, DependencyControl = pcall require, 'l0.DependencyControl'
-
-local ffi, requireffi, bff, depctrl
-if haveDepCtrl
-    depctrl = DependencyControl({
-        name: "lodepng"
-        version: versionRecord
-        description: "PNG encoder and decoder"
-        author: "Zeref"
-        url: "https://github.com/TypesettingTools/zeref-Aegisub-Scripts"
-        moduleName: "zimg.main.lodepng.lodepng"
-        feed: "https://raw.githubusercontent.com/TypesettingTools/zeref-Aegisub-Scripts/main/DependencyControl.json"
-        {
-            { "ffi" }
-            { "requireffi.requireffi", version: "0.1.2" }
-            { "zimg.main.buffer.buffer" }
-        }
-    })
-    ffi, requireffi, bff = depctrl\requireModules!
-else
-    ffi = require "ffi"
-    requireffi = require "requireffi.requireffi"
-    bff = require "zimg.main.buffer.buffer"
+ffi = require "ffi"
+requireffi = require "requireffi.requireffi"
+bff = require "zimg.main.buffer.buffer"
 
 has_loaded, PNG = pcall requireffi, "zimg.main.lodepng.lodepng.lodepng"
 
@@ -81,7 +59,4 @@ class LIBPNG
 
         return @
 
-if haveDepCtrl
-	return depctrl\register {:LIBPNG, :has_loaded, version: versionRecord}
-else
-	return {:LIBPNG, :has_loaded, version: versionRecord}
+{:LIBPNG}

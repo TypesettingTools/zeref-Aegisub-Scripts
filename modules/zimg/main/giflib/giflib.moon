@@ -1,26 +1,5 @@
-versionRecord = "5.2.1"
-
-haveDepCtrl, DependencyControl = pcall require, 'l0.DependencyControl'
-
-local ffi, requireffi, depctrl
-if haveDepCtrl
-    depctrl = DependencyControl({
-        name: "giflib"
-        version: versionRecord
-        description: "giflib is a library for reading and writing gif images."
-        author: "Zeref"
-        url: "https://github.com/TypesettingTools/zeref-Aegisub-Scripts"
-        moduleName: "zimg.main.giflib.giflib"
-        feed: "https://raw.githubusercontent.com/TypesettingTools/zeref-Aegisub-Scripts/main/DependencyControl.json"
-        {
-            { "ffi" }
-            { "requireffi.requireffi", version: "0.1.2" }
-        }
-    })
-    ffi, requireffi = depctrl\requireModules!
-else
-    ffi = require "ffi"
-    requireffi = require "requireffi.requireffi"
+ffi = require "ffi"
+requireffi = require "requireffi.requireffi"
 
 has_loaded, GIF = pcall requireffi, "zimg.main.giflib.giflib.giflib"
 
@@ -151,7 +130,4 @@ class LIBGIF
 
         return @
 
-if haveDepCtrl
-	return depctrl\register {:LIBGIF, :has_loaded, version: versionRecord}
-else
-	return {:LIBGIF, :has_loaded, version: versionRecord}
+{:LIBGIF}
