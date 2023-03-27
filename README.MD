@@ -1,4 +1,6 @@
-# **Zeref's Aegisub Macros**
+# **Has been discontinued in favor of [ILL](https://github.com/TypesettingTools/ILL-Aegisub-Scripts)**
+
+## **Zeref's Aegisub Macros**
 
 Aegisub-Macros is a collection of automations for the Aegisub tool. These automations were made exclusively for Typesetting, which is a type of function found in Fansubs.
 These tools were originally developed by Zeref and are now maintained in TypesettingTools.
