@@ -155,39 +155,6 @@
             "description": "Splits the line frame by frame interpolating all transformations present in it",
             "author": "Zeref"
         },
-        "zf.makeImage": {
-            "url": "@{baseUrl}#@{namespace}",
-            "fileBaseUrl": "@{fileBaseUrl}macros/@{namespace}",
-            "channels": {
-                "main": {
-                    "default": true,
-                    "version": "1.2.2",
-                    "released": "2022-11-27",
-                    "files": [
-                        {
-                            "name": ".moon",
-                            "url": "@{fileBaseUrl}@{fileName}",
-                            "sha1": "36956fa38d54159e1968951df13f54f0fcf6ddba"
-                        }
-                    ],
-                    "requiredModules": [
-                        {
-                            "moduleName": "ZF.main",
-                            "feed": "@{feed:zeref}",
-                            "version": "2.3.0"
-                        }
-                    ]
-                }
-            },
-            "changelog": {
-                "1.2.2": [
-                    "Initial depctrl release"
-                ]
-            },
-            "name": "Make Image",
-            "description": "Converts images of various formats to pixels written in shape.",
-            "author": "Zeref"
-        },
         "zf.split": {
             "url": "@{baseUrl}#@{namespace}",
             "fileBaseUrl": "@{fileBaseUrl}macros/@{namespace}",
