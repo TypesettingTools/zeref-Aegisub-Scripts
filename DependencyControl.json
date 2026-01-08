@@ -119,42 +119,6 @@
             "description": "Generates a gradient from cuts in sequence.",
             "author": "Zeref"
         },
-        "zf.line2fbf": {
-            "url": "@{baseUrl}#@{namespace}",
-            "fileBaseUrl": "@{fileBaseUrl}macros/@{namespace}",
-            "channels": {
-                "main": {
-                    "default": true,
-                    "version": "1.1.2",
-                    "released": "2022-12-30",
-                    "files": [
-                        {
-                            "name": ".moon",
-                            "url": "@{fileBaseUrl}@{fileName}",
-                            "sha1": "cec7c9299ea15ab34d3db7482b585ff6651cbc6b"
-                        }
-                    ],
-                    "requiredModules": [
-                        {
-                            "moduleName": "ZF.main",
-                            "feed": "@{feed:zeref}",
-                            "version": "2.3.0"
-                        }
-                    ]
-                }
-            },
-            "changelog": {
-                "1.1.1": [
-                    "Initial depctrl release"
-                ],
-                "1.1.2": [
-                    "Fixed depctrl registration"
-                ]
-            },
-            "name": "Line To FBF",
-            "description": "Splits the line frame by frame interpolating all transformations present in it",
-            "author": "Zeref"
-        },
         "zf.split": {
             "url": "@{baseUrl}#@{namespace}",
             "fileBaseUrl": "@{fileBaseUrl}macros/@{namespace}",
